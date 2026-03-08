@@ -1,0 +1,101 @@
+## ─────────────────────────────────────────────────────────────────────────────
+## KubePilot Helm Chart – values.yaml
+## Override any value with --set or a custom values file.
+## ─────────────────────────────────────────────────────────────────────────────
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kubepilot/kubepilot
+  pullPolicy: IfNotPresent
+  tag: ""  # Defaults to Chart.appVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ── Service ─────────────────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  dashboardPort: 8080
+  mcpPort: 9090
+
+# ── Ingress ──────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: kubepilot.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# ── KubePilot configuration ──────────────────────────────────────────────────
+kubepilot:
+  # Ollama base URL — defaults to the in-cluster Ollama service if deployed together,
+  # or http://localhost:11434/v1 for single-node local setups.
+  ollamaBaseURL: "http://localhost:11434/v1"
+
+  # Ollama model name: llama3 | mistral | codellama | etc.
+  ollamaModel: "llama3"
+
+  # ollamaAPIKeySecret is optional — only required if Ollama is behind an auth proxy.
+  # Set via: --set kubepilot.ollamaAPIKeySecret.name=my-secret
+  # NEVER put the key directly in values.yaml.
+  ollamaAPIKeySecret:
+    name: ""   # Leave empty when using unauthenticated local Ollama.
+    key: "api-key"
+
+  # Log level: debug | info | warn | error
+  logLevel: "info"
+
+  # Namespaces to monitor for AI-driven troubleshooting. Empty = all namespaces.
+  watchNamespaces: []
+
+# ── Operator ─────────────────────────────────────────────────────────────────
+operator:
+  enabled: true
+  leaderElect: true
+  metricsPort: 8081
+  healthProbePort: 8082
+
+# ── Resources ────────────────────────────────────────────────────────────────
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# ── Security ─────────────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# ── Observability ─────────────────────────────────────────────────────────────
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false  # Set to true if Prometheus Operator is installed.
+    namespace: monitoring
+    interval: 30s
+
+# ── Node scheduling ──────────────────────────────────────────────────────────
+nodeSelector: {}
+tolerations: []
+affinity: {}

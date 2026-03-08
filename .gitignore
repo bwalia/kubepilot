@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dashboard/out/
+dashboard/.next/
+
+# OS files
+.DS_Store
+
+# Environment
+.env
+.env.local

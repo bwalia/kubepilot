@@ -1,0 +1,18 @@
+apiVersion: v2
+name: kubepilot
+description: AI-driven Kubernetes autopilot — single binary with Kubernetes Cockpit dashboard
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - kubernetes
+  - ai
+  - automation
+  - observability
+home: https://github.com/kubepilot/kubepilot
+sources:
+  - https://github.com/kubepilot/kubepilot
+maintainers:
+  - name: KubePilot Authors
+    url: https://github.com/kubepilot
+icon: https://raw.githubusercontent.com/kubepilot/kubepilot/main/docs/logo.png

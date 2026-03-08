@@ -1,0 +1,93 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: kubepilotclusters.kubepilot.io
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+spec:
+  group: kubepilot.io
+  names:
+    kind: KubePilotCluster
+    listKind: KubePilotClusterList
+    plural: kubepilotclusters
+    singular: kubepilotcluster
+    shortNames:
+      - kpc
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Environment
+          type: string
+          jsonPath: .spec.environment
+        - name: Connected
+          type: boolean
+          jsonPath: .status.connected
+        - name: Last Seen
+          type: date
+          jsonPath: .status.lastSeenAt
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              required:
+                - mcpServerAddress
+                - environment
+              properties:
+                mcpServerAddress:
+                  type: string
+                  description: Address of the KubePilot MCP server (host:port)
+                environment:
+                  type: string
+                  enum: [production, staging, development]
+                  default: development
+                  description: Cluster environment label
+                kubeconfigSecretRef:
+                  type: object
+                  required: [name, namespace]
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    key:
+                      type: string
+                      default: cr-code
+            status:
+              type: object
+              properties:
+                connected:
+                  type: boolean
+                lastSeenAt:
+                  type: string
+                  format: date-time
+                agentVersion:
+                  type: string
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required: [type, status]
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time

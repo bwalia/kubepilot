@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubepilot.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubepilot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kubepilot.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "kubepilot.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: kubepilot
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          args:
+            - serve
+            - --dashboard-port={{ .Values.service.dashboardPort }}
+            - --mcp-port={{ .Values.service.mcpPort }}
+            - --log-level={{ .Values.kubepilot.logLevel }}
+            - --ollama-base-url={{ .Values.kubepilot.ollamaBaseURL }}
+            - --ollama-model={{ .Values.kubepilot.ollamaModel }}
+          env:
+            {{- if .Values.kubepilot.ollamaAPIKeySecret.name }}
+            - name: KUBEPILOT_OLLAMA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kubepilot.ollamaAPIKeySecret.name }}
+                  key: {{ .Values.kubepilot.ollamaAPIKeySecret.key }}
+            {{- end }}
+          ports:
+            - name: dashboard
+              containerPort: {{ .Values.service.dashboardPort }}
+              protocol: TCP
+            - name: mcp
+              containerPort: {{ .Values.service.mcpPort }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.operator.metricsPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: dashboard
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: dashboard
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}

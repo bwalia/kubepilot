@@ -1,0 +1,67 @@
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kubepilot.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubepilot.fullname" . }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+rules:
+  # Core cluster read access — required for AI cluster context building.
+  - apiGroups: [""]
+    resources: [pods, pods/log, nodes, services, endpoints, namespaces, events, configmaps]
+    verbs: [get, list, watch]
+  # Write access — only for AI-approved actions (scaling, restart, pod deletion).
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [delete]
+  - apiGroups: [apps]
+    resources: [deployments, replicasets, statefulsets, daemonsets]
+    verbs: [get, list, watch, update, patch]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    verbs: [get, update, patch]
+  # Secrets — restricted to kubepilot-security namespace for CR code management.
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch, create, update, delete]
+    # Note: Restrict this to kubepilot-security namespace via RoleBinding, not ClusterRoleBinding.
+  # KubePilot CRDs.
+  - apiGroups: [kubepilot.io]
+    resources: ["*"]
+    verbs: [get, list, watch, create, update, patch, delete]
+  # Metrics API.
+  - apiGroups: [metrics.k8s.io]
+    resources: [pods, nodes]
+    verbs: [get, list]
+  # Operator leader election.
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kubepilot.fullname" . }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kubepilot.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kubepilot.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

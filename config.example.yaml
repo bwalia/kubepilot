@@ -1,0 +1,40 @@
+## ─────────────────────────────────────────────────────────────────────────────
+## KubePilot – example configuration file
+## Copy to config.yaml or $HOME/.kubepilot/config.yaml and customize.
+##
+## Environment variable overrides (prefix: KUBEPILOT_):
+##   KUBEPILOT_OLLAMA_BASE_URL=http://localhost:11434/v1
+##   KUBEPILOT_OLLAMA_API_KEY=<only needed if Ollama is behind an auth proxy>
+##   KUBEPILOT_OLLAMA_MODEL=llama3
+##   KUBEPILOT_LOG_LEVEL=debug
+##   KUBEPILOT_MCP_PORT=9090
+## ─────────────────────────────────────────────────────────────────────────────
+
+# Path to kubeconfig. Leave empty to use in-cluster config when running inside a pod.
+# kubeconfig: ~/.kube/config
+
+# Logging level: debug | info | warn | error
+log_level: info
+
+# MCP server port (used by remote agents).
+mcp_port: 9090
+
+# Kubernetes Cockpit dashboard port.
+dashboard_port: 9080
+
+# Ollama configuration.
+# ollama_base_url defaults to http://localhost:11434/v1 — override for remote instances.
+# ollama_api_key is optional (only needed if Ollama is behind an auth proxy).
+ollama_base_url: "http://localhost:11434/v1"
+ollama_model: llama3
+
+# Operator settings.
+operator:
+  metrics_addr: ":8081"
+  health_probe_addr: ":8082"
+  leader_elect: true
+
+# Agent settings (when running in remote cluster mode).
+agent:
+  mcp_server: ""      # host:port of the central MCP server
+  cluster_name: ""    # Unique name for this cluster

@@ -1,0 +1,83 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: kubepilotjobs.kubepilot.io
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+spec:
+  group: kubepilot.io
+  names:
+    kind: KubePilotJob
+    listKind: KubePilotJobList
+    plural: kubepilotjobs
+    singular: kubepilotjob
+    shortNames:
+      - kpj
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Environment
+          type: string
+          jsonPath: .spec.targetEnvironment
+        - name: Schedule
+          type: string
+          jsonPath: .spec.schedule
+        - name: Last Run
+          type: date
+          jsonPath: .status.lastRunAt
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              required:
+                - command
+                - targetEnvironment
+              properties:
+                command:
+                  type: string
+                  description: Natural language or structured command for the AI agent
+                schedule:
+                  type: string
+                  description: Cron expression for repeating jobs (e.g. "0 */6 * * *")
+                targetClusters:
+                  type: array
+                  items:
+                    type: string
+                  description: Cluster names to run on; empty means all clusters
+                targetEnvironment:
+                  type: string
+                  enum: [production, staging, development]
+                  default: development
+                changeIDRef:
+                  type: string
+                  description: Change Request ID required for production jobs (e.g. INFRA-1234)
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [Pending, Running, Succeeded, Failed, Blocked]
+                lastRunAt:
+                  type: string
+                  format: date-time
+                result:
+                  type: string
+                conditions:
+                  type: array
+                  items:
+                    type: object

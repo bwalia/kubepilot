@@ -1,0 +1,31 @@
+## KubePilot security namespace for CR code secrets.
+## Deploy this before installing KubePilot.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubepilot-security
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+    # Restrict network ingress to kubepilot pods only via NetworkPolicy.
+    kubepilot.io/role: security
+
+---
+## Example NetworkPolicy: only kubepilot pods can access secrets in this namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubepilot-security-isolation
+  namespace: kubepilot-security
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kubepilot
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kubepilot

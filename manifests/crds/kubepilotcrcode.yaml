@@ -1,0 +1,79 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: kubepilotcrcodes.kubepilot.io
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+spec:
+  group: kubepilot.io
+  names:
+    kind: KubePilotCRCode
+    listKind: KubePilotCRCodeList
+    plural: kubepilotcrcodes
+    singular: kubepilotcrcode
+    shortNames:
+      - kpcr
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Change ID
+          type: string
+          jsonPath: .spec.changeID
+        - name: Active
+          type: boolean
+          jsonPath: .status.active
+        - name: Expires At
+          type: date
+          jsonPath: .spec.expiresAt
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              required:
+                - changeID
+                - secretRef
+              properties:
+                changeID:
+                  type: string
+                  description: Unique change request identifier (e.g. JIRA-1234)
+                secretRef:
+                  type: object
+                  required: [name, namespace]
+                  description: Reference to the Kubernetes Secret holding the CR code value
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    key:
+                      type: string
+                      default: cr-code
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: Optional expiry timestamp — code is invalid after this time
+                allowedJobs:
+                  type: array
+                  items:
+                    type: string
+                  description: KubePilotJob names this code authorizes; empty means all
+            status:
+              type: object
+              properties:
+                active:
+                  type: boolean
+                usedAt:
+                  type: string
+                  format: date-time

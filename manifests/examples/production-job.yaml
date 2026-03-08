@@ -1,0 +1,48 @@
+## Example: Production KubePilotJob with CR code authorization
+## This job will be BLOCKED by the operator until a KubePilotCRCode resource
+## exists for changeID "INFRA-1234" and a valid CR code secret is present.
+---
+apiVersion: kubepilot.io/v1alpha1
+kind: KubePilotJob
+metadata:
+  name: fix-production-crashers
+  namespace: kubepilot
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+    kubepilot.io/environment: production
+spec:
+  command: "Fix all pods in CrashLoopBackOff in the production namespace. Analyze logs and restart affected deployments."
+  targetEnvironment: production
+  targetClusters:
+    - prod-us-east-1
+  changeIDRef: INFRA-1234
+
+---
+## Example: Recurring job — health check every 6 hours (no CR code needed for non-production).
+apiVersion: kubepilot.io/v1alpha1
+kind: KubePilotJob
+metadata:
+  name: staging-health-check
+  namespace: kubepilot
+spec:
+  command: "Check all pods in staging for errors and report crashing pods with root cause analysis."
+  targetEnvironment: staging
+  schedule: "0 */6 * * *"
+
+---
+## Example: KubePilotCRCode — registers the production CR code for INFRA-1234.
+## The actual code value is in a Kubernetes Secret (never stored in the CRD spec).
+apiVersion: kubepilot.io/v1alpha1
+kind: KubePilotCRCode
+metadata:
+  name: infra-1234
+  namespace: kubepilot-security
+spec:
+  changeID: INFRA-1234
+  secretRef:
+    name: kubepilot-crcode-INFRA-1234
+    namespace: kubepilot-security
+    key: cr-code
+  expiresAt: "2099-12-31T23:59:59Z"  # Set a real expiry in production.
+  allowedJobs:
+    - fix-production-crashers
