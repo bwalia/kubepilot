@@ -32,8 +32,7 @@ all: dashboard build
 # Build the kubepilot binary for the host platform.
 build:
 	@echo "▸ Building $(BINARY) ($(GOOS)/$(GOARCH))"
-	@mkdir -p $(DIST_DIR)
-	$(GO) build $(LDFLAGS) -o $(DIST_DIR)/$(BINARY) ./cmd/kubepilot
+	bash scripts/build-kubepilot.sh $(BINARY) $(DIST_DIR)/$(BINARY) ./cmd/kubepilot
 
 # Cross-compile release binaries.
 build-linux:
