@@ -1,0 +1,54 @@
+name: Quick Go Build
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - "scripts/build-kubepilot.sh"
+      - ".github/workflows/quick-go-build.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - "scripts/build-kubepilot.sh"
+      - ".github/workflows/quick-go-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quick-build:
+    name: Clean Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build kubepilot
+        run: |
+          chmod +x scripts/build-kubepilot.sh
+          ./scripts/build-kubepilot.sh
+
+      - name: Verify workspace stayed clean
+        run: |
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+            echo "Repository has tracked file changes after build:"
+            git status --short
+            git diff
+            exit 1
+          fi
