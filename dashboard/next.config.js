@@ -5,7 +5,7 @@ const nextConfig = {
   // Proxy API calls to the Go backend during development.
   async rewrites() {
     return process.env.NODE_ENV === "development"
-      ? [{ source: "/api/:path*", destination: "http://localhost:8888/api/:path*" }]
+      ? [{ source: "/api/:path*", destination: "http://localhost:8383/api/:path*" }]
       : [];
   },
 };

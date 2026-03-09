@@ -24,7 +24,7 @@ Example:
 
 	cmd.Flags().String("namespace", "", "Filter by namespace")
 	cmd.Flags().Duration("interval", 5*time.Second, "Poll interval")
-	cmd.Flags().String("server", "http://localhost:8888", "KubePilot server URL")
+	cmd.Flags().String("server", "http://localhost:8383", "KubePilot server URL")
 	return cmd
 }
 

@@ -27,12 +27,12 @@ func newServeCmd() *cobra.Command {
 		Long: `Start all KubePilot components in a single binary:
   • MCP server for multi-cluster agent coordination
   • AI engine for natural language cluster management
-  • Kubernetes Cockpit dashboard on localhost:8080`,
+  • Kubernetes Cockpit dashboard on localhost:8383`,
 		RunE: runServe,
 	}
 
 	cmd.Flags().Int("mcp-port", 9090, "MCP server port")
-	cmd.Flags().Int("dashboard-port", 8080, "Kubernetes Cockpit dashboard port")
+	cmd.Flags().Int("dashboard-port", 8383, "Kubernetes Cockpit dashboard port")
 	cmd.Flags().String("kubeconfig", "", "path to kubeconfig (defaults to in-cluster config)")
 	cmd.Flags().String("ollama-base-url", "", "Ollama API base URL (or set KUBEPILOT_OLLAMA_BASE_URL, default: http://localhost:11434/v1)")
 	cmd.Flags().String("ollama-api-key", "", "Ollama API key — optional, only needed if Ollama is behind an auth proxy (or set KUBEPILOT_OLLAMA_API_KEY)")

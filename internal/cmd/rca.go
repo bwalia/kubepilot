@@ -30,7 +30,7 @@ func newRCAListCmd() *cobra.Command {
 	cmd.Flags().String("severity", "", "Filter by severity (critical, high, medium, low)")
 	cmd.Flags().String("namespace", "", "Filter by namespace")
 	cmd.Flags().String("since", "24h", "Show reports since duration (e.g. 1h, 24h, 7d)")
-	cmd.Flags().String("server", "http://localhost:8888", "KubePilot server URL")
+	cmd.Flags().String("server", "http://localhost:8383", "KubePilot server URL")
 	return cmd
 }
 
@@ -90,7 +90,7 @@ func runRCAList(cmd *cobra.Command, _ []string) error {
 }
 
 func runRCAGet(cmd *cobra.Command, args []string) error {
-	serverURL := "http://localhost:8888"
+	serverURL := "http://localhost:8383"
 	url := fmt.Sprintf("%s/api/v1/rca/%s", serverURL, args[0])
 
 	resp, err := http.Get(url)

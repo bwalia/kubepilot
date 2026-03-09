@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN_NAME="${1:-kubepilot}"
 OUT_PATH="${2:-$ROOT_DIR/dist/$BIN_NAME}"
 CMD_PKG="${3:-./cmd/kubepilot}"
+VERSION="${VERSION:-$(git -C "$ROOT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -56,14 +57,18 @@ fi
 
 mkdir -p "$(dirname "$OUT_PATH")"
 
-# Force internal linking to avoid dyld LC_UUID errors observed on some macOS setups.
-export CGO_ENABLED=0
 export GOTOOLCHAIN=auto
+
+LDFLAGS="-s -w -X github.com/kubepilot/kubepilot/internal/version.Version=$VERSION"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  # External linking ensures LC_UUID is present for dyld on modern macOS.
+  LDFLAGS="$LDFLAGS -linkmode=external"
+fi
 
 echo "Building $CMD_PKG -> $OUT_PATH"
 (
   cd "$ROOT_DIR"
-  go build -trimpath -o "$OUT_PATH" "$CMD_PKG"
+  go build -trimpath -ldflags "$LDFLAGS" -o "$OUT_PATH" "$CMD_PKG"
 )
 
 if [[ "$(uname -s)" == "Darwin" ]] && command -v otool >/dev/null 2>&1; then
