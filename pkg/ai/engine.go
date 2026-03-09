@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
@@ -61,6 +62,7 @@ type SuggestedAction struct {
 
 // Engine handles natural language interpretation of cluster management commands.
 type Engine struct {
+	mu       sync.RWMutex
 	cfg       Config
 	client    *openai.Client
 	k8s       *k8s.Client
@@ -76,6 +78,17 @@ func (e *Engine) RCA() *RCAEngine {
 // Client returns the underlying OpenAI-compatible client (for sub-engines).
 func (e *Engine) Client() *openai.Client {
 	return e.client
+}
+
+// SetK8sClient swaps the active Kubernetes client at runtime.
+// This allows the dashboard/server to switch target clusters without restart.
+func (e *Engine) SetK8sClient(k8sClient *k8s.Client) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.k8s = k8sClient
+	if e.rca != nil {
+		e.rca.k8s = k8sClient
+	}
 }
 
 // NewEngine constructs an Engine with the provided configuration.
@@ -219,23 +232,27 @@ func parseActionsFromResponse(raw string) ([]SuggestedAction, error) {
 // for injection into the AI system prompt. Intentionally lightweight —
 // only summaries are sent, not full YAML manifests, to stay within token limits.
 func (e *Engine) buildClusterContext(ctx context.Context) (string, error) {
+	e.mu.RLock()
+	k8sClient := e.k8s
+	e.mu.RUnlock()
+
 	type clusterState struct {
 		CrashingPods  []k8s.PodSummary        `json:"crashing_pods"`
 		Deployments   []k8s.DeploymentSummary  `json:"deployments"`
 		PressureNodes []k8s.NodeSummary        `json:"pressure_nodes"`
 	}
 
-	crashingPods, err := e.k8s.ListCrashingPods(ctx, "")
+	crashingPods, err := k8sClient.ListCrashingPods(ctx, "")
 	if err != nil {
 		return "", fmt.Errorf("listing crashing pods: %w", err)
 	}
 
-	deployments, err := e.k8s.ListDeployments(ctx, "")
+	deployments, err := k8sClient.ListDeployments(ctx, "")
 	if err != nil {
 		return "", fmt.Errorf("listing deployments: %w", err)
 	}
 
-	pressureNodes, err := e.k8s.ListPressureNodes(ctx)
+	pressureNodes, err := k8sClient.ListPressureNodes(ctx)
 	if err != nil {
 		return "", fmt.Errorf("listing pressure nodes: %w", err)
 	}

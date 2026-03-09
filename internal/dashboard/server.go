@@ -7,7 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -27,22 +33,62 @@ type Config struct {
 	Scheduler *jobs.Scheduler
 	K8sClient *k8s.Client
 	RCAStore  *observability.RCAStore
+	KubeconfigPath string
 }
 
 // Server serves the Kubernetes Cockpit dashboard and REST API.
 type Server struct {
+	mu   sync.RWMutex
 	cfg   Config
 	guard *security.Guard
 	log   *zap.Logger
+
+	k8sClient            *k8s.Client
+	activeKubeconfigPath string
+	knownKubeconfigPaths map[string]struct{}
+	stateFilePath        string
+	uploadDir            string
 }
 
 // NewServer creates a dashboard Server.
 func NewServer(cfg Config, log *zap.Logger) *Server {
-	return &Server{
+	srv := &Server{
 		cfg:   cfg,
 		guard: security.NewGuard(cfg.K8sClient.Core, log),
 		log:   log,
+		k8sClient:            cfg.K8sClient,
+		activeKubeconfigPath: cfg.KubeconfigPath,
+		knownKubeconfigPaths: map[string]struct{}{},
 	}
+
+	if cfg.KubeconfigPath != "" {
+		srv.knownKubeconfigPaths[cfg.KubeconfigPath] = struct{}{}
+	}
+
+	stateFile, uploadDir, err := defaultStatePaths()
+	if err == nil {
+		srv.stateFilePath = stateFile
+		srv.uploadDir = uploadDir
+		if st, loadErr := loadKubeconfigState(stateFile); loadErr == nil {
+			for _, p := range st.Paths {
+				srv.knownKubeconfigPaths[p] = struct{}{}
+			}
+			if srv.activeKubeconfigPath == "" && st.ActivePath != "" {
+				srv.activeKubeconfigPath = st.ActivePath
+			}
+		} else {
+			log.Warn("Failed to load persisted kubeconfig state", zap.Error(loadErr))
+		}
+	} else {
+		log.Warn("Failed to initialize kubeconfig state paths", zap.Error(err))
+	}
+
+	if srv.activeKubeconfigPath != "" {
+		srv.knownKubeconfigPaths[srv.activeKubeconfigPath] = struct{}{}
+		srv.persistKubeconfigStateLocked()
+	}
+
+	return srv
 }
 
 // Start begins serving on the configured port until ctx is cancelled.
@@ -53,6 +99,11 @@ func (s *Server) Start(ctx context.Context) error {
 	api := router.PathPrefix("/api/v1").Subrouter()
 
 	// Cluster overview
+	api.HandleFunc("/clusters/kubeconfigs", s.handleListKubeconfigs).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/kubeconfigs", s.handleAddKubeconfig).Methods(http.MethodPost)
+	api.HandleFunc("/clusters/kubeconfigs/upload", s.handleUploadKubeconfig).Methods(http.MethodPost)
+	api.HandleFunc("/clusters/switch", s.handleSwitchCluster).Methods(http.MethodPost)
+
 	api.HandleFunc("/clusters/pods", s.handleListPods).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/deployments", s.handleListDeployments).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/nodes", s.handleListNodes).Methods(http.MethodGet)
@@ -116,8 +167,9 @@ func (s *Server) Start(ctx context.Context) error {
 // ─────────────────────────────────────────
 
 func (s *Server) handleListPods(w http.ResponseWriter, r *http.Request) {
+	k8sClient := s.currentK8sClient()
 	ns := r.URL.Query().Get("namespace")
-	pods, err := s.cfg.K8sClient.ListPods(r.Context(), ns)
+	pods, err := k8sClient.ListPods(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -126,8 +178,9 @@ func (s *Server) handleListPods(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListDeployments(w http.ResponseWriter, r *http.Request) {
+	k8sClient := s.currentK8sClient()
 	ns := r.URL.Query().Get("namespace")
-	deps, err := s.cfg.K8sClient.ListDeployments(r.Context(), ns)
+	deps, err := k8sClient.ListDeployments(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -136,7 +189,8 @@ func (s *Server) handleListDeployments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
-	nodes, err := s.cfg.K8sClient.ListNodes(r.Context())
+	k8sClient := s.currentK8sClient()
+	nodes, err := k8sClient.ListNodes(r.Context())
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -145,8 +199,9 @@ func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCrashingPods(w http.ResponseWriter, r *http.Request) {
+	k8sClient := s.currentK8sClient()
 	ns := r.URL.Query().Get("namespace")
-	pods, err := s.cfg.K8sClient.ListCrashingPods(r.Context(), ns)
+	pods, err := k8sClient.ListCrashingPods(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -365,7 +420,8 @@ func (s *Server) handleListAnomalies(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleTopology(w http.ResponseWriter, r *http.Request) {
 	ns := mux.Vars(r)["namespace"]
-	correlationEngine := ai.NewCorrelationEngine(s.cfg.AIEngine, s.cfg.K8sClient, s.log)
+	k8sClient := s.currentK8sClient()
+	correlationEngine := ai.NewCorrelationEngine(s.cfg.AIEngine, k8sClient, s.log)
 	topology, err := correlationEngine.BuildTopology(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
@@ -403,13 +459,202 @@ func (s *Server) handleRemediate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	step := report.Remediation[req.Step]
-	executor := ai.NewRemediationExecutor(s.cfg.K8sClient, s.guard, ai.RemediationConfig{DryRun: true}, s.log)
+	k8sClient := s.currentK8sClient()
+	guard := s.currentGuard()
+	executor := ai.NewRemediationExecutor(k8sClient, guard, ai.RemediationConfig{DryRun: true}, s.log)
 	result, err := executor.ExecuteStep(r.Context(), step, req.ChangeID, req.CRCode)
 	if err != nil {
 		httpError(w, err, http.StatusForbidden)
 		return
 	}
 	writeJSON(w, result)
+}
+
+func (s *Server) handleListKubeconfigs(w http.ResponseWriter, _ *http.Request) {
+	s.mu.RLock()
+	active := s.activeKubeconfigPath
+	paths := make([]string, 0, len(s.knownKubeconfigPaths))
+	for p := range s.knownKubeconfigPaths {
+		paths = append(paths, p)
+	}
+	s.mu.RUnlock()
+	sort.Strings(paths)
+	writeJSON(w, map[string]any{
+		"active_path": active,
+		"paths":       paths,
+	})
+}
+
+func (s *Server) handleAddKubeconfig(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Path     string `json:"path"`
+		Activate *bool  `json:"activate,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	path := expandKubeconfigPath(req.Path)
+	if path == "" {
+		httpError(w, fmt.Errorf("path is required"), http.StatusBadRequest)
+		return
+	}
+	if !filepath.IsAbs(path) {
+		if abs, err := filepath.Abs(path); err == nil {
+			path = abs
+		}
+	}
+	if _, err := os.Stat(path); err != nil {
+		httpError(w, fmt.Errorf("kubeconfig path is not accessible: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	activate := true
+	if req.Activate != nil {
+		activate = *req.Activate
+	}
+
+	if activate {
+		if err := s.switchCluster(path); err != nil {
+			httpError(w, err, http.StatusBadRequest)
+			return
+		}
+	} else {
+		s.mu.Lock()
+		s.knownKubeconfigPaths[path] = struct{}{}
+		s.persistKubeconfigStateLocked()
+		s.mu.Unlock()
+	}
+
+	s.handleListKubeconfigs(w, r)
+}
+
+func (s *Server) handleUploadKubeconfig(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(8 << 20); err != nil {
+		httpError(w, fmt.Errorf("invalid multipart form: %w", err), http.StatusBadRequest)
+		return
+	}
+	file, header, err := r.FormFile("kubeconfig")
+	if err != nil {
+		httpError(w, fmt.Errorf("kubeconfig file is required: %w", err), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	if s.uploadDir == "" {
+		httpError(w, fmt.Errorf("kubeconfig upload directory is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+
+	baseName := filepath.Base(strings.TrimSpace(header.Filename))
+	if baseName == "." || baseName == string(filepath.Separator) || baseName == "" {
+		baseName = fmt.Sprintf("uploaded-%d.kubeconfig", time.Now().Unix())
+	}
+	dstPath := filepath.Join(s.uploadDir, baseName)
+	if _, err := os.Stat(dstPath); err == nil {
+		dstPath = filepath.Join(s.uploadDir, fmt.Sprintf("%d-%s", time.Now().Unix(), baseName))
+	}
+
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		httpError(w, fmt.Errorf("creating kubeconfig file: %w", err), http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		httpError(w, fmt.Errorf("saving kubeconfig file: %w", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := s.switchCluster(dstPath); err != nil {
+		httpError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	s.handleListKubeconfigs(w, r)
+}
+
+func (s *Server) handleSwitchCluster(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+	if err := s.switchCluster(req.Path); err != nil {
+		httpError(w, err, http.StatusBadRequest)
+		return
+	}
+	s.handleListKubeconfigs(w, r)
+}
+
+func (s *Server) currentK8sClient() *k8s.Client {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.k8sClient
+}
+
+func (s *Server) currentGuard() *security.Guard {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.guard
+}
+
+func (s *Server) switchCluster(rawPath string) error {
+	path := expandKubeconfigPath(rawPath)
+	if path == "" {
+		return fmt.Errorf("path is required")
+	}
+	if !filepath.IsAbs(path) {
+		if abs, err := filepath.Abs(path); err == nil {
+			path = abs
+		}
+	}
+	if _, err := os.Stat(path); err != nil {
+		return fmt.Errorf("kubeconfig path is not accessible: %w", err)
+	}
+
+	client, err := k8s.NewClient(path)
+	if err != nil {
+		return fmt.Errorf("connecting with kubeconfig %q: %w", path, err)
+	}
+
+	s.mu.Lock()
+	s.k8sClient = client
+	s.guard = security.NewGuard(client.Core, s.log)
+	s.activeKubeconfigPath = path
+	s.knownKubeconfigPaths[path] = struct{}{}
+	if s.cfg.AIEngine != nil {
+		s.cfg.AIEngine.SetK8sClient(client)
+	}
+	if s.cfg.Scheduler != nil {
+		s.cfg.Scheduler.SetK8sClient(client)
+	}
+	s.persistKubeconfigStateLocked()
+	s.mu.Unlock()
+
+	s.log.Info("Switched active Kubernetes cluster", zap.String("kubeconfig", path))
+	return nil
+}
+
+func (s *Server) persistKubeconfigStateLocked() {
+	if s.stateFilePath == "" {
+		return
+	}
+	paths := make([]string, 0, len(s.knownKubeconfigPaths))
+	for p := range s.knownKubeconfigPaths {
+		paths = append(paths, p)
+	}
+	st := &kubeconfigState{
+		ActivePath: s.activeKubeconfigPath,
+		Paths:      paths,
+	}
+	if err := saveKubeconfigState(s.stateFilePath, st); err != nil {
+		s.log.Warn("Failed to persist kubeconfig state", zap.Error(err))
+	}
 }
 
 // ─────────────────────────────────────────

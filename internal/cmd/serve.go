@@ -99,6 +99,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		Scheduler: scheduler,
 		K8sClient: k8sClient,
 		RCAStore:  rcaStore,
+		KubeconfigPath: viper.GetString("kubeconfig"),
 	}, log)
 
 	go func() {

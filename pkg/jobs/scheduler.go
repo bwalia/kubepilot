@@ -71,6 +71,14 @@ func NewScheduler(aiEngine *ai.Engine, k8sClient *k8s.Client, log *zap.Logger) *
 	}
 }
 
+// SetK8sClient swaps the active Kubernetes client and corresponding CR-code guard.
+func (s *Scheduler) SetK8sClient(k8sClient *k8s.Client) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.k8s = k8sClient
+	s.guard = security.NewGuard(k8sClient.Core, s.log)
+}
+
 // Start begins the cron scheduler. It runs until ctx is cancelled.
 func (s *Scheduler) Start(ctx context.Context) {
 	s.cron.Start()
@@ -91,7 +99,10 @@ func (s *Scheduler) Submit(ctx context.Context, job *Job) error {
 
 	// Production jobs must have a CR code before they can be queued.
 	if job.TargetEnv == "production" {
-		if err := s.guard.Authorize(ctx, job.ChangeID, job.CRCode); err != nil {
+		s.mu.RLock()
+		guard := s.guard
+		s.mu.RUnlock()
+		if err := guard.Authorize(ctx, job.ChangeID, job.CRCode); err != nil {
 			job.Status = StatusBlocked
 			s.storeJob(job)
 			return fmt.Errorf("job %q blocked: %w", job.Name, err)
@@ -207,13 +218,17 @@ func (s *Scheduler) executeJob(ctx context.Context, job *Job) {
 }
 
 func (s *Scheduler) executeAction(ctx context.Context, action ai.SuggestedAction) error {
+	s.mu.RLock()
+	k8sClient := s.k8s
+	s.mu.RUnlock()
+
 	switch action.Type {
 	case ai.ActionRestart:
-		return s.k8s.RestartDeployment(ctx, action.Namespace, action.Resource)
+		return k8sClient.RestartDeployment(ctx, action.Namespace, action.Resource)
 	case ai.ActionScale:
-		return s.k8s.ScaleDeployment(ctx, action.Namespace, action.Resource, action.Replicas)
+		return k8sClient.ScaleDeployment(ctx, action.Namespace, action.Resource, action.Replicas)
 	case ai.ActionDeletePod:
-		return s.k8s.DeletePod(ctx, action.Namespace, action.Resource)
+		return k8sClient.DeletePod(ctx, action.Namespace, action.Resource)
 	case ai.ActionInvestigate, ai.ActionNoOp:
 		// Investigate and noop actions are informational — logged but not acted upon automatically.
 		s.log.Info("Investigate/noop action",

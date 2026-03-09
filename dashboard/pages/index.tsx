@@ -10,6 +10,7 @@ import {
   listNodes,
   listDeployments,
   listAnomalies,
+  listKubeconfigs,
   interpretCommand,
   type SuggestedAction,
 } from "@/lib/api";
@@ -20,6 +21,7 @@ import { CRCodeApproval } from "@/components/CRCodeApproval";
 import { CRCodeManager } from "@/components/CRCodeManager";
 import { JobScheduler } from "@/components/JobScheduler";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
+import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import RCAPage from "@/pages/rca";
 import TopologyPage from "@/pages/topology";
 
@@ -52,6 +54,12 @@ export default function DashboardHome() {
     refetchInterval: 15_000,
   });
 
+  const { data: kubeconfigs } = useQuery({
+    queryKey: ["kubeconfigs"],
+    queryFn: listKubeconfigs,
+    refetchInterval: 15_000,
+  });
+
   const handleAICommand = async () => {
     if (!command.trim()) return;
     setAiLoading(true);
@@ -79,6 +87,10 @@ export default function DashboardHome() {
   const pressureNodes = nodes.filter(
     (n) => n.MemoryPressure || n.DiskPressure || n.PIDPressure
   ).length;
+  const activeKubeconfig = kubeconfigs?.active_path || "";
+  const activeKubeconfigBasename = activeKubeconfig
+    ? activeKubeconfig.split(/[\\/]/).pop() || activeKubeconfig
+    : "in-cluster";
 
   return (
     <div className="min-h-screen bg-pilot-bg text-white font-mono">
@@ -92,6 +104,18 @@ export default function DashboardHome() {
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-pilot-muted">
+          <KubeconfigSwitcher
+            onSwitched={() => {
+              setAiActions(null);
+              setActiveTab("overview");
+            }}
+          />
+          <span
+            className="text-[11px] bg-pilot-surface border border-pilot-border text-pilot-muted px-2 py-1 rounded font-mono max-w-56 truncate"
+            title={activeKubeconfig || "in-cluster"}
+          >
+            {activeKubeconfigBasename}
+          </span>
           <Activity className="w-4 h-4 text-pilot-success" />
           <span>Live</span>
         </div>

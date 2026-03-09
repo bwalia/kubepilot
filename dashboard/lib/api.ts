@@ -44,6 +44,11 @@ export interface NodeSummary {
   Unschedulable: boolean;
 }
 
+export interface KubeconfigState {
+  active_path: string;
+  paths: string[];
+}
+
 export type ActionType =
   | "scale"
   | "restart"
@@ -118,6 +123,29 @@ export const listDeployments = (namespace = ""): Promise<DeploymentSummary[]> =>
 
 export const listNodes = (): Promise<NodeSummary[]> =>
   http.get("/clusters/nodes").then((r) => r.data);
+
+export const listKubeconfigs = (): Promise<KubeconfigState> =>
+  http.get("/clusters/kubeconfigs").then((r) => r.data);
+
+export const addKubeconfigPath = (
+  path: string,
+  activate = true
+): Promise<KubeconfigState> =>
+  http.post("/clusters/kubeconfigs", { path, activate }).then((r) => r.data);
+
+export const switchCluster = (path: string): Promise<KubeconfigState> =>
+  http.post("/clusters/switch", { path }).then((r) => r.data);
+
+export const uploadKubeconfig = async (
+  file: File
+): Promise<KubeconfigState> => {
+  const form = new FormData();
+  form.append("kubeconfig", file);
+  const resp = await http.post("/clusters/kubeconfigs/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return resp.data;
+};
 
 // ─────────────────────────────────────────
 // AI API

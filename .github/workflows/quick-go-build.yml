@@ -8,6 +8,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "Makefile"
+      - "Dockerfile"
       - "scripts/build-kubepilot.sh"
       - ".github/workflows/quick-go-build.yml"
   pull_request:
@@ -17,6 +18,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "Makefile"
+      - "Dockerfile"
       - "scripts/build-kubepilot.sh"
       - ".github/workflows/quick-go-build.yml"
   workflow_dispatch:
@@ -44,6 +46,53 @@ jobs:
           chmod +x scripts/build-kubepilot.sh
           ./scripts/build-kubepilot.sh
 
+      - name: Build Docker image
+        run: docker build -t kubepilot:ci .
+
+      - name: Start container
+        run: |
+          cat > ci.kubeconfig <<'EOF'
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - name: ci
+              cluster:
+                server: https://127.0.0.1:65535
+                insecure-skip-tls-verify: true
+          contexts:
+            - name: ci
+              context:
+                cluster: ci
+                user: ci
+          current-context: ci
+          users:
+            - name: ci
+              user:
+                token: ci
+          EOF
+
+          docker run -d --rm \
+            --name kubepilot-ci \
+            -p 8383:8383 \
+            -v "$PWD/ci.kubeconfig:/tmp/ci.kubeconfig:ro" \
+            kubepilot:ci \
+            serve --kubeconfig /tmp/ci.kubeconfig --dashboard-port 8383
+
+      - name: Smoke test server
+        run: |
+          for i in {1..30}; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8383/ || true)"
+            if [[ "$code" == "200" ]]; then
+              echo "Smoke test passed: server responded with HTTP 200"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Smoke test failed: no HTTP 200 from http://localhost:8383/"
+          docker logs kubepilot-ci || true
+          exit 1
+
       - name: Verify workspace stayed clean
         run: |
           if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
@@ -52,3 +101,9 @@ jobs:
             git diff
             exit 1
           fi
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker rm -f kubepilot-ci >/dev/null 2>&1 || true
+          rm -f ci.kubeconfig
