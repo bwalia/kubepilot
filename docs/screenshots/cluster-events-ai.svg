@@ -1,0 +1,69 @@
+<svg width="1728" height="876" viewBox="0 0 1728 876" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1728" y2="876" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081125"/>
+      <stop offset="1" stop-color="#040912"/>
+    </linearGradient>
+    <linearGradient id="panel2" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#0E1A34"/>
+      <stop offset="1" stop-color="#09142A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1728" height="876" fill="url(#bg2)"/>
+
+  <rect x="20" y="20" width="1190" height="340" rx="12" fill="url(#panel2)" stroke="#23406F"/>
+  <text x="44" y="58" fill="#E4EEFF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">Cluster Health Summary</text>
+  <text x="1024" y="58" fill="#88A2D1" font-family="Segoe UI, Arial" font-size="18">Auto-refresh every 10s</text>
+
+  <rect x="40" y="84" width="560" height="140" rx="10" fill="#0A1530" stroke="#274575"/>
+  <text x="60" y="116" fill="#8EA7D5" font-family="Segoe UI, Arial" font-size="16">RECOMMENDED ACTIONS</text>
+  <text x="60" y="153" fill="#F1C15B" font-family="Segoe UI, Arial" font-size="24">⚠ Investigate failing pods</text>
+  <text x="60" y="187" fill="#F1C15B" font-family="Segoe UI, Arial" font-size="24">⚠ Check container logs and environment variables</text>
+
+  <rect x="620" y="84" width="570" height="140" rx="10" fill="#0A1530" stroke="#274575"/>
+  <text x="640" y="116" fill="#8EA7D5" font-family="Segoe UI, Arial" font-size="16">RESOURCE PRESSURE</text>
+  <text x="640" y="153" fill="#DAE8FF" font-family="Segoe UI, Arial" font-size="26">Cluster CPU</text>
+  <text x="1100" y="153" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="26" font-weight="700">52%</text>
+  <text x="640" y="192" fill="#DAE8FF" font-family="Segoe UI, Arial" font-size="26">Cluster Memory</text>
+  <text x="1100" y="192" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="26" font-weight="700">75%</text>
+
+  <rect x="1230" y="20" width="478" height="340" rx="12" fill="url(#panel2)" stroke="#23406F"/>
+  <text x="1252" y="58" fill="#E4EEFF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">Troubleshooting Insights</text>
+
+  <rect x="1250" y="84" width="438" height="126" rx="9" fill="#091429" stroke="#C23F56"/>
+  <text x="1272" y="120" fill="#E9F0FF" font-family="Segoe UI, Arial" font-size="26" font-weight="700">4 pods crashing repeatedly</text>
+  <text x="1272" y="156" fill="#98AED9" font-family="Segoe UI, Arial" font-size="21">Review probes, env vars, and restart causes</text>
+
+  <rect x="1250" y="224" width="438" height="126" rx="9" fill="#091429" stroke="#D29A36"/>
+  <text x="1272" y="260" fill="#E9F0FF" font-family="Segoe UI, Arial" font-size="26" font-weight="700">Storage mount issues detected</text>
+  <text x="1272" y="296" fill="#98AED9" font-family="Segoe UI, Arial" font-size="21">Inspect PVC/PV bindings and CSI health</text>
+
+  <rect x="20" y="380" width="1688" height="140" rx="12" fill="url(#panel2)" stroke="#23406F"/>
+  <text x="44" y="420" fill="#E4EEFF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">Node Health</text>
+  <text x="1582" y="420" fill="#29C979" font-family="Segoe UI, Arial" font-size="20">Metrics server detected</text>
+  <text x="44" y="470" fill="#96ABD4" font-family="Segoe UI, Arial" font-size="22">lima-rancher-desktop  •  Ready  •  CPU: 1058m/2 (52%)  •  Memory: 4488Mi/6066752Ki (75%)</text>
+
+  <rect x="20" y="540" width="1688" height="316" rx="12" fill="url(#panel2)" stroke="#23406F"/>
+  <text x="44" y="582" fill="#E4EEFF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">Problematic Pods</text>
+  <text x="1080" y="582" fill="#91A7D4" font-family="Segoe UI, Arial" font-size="20">Crash loops, evictions, pull failures, long-pending pods</text>
+
+  <rect x="40" y="608" width="1648" height="48" rx="8" fill="#0B1630" stroke="#2A4675"/>
+  <text x="56" y="639" fill="#A2B5DC" font-family="Segoe UI, Arial" font-size="18">POD</text>
+  <text x="520" y="639" fill="#A2B5DC" font-family="Segoe UI, Arial" font-size="18">NAMESPACE</text>
+  <text x="980" y="639" fill="#A2B5DC" font-family="Segoe UI, Arial" font-size="18">REASON</text>
+  <text x="1210" y="639" fill="#A2B5DC" font-family="Segoe UI, Arial" font-size="18">ACTIONS</text>
+
+  <text x="56" y="694" fill="#E8F0FF" font-family="Segoe UI, Arial" font-size="22">traefik-....</text>
+  <text x="520" y="694" fill="#97ADD8" font-family="Segoe UI, Arial" font-size="22">kube-system</text>
+  <text x="980" y="694" fill="#FFD07A" font-family="Segoe UI, Arial" font-size="22">Completed / Restarting</text>
+
+  <rect x="1210" y="666" width="124" height="40" rx="8" fill="#3B82F6"/>
+  <text x="1244" y="693" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Inspect</text>
+
+  <rect x="1348" y="666" width="168" height="40" rx="8" fill="#F59E0B"/>
+  <text x="1374" y="693" fill="#111827" font-family="Segoe UI, Arial" font-size="20" font-weight="700">AI Analyze</text>
+
+  <text x="44" y="756" fill="#DCE8FF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">AI value for incident response</text>
+  <text x="44" y="796" fill="#99AFDA" font-family="Segoe UI, Arial" font-size="24">• Converts noisy pod failures into probable root cause</text>
+  <text x="44" y="830" fill="#99AFDA" font-family="Segoe UI, Arial" font-size="24">• Suggests remediation steps with operational context</text>
+</svg>

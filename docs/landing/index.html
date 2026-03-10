@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KubePilot | AI-Powered Kubernetes Troubleshooting</title>
+    <meta
+      name="description"
+      content="KubePilot is an AI-assisted Kubernetes operations platform for topology visibility, cluster troubleshooting, and faster incident resolution."
+    />
+    <style>
+      :root {
+        --bg: #050914;
+        --panel: #0a1329;
+        --panel-2: #0d1a33;
+        --line: #1a2b4f;
+        --text: #e8eefc;
+        --muted: #9db0d8;
+        --brand: #3b82f6;
+        --brand-2: #22c55e;
+        --warn: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at 15% 0%, #0d2246 0%, var(--bg) 48%) fixed;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .wrap {
+        width: min(1180px, 92vw);
+        margin: 0 auto;
+      }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        backdrop-filter: blur(8px);
+        background: rgba(5, 9, 20, 0.72);
+        border-bottom: 1px solid rgba(157, 176, 216, 0.16);
+      }
+
+      .nav-inner {
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .logo {
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        font-size: 1.24rem;
+      }
+
+      .logo span {
+        color: var(--brand);
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        border: 1px solid var(--line);
+        color: var(--text);
+        background: linear-gradient(180deg, #10254a, #0b1a36);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: transform 0.16s ease, border-color 0.16s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        border-color: #3a5e9f;
+      }
+
+      .btn.primary {
+        background: linear-gradient(180deg, #3b82f6, #2563eb);
+        border-color: #4f8ef6;
+      }
+
+      .hero {
+        padding: 72px 0 46px;
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: 24px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        font-size: 0.8rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--brand-2);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        background: rgba(34, 197, 94, 0.1);
+        padding: 5px 10px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        margin: 0;
+        line-height: 1.1;
+        font-size: clamp(2rem, 5vw, 3.4rem);
+      }
+
+      .hero p {
+        color: var(--muted);
+        margin: 14px 0 24px;
+        font-size: 1.04rem;
+      }
+
+      .hero-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        background: linear-gradient(180deg, rgba(17, 35, 68, 0.8), rgba(8, 18, 38, 0.9));
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .metric {
+        background: #091428;
+        border: 1px solid rgba(157, 176, 216, 0.22);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .metric b {
+        font-size: 1.18rem;
+      }
+
+      .metric small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+      }
+
+      section {
+        padding: 42px 0;
+      }
+
+      h2 {
+        font-size: clamp(1.5rem, 3vw, 2.1rem);
+        margin: 0 0 10px;
+      }
+
+      .lead {
+        margin: 0 0 20px;
+        color: var(--muted);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+
+      .shot-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .shot {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: #091427;
+      }
+
+      .shot img {
+        width: 100%;
+        display: block;
+      }
+
+      .shot figcaption {
+        padding: 10px 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .step {
+        border: 1px dashed #3860a7;
+        border-radius: 12px;
+        padding: 12px;
+        background: rgba(12, 25, 49, 0.7);
+      }
+
+      .step b {
+        color: var(--brand);
+      }
+
+      .footer {
+        border-top: 1px solid rgba(157, 176, 216, 0.18);
+        margin-top: 38px;
+        padding: 24px 0 34px;
+        color: var(--muted);
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.86rem;
+        border: 1px solid rgba(245, 158, 11, 0.34);
+        color: #ffd48a;
+        background: rgba(245, 158, 11, 0.1);
+        border-radius: 999px;
+        padding: 5px 10px;
+        margin-top: 12px;
+      }
+
+      @media (max-width: 1000px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        .cards,
+        .flow {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .cards,
+        .shot-grid,
+        .flow,
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <div class="logo">Kube<span>Pilot</span></div>
+        <div class="actions">
+          <a class="btn" href="../../README.md">Read Docs</a>
+          <a class="btn" href="https://github.com/kubepilot/kubepilot">GitHub</a>
+          <a class="btn primary" href="https://github.com/kubepilot/kubepilot/issues/new">Request Demo</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <div>
+          <span class="eyebrow">AI for SRE and Platform Teams</span>
+          <h1>Troubleshoot Kubernetes faster with AI-guided diagnosis.</h1>
+          <p>
+            KubePilot combines cluster events, node pressure, pod diagnostics, and topology views into one workflow.
+            Engineers can inspect incidents and run AI analysis without jumping across multiple tools.
+          </p>
+          <div class="actions">
+            <a class="btn primary" href="https://github.com/kubepilot/kubepilot">Start with GitHub</a>
+            <a class="btn" href="../../README.md#quick-start">Install in minutes</a>
+          </div>
+          <div class="tag">Built for CrashLoopBackOff, scheduling failures, mount issues, and noisy clusters</div>
+        </div>
+
+        <aside class="hero-card">
+          <div class="hero-grid">
+            <div class="metric">
+              <b>1 view</b>
+              <small>for events + health + diagnostics</small>
+            </div>
+            <div class="metric">
+              <b>AI Analyze</b>
+              <small>for root cause and next actions</small>
+            </div>
+            <div class="metric">
+              <b>Topology Canvas</b>
+              <small>Ingress -> Service -> Workload -> Pod</small>
+            </div>
+            <div class="metric">
+              <b>Multi-cluster</b>
+              <small>via kubeconfig switcher</small>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section>
+        <h2>What teams get from KubePilot</h2>
+        <p class="lead">A practical incident workflow that blends observability context with AI recommendations.</p>
+        <div class="cards">
+          <article class="card">
+            <h3>Cluster Events Hub</h3>
+            <p>Filter and search Kubernetes events, correlate with failing pods, and prioritize warning patterns.</p>
+          </article>
+          <article class="card">
+            <h3>Node and Resource Health</h3>
+            <p>Detect pressure signals and capacity hotspots early with CPU and memory utilization visibility.</p>
+          </article>
+          <article class="card">
+            <h3>Pod Deep Inspection</h3>
+            <p>Open pod diagnostics for status, conditions, events, and logs in one drill-down panel.</p>
+          </article>
+          <article class="card">
+            <h3>AI Root-Cause Guidance</h3>
+            <p>Use AI suggestions to triage faster and identify safer remediation actions during incidents.</p>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2>Product Screenshots</h2>
+        <p class="lead">These screenshots are sourced from the repository docs folder for GitHub-friendly documentation.</p>
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="../screenshots/dashboard-overview.svg" alt="KubePilot dashboard overview with cluster cards and tabs" />
+            <figcaption>Overview tab: cluster KPIs, node readiness, deployment health, and navigation to RCA, topology, jobs, and events.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="../screenshots/cluster-events-ai.svg" alt="Cluster Events and troubleshooting with AI Analyze actions" />
+            <figcaption>Cluster Events tab: health summary, node pressure, problematic pods, and AI Analyze actions for deep troubleshooting.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section>
+        <h2>How incident triage works</h2>
+        <p class="lead">A simple 4-step loop to reduce mean-time-to-resolution.</p>
+        <div class="flow">
+          <div class="step"><b>1.</b> Open Cluster Events and identify warnings, pressure, and failing pods.</div>
+          <div class="step"><b>2.</b> Inspect a problematic pod for logs, event history, and container state.</div>
+          <div class="step"><b>3.</b> Run AI Analyze to infer probable root cause and remediation strategy.</div>
+          <div class="step"><b>4.</b> Validate impact using topology and cluster health before/after action.</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Install and run</h2>
+        <p class="lead">Use source build for now and run locally on your current kubeconfig context.</p>
+        <div class="card">
+<pre><code>git clone https://github.com/kubepilot/kubepilot.git
+cd kubepilot
+make dashboard-install
+make dashboard
+make build
+KUBEPILOT_KUBECONFIG="$HOME/.kube/config" ./dist/kubepilot serve --dashboard-port=8383
+</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        KubePilot landing page | <a href="https://github.com/kubepilot/kubepilot">GitHub</a> | <a href="../../README.md">Documentation</a>
+      </div>
+    </footer>
+  </body>
+</html>

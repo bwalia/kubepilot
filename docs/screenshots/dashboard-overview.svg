@@ -1,0 +1,64 @@
+<svg width="1728" height="876" viewBox="0 0 1728 876" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1728" y2="876" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081329"/>
+      <stop offset="1" stop-color="#040A18"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#0D1D3A"/>
+      <stop offset="1" stop-color="#0A1730"/>
+    </linearGradient>
+  </defs>
+  <rect width="1728" height="876" fill="url(#bg)"/>
+  <rect x="24" y="24" width="1680" height="72" rx="12" fill="#07152D" stroke="#1C325C"/>
+  <text x="56" y="68" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="36" font-weight="700">KubePilot</text>
+  <text x="245" y="67" fill="#93A8D6" font-family="Segoe UI, Arial" font-size="24">Kubernetes Cockpit</text>
+  <text x="1478" y="68" fill="#23C55E" font-family="Segoe UI, Arial" font-size="24" font-weight="600">Live</text>
+
+  <rect x="24" y="116" width="330" height="120" rx="12" fill="url(#panel)" stroke="#223B6A"/>
+  <rect x="374" y="116" width="330" height="120" rx="12" fill="url(#panel)" stroke="#223B6A"/>
+  <rect x="724" y="116" width="330" height="120" rx="12" fill="url(#panel)" stroke="#223B6A"/>
+  <rect x="1074" y="116" width="330" height="120" rx="12" fill="url(#panel)" stroke="#223B6A"/>
+  <rect x="1424" y="116" width="280" height="120" rx="12" fill="url(#panel)" stroke="#223B6A"/>
+
+  <text x="48" y="160" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="18">TOTAL PODS</text>
+  <text x="48" y="210" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="54" font-weight="700">5</text>
+
+  <text x="398" y="160" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="18">CRASHING PODS</text>
+  <text x="398" y="210" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="54" font-weight="700">0</text>
+
+  <text x="748" y="160" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="18">NODES READY</text>
+  <text x="748" y="210" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="54" font-weight="700">1/1</text>
+
+  <text x="1098" y="160" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="18">NODE PRESSURE</text>
+  <text x="1098" y="210" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="54" font-weight="700">0</text>
+
+  <text x="1448" y="160" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="18">ANOMALIES (1H)</text>
+  <text x="1448" y="210" fill="#FFFFFF" font-family="Segoe UI, Arial" font-size="54" font-weight="700">0</text>
+
+  <rect x="24" y="256" width="1680" height="54" rx="10" fill="#0A1730" stroke="#223B6A"/>
+  <text x="46" y="290" fill="#89A1D0" font-family="Segoe UI, Arial" font-size="22">Try: "Fix CrashLoopBackOff pods in production"</text>
+
+  <rect x="24" y="330" width="1680" height="54" rx="10" fill="#08142A" stroke="#1D3360"/>
+  <text x="40" y="365" fill="#E7F0FF" font-family="Segoe UI, Arial" font-size="26" font-weight="600">Overview  RCA  Topology  Jobs  Cluster Events  Cr-Codes</text>
+
+  <rect x="24" y="404" width="1680" height="430" rx="14" fill="#07152D" stroke="#1C325C"/>
+  <text x="42" y="447" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">Unified Kubernetes Operations View</text>
+  <text x="42" y="487" fill="#95ABD8" font-family="Segoe UI, Arial" font-size="24">Single cockpit for KPIs, node health, deployment status, and incident navigation.</text>
+
+  <rect x="42" y="520" width="1090" height="280" rx="12" fill="#0A1730" stroke="#264372"/>
+  <text x="74" y="568" fill="#D7E7FF" font-family="Segoe UI, Arial" font-size="28" font-weight="600">Deployment Health</text>
+  <rect x="74" y="602" width="148" height="174" rx="8" fill="#17B887"/>
+  <rect x="252" y="602" width="148" height="174" rx="8" fill="#17B887"/>
+  <rect x="430" y="602" width="148" height="174" rx="8" fill="#17B887"/>
+  <rect x="608" y="602" width="148" height="174" rx="8" fill="#17B887"/>
+  <rect x="786" y="602" width="148" height="174" rx="8" fill="#17B887"/>
+  <text x="962" y="620" fill="#0B1F3E" font-family="Segoe UI, Arial" font-size="22" font-weight="700">100% healthy</text>
+
+  <rect x="1160" y="520" width="524" height="280" rx="12" fill="#0A1730" stroke="#264372"/>
+  <text x="1190" y="568" fill="#D7E7FF" font-family="Segoe UI, Arial" font-size="28" font-weight="600">Why this matters</text>
+  <text x="1190" y="610" fill="#9FB4DE" font-family="Segoe UI, Arial" font-size="22">• Reduces dashboard hopping during incidents</text>
+  <text x="1190" y="648" fill="#9FB4DE" font-family="Segoe UI, Arial" font-size="22">• Puts health and context side-by-side</text>
+  <text x="1190" y="686" fill="#9FB4DE" font-family="Segoe UI, Arial" font-size="22">• Improves triage speed and confidence</text>
+  <text x="1190" y="724" fill="#9FB4DE" font-family="Segoe UI, Arial" font-size="22">• Creates a clear path to AI analysis</text>
+</svg>
