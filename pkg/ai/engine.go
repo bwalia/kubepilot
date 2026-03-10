@@ -55,6 +55,7 @@ type SuggestedAction struct {
 	Namespace   string     `json:"namespace,omitempty"`
 	Resource    string     `json:"resource,omitempty"`
 	Replicas    int32      `json:"replicas,omitempty"`
+	Command     string     `json:"command,omitempty"`
 	Explanation string     `json:"explanation"`
 	// RequiresCRCode indicates this action must not run on production without a valid CR code.
 	RequiresCRCode bool `json:"requires_cr_code"`

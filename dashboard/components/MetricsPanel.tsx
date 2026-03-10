@@ -19,7 +19,7 @@ export function MetricsPanel({ deployments }: Props) {
     .sort((a, b) => b.Replicas - a.Replicas)
     .slice(0, 10)
     .map((d) => ({
-      name: d.Name.length > 16 ? d.Name.slice(0, 16) + "…" : d.Name,
+      name: (d.Name || "unknown").length > 16 ? (d.Name || "unknown").slice(0, 16) + "…" : (d.Name || "unknown"),
       desired: d.Replicas,
       ready: d.ReadyReplicas,
       degraded: d.Replicas - d.ReadyReplicas,

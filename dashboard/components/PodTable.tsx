@@ -179,11 +179,11 @@ function TroubleshootPanel({
               <p className="text-xs text-pilot-muted mb-1">Analysis</p>
               <p className="text-sm text-white leading-relaxed">{report.Analysis}</p>
             </div>
-            {report.Actions.length > 0 && (
+            {(report.Actions || []).length > 0 && (
               <div>
                 <p className="text-xs text-pilot-muted mb-2">Suggested Actions</p>
                 <div className="space-y-2">
-                  {report.Actions.map((action, i) => (
+                  {(report.Actions || []).map((action, i) => (
                     <div
                       key={i}
                       className="bg-pilot-surface border border-pilot-border rounded p-3"

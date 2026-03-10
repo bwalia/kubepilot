@@ -52,6 +52,7 @@ func (e *Engine) TroubleshootPod(ctx context.Context, namespace, podName string)
 		action := SuggestedAction{
 			Type:           ActionType(rem.Action),
 			Namespace:      namespace,
+			Command:        rem.Command,
 			Explanation:    rem.Description,
 			RequiresCRCode: rem.RequiresCR,
 		}

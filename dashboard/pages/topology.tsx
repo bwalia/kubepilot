@@ -1,12 +1,12 @@
 /**
  * Topology page — Service dependency graph visualization for a namespace.
  */
-import { TopologyGraph } from "@/components/TopologyGraph";
+import { ServiceTopologyCanvas } from "@/components/ServiceTopologyCanvas";
 
 export default function TopologyPage() {
   return (
-    <div className="min-h-screen bg-pilot-bg text-white font-mono p-6">
-      <TopologyGraph namespace="default" />
+    <div className="h-[calc(100vh-180px)] min-h-[500px] font-mono">
+      <ServiceTopologyCanvas />
     </div>
   );
 }

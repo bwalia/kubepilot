@@ -5,11 +5,13 @@ package dashboard
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -28,17 +30,17 @@ import (
 
 // Config holds dashboard server configuration.
 type Config struct {
-	Port      int
-	AIEngine  *ai.Engine
-	Scheduler *jobs.Scheduler
-	K8sClient *k8s.Client
-	RCAStore  *observability.RCAStore
+	Port           int
+	AIEngine       *ai.Engine
+	Scheduler      *jobs.Scheduler
+	K8sClient      *k8s.Client
+	RCAStore       *observability.RCAStore
 	KubeconfigPath string
 }
 
 // Server serves the Kubernetes Cockpit dashboard and REST API.
 type Server struct {
-	mu   sync.RWMutex
+	mu    sync.RWMutex
 	cfg   Config
 	guard *security.Guard
 	log   *zap.Logger
@@ -53,9 +55,9 @@ type Server struct {
 // NewServer creates a dashboard Server.
 func NewServer(cfg Config, log *zap.Logger) *Server {
 	srv := &Server{
-		cfg:   cfg,
-		guard: security.NewGuard(cfg.K8sClient.Core, log),
-		log:   log,
+		cfg:                  cfg,
+		guard:                security.NewGuard(cfg.K8sClient.Core, log),
+		log:                  log,
 		k8sClient:            cfg.K8sClient,
 		activeKubeconfigPath: cfg.KubeconfigPath,
 		knownKubeconfigPaths: map[string]struct{}{},
@@ -102,16 +104,22 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/clusters/kubeconfigs", s.handleListKubeconfigs).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/kubeconfigs", s.handleAddKubeconfig).Methods(http.MethodPost)
 	api.HandleFunc("/clusters/kubeconfigs/upload", s.handleUploadKubeconfig).Methods(http.MethodPost)
+	api.HandleFunc("/clusters/kubeconfigs/base64", s.handleUploadKubeconfigBase64).Methods(http.MethodPost)
 	api.HandleFunc("/clusters/switch", s.handleSwitchCluster).Methods(http.MethodPost)
 
 	api.HandleFunc("/clusters/pods", s.handleListPods).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/pods/{namespace}/{pod}/diagnostics", s.handlePodDiagnostics).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/deployments", s.handleListDeployments).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/nodes", s.handleListNodes).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/crashing-pods", s.handleCrashingPods).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/service-graph", s.handleServiceGraph).Methods(http.MethodGet)
+	api.HandleFunc("/events", s.handleListEvents).Methods(http.MethodGet)
+	api.HandleFunc("/troubleshooting/summary", s.handleClusterTroubleshooting).Methods(http.MethodGet)
 
 	// AI
 	api.HandleFunc("/ai/interpret", s.handleAIInterpret).Methods(http.MethodPost)
 	api.HandleFunc("/ai/troubleshoot/{namespace}/{pod}", s.handleTroubleshoot).Methods(http.MethodGet)
+	api.HandleFunc("/ai/execute-action", s.handleExecuteSuggestedAction).Methods(http.MethodPost)
 
 	// RCA & Anomalies
 	api.HandleFunc("/rca", s.handleListRCAReports).Methods(http.MethodGet)
@@ -209,6 +217,21 @@ func (s *Server) handleCrashingPods(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, pods)
 }
 
+func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
+	k8sClient := s.currentK8sClient()
+	ns := strings.TrimSpace(r.URL.Query().Get("namespace"))
+	// Empty namespace (or "all") means list resources across all namespaces.
+	if strings.EqualFold(ns, "all") {
+		ns = ""
+	}
+	graph, err := k8sClient.GetServiceGraph(r.Context(), ns)
+	if err != nil {
+		httpError(w, err, http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, graph)
+}
+
 // ─────────────────────────────────────────
 // AI handlers
 // ─────────────────────────────────────────
@@ -242,6 +265,89 @@ func (s *Server) handleTroubleshoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, report)
+}
+
+func (s *Server) handleExecuteSuggestedAction(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Action   ai.SuggestedAction `json:"action"`
+		ChangeID string             `json:"change_id,omitempty"`
+		CRCode   string             `json:"cr_code,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.Action.Type == "" {
+		httpError(w, fmt.Errorf("action.type is required"), http.StatusBadRequest)
+		return
+	}
+
+	if req.Action.RequiresCRCode {
+		guard := s.currentGuard()
+		if err := guard.Authorize(r.Context(), req.ChangeID, req.CRCode); err != nil {
+			httpError(w, err, http.StatusForbidden)
+			return
+		}
+	}
+
+	if req.Action.Command != "" {
+		output, err := s.executeSuggestedCommand(r.Context(), req.Action.Command)
+		if err != nil {
+			httpError(w, fmt.Errorf("executing suggested command: %w", err), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, map[string]any{
+			"status":  "executed",
+			"message": output,
+		})
+		return
+	}
+
+	k8sClient := s.currentK8sClient()
+	switch req.Action.Type {
+	case ai.ActionRestart:
+		if req.Action.Namespace == "" || req.Action.Resource == "" {
+			httpError(w, fmt.Errorf("restart action requires namespace and resource"), http.StatusBadRequest)
+			return
+		}
+		if err := k8sClient.RestartDeployment(r.Context(), req.Action.Namespace, req.Action.Resource); err != nil {
+			httpError(w, err, http.StatusBadRequest)
+			return
+		}
+	case ai.ActionScale:
+		if req.Action.Namespace == "" || req.Action.Resource == "" {
+			httpError(w, fmt.Errorf("scale action requires namespace and resource"), http.StatusBadRequest)
+			return
+		}
+		if err := k8sClient.ScaleDeployment(r.Context(), req.Action.Namespace, req.Action.Resource, req.Action.Replicas); err != nil {
+			httpError(w, err, http.StatusBadRequest)
+			return
+		}
+	case ai.ActionDeletePod:
+		if req.Action.Namespace == "" || req.Action.Resource == "" {
+			httpError(w, fmt.Errorf("delete_pod action requires namespace and resource"), http.StatusBadRequest)
+			return
+		}
+		if err := k8sClient.DeletePod(r.Context(), req.Action.Namespace, req.Action.Resource); err != nil {
+			httpError(w, err, http.StatusBadRequest)
+			return
+		}
+	case ai.ActionInvestigate, ai.ActionNoOp:
+		writeJSON(w, map[string]any{
+			"status":  "skipped",
+			"message": "Action is informational and does not require execution",
+		})
+		return
+	default:
+		httpError(w, fmt.Errorf("unsupported action type %q; provide action.command for command-based fixes", req.Action.Type), http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, map[string]any{
+		"status":  "executed",
+		"message": "Action executed successfully",
+	})
 }
 
 // ─────────────────────────────────────────
@@ -551,20 +657,69 @@ func (s *Server) handleUploadKubeconfig(w http.ResponseWriter, r *http.Request) 
 	if baseName == "." || baseName == string(filepath.Separator) || baseName == "" {
 		baseName = fmt.Sprintf("uploaded-%d.kubeconfig", time.Now().Unix())
 	}
-	dstPath := filepath.Join(s.uploadDir, baseName)
-	if _, err := os.Stat(dstPath); err == nil {
-		dstPath = filepath.Join(s.uploadDir, fmt.Sprintf("%d-%s", time.Now().Unix(), baseName))
-	}
-
-	dst, err := os.Create(dstPath)
+	raw, err := io.ReadAll(file)
 	if err != nil {
-		httpError(w, fmt.Errorf("creating kubeconfig file: %w", err), http.StatusInternalServerError)
+		httpError(w, fmt.Errorf("reading kubeconfig file: %w", err), http.StatusBadRequest)
 		return
 	}
-	defer dst.Close()
+	dstPath, err := s.saveKubeconfigBytes(baseName, raw)
+	if err != nil {
+		httpError(w, err, http.StatusInternalServerError)
+		return
+	}
 
-	if _, err := io.Copy(dst, file); err != nil {
-		httpError(w, fmt.Errorf("saving kubeconfig file: %w", err), http.StatusInternalServerError)
+	if err := s.switchCluster(dstPath); err != nil {
+		httpError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	s.handleListKubeconfigs(w, r)
+}
+
+func (s *Server) handleUploadKubeconfigBase64(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name          string `json:"name,omitempty"`
+		ContentBase64 string `json:"content_base64"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	encoded := strings.TrimSpace(req.ContentBase64)
+	if encoded == "" {
+		httpError(w, fmt.Errorf("content_base64 is required"), http.StatusBadRequest)
+		return
+	}
+
+	if idx := strings.Index(encoded, ","); strings.HasPrefix(encoded, "data:") && idx > -1 {
+		encoded = encoded[idx+1:]
+	}
+	encoded = strings.Map(func(r rune) rune {
+		switch r {
+		case ' ', '\n', '\r', '\t':
+			return -1
+		default:
+			return r
+		}
+	}, encoded)
+
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		raw, err = base64.RawStdEncoding.DecodeString(encoded)
+		if err != nil {
+			httpError(w, fmt.Errorf("invalid base64 kubeconfig content: %w", err), http.StatusBadRequest)
+			return
+		}
+	}
+
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		name = fmt.Sprintf("base64-%d.kubeconfig", time.Now().Unix())
+	}
+	dstPath, err := s.saveKubeconfigBytes(name, raw)
+	if err != nil {
+		httpError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -638,6 +793,79 @@ func (s *Server) switchCluster(rawPath string) error {
 
 	s.log.Info("Switched active Kubernetes cluster", zap.String("kubeconfig", path))
 	return nil
+}
+
+func (s *Server) saveKubeconfigBytes(name string, content []byte) (string, error) {
+	if s.uploadDir == "" {
+		return "", fmt.Errorf("kubeconfig upload directory is not configured")
+	}
+	baseName := filepath.Base(strings.TrimSpace(name))
+	if baseName == "" || baseName == "." || baseName == string(filepath.Separator) {
+		baseName = fmt.Sprintf("uploaded-%d.kubeconfig", time.Now().Unix())
+	}
+	if !strings.HasSuffix(baseName, ".yaml") && !strings.HasSuffix(baseName, ".yml") && !strings.HasSuffix(baseName, ".kubeconfig") && !strings.HasSuffix(baseName, ".conf") {
+		baseName += ".kubeconfig"
+	}
+
+	dstPath := filepath.Join(s.uploadDir, baseName)
+	if _, err := os.Stat(dstPath); err == nil {
+		dstPath = filepath.Join(s.uploadDir, fmt.Sprintf("%d-%s", time.Now().Unix(), baseName))
+	}
+
+	if err := os.WriteFile(dstPath, content, 0o600); err != nil {
+		return "", fmt.Errorf("saving kubeconfig file: %w", err)
+	}
+	return dstPath, nil
+}
+
+func (s *Server) executeSuggestedCommand(ctx context.Context, command string) (string, error) {
+	command = strings.TrimSpace(command)
+	if command == "" {
+		return "", fmt.Errorf("command is empty")
+	}
+	if strings.ContainsAny(command, "\n\r;&|><`") {
+		return "", fmt.Errorf("command contains unsupported shell operators")
+	}
+
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+		return "", fmt.Errorf("command is empty")
+	}
+	if parts[0] != "kubectl" {
+		return "", fmt.Errorf("only kubectl commands are allowed")
+	}
+
+	s.mu.RLock()
+	active := s.activeKubeconfigPath
+	s.mu.RUnlock()
+
+	if active != "" {
+		hasKubeconfig := false
+		for i := 1; i < len(parts); i++ {
+			if parts[i] == "--kubeconfig" || strings.HasPrefix(parts[i], "--kubeconfig=") {
+				hasKubeconfig = true
+				break
+			}
+		}
+		if !hasKubeconfig {
+			parts = append([]string{"kubectl", "--kubeconfig", active}, parts[1:]...)
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		trimmed := strings.TrimSpace(string(out))
+		if trimmed == "" {
+			trimmed = err.Error()
+		}
+		return "", fmt.Errorf(trimmed)
+	}
+	trimmed := strings.TrimSpace(string(out))
+	if trimmed == "" {
+		trimmed = "kubectl command executed"
+	}
+	return trimmed, nil
 }
 
 func (s *Server) persistKubeconfigStateLocked() {

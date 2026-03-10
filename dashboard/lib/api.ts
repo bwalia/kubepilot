@@ -44,6 +44,143 @@ export interface NodeSummary {
   Unschedulable: boolean;
 }
 
+export interface KubeEvent {
+  reason: string;
+  message: string;
+  type: string;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  involved_object: {
+    kind: string;
+    name: string;
+    namespace: string;
+  };
+  source: string;
+}
+
+export interface EventListResponse {
+  items: KubeEvent[];
+  total: number;
+}
+
+export interface TroubleshootingInsight {
+  id: string;
+  category: string;
+  severity: string;
+  title: string;
+  summary: string;
+  suggestions: string[];
+  affected_resources?: string[];
+}
+
+export interface NodeHealthRow {
+  name: string;
+  ready: boolean;
+  cpu_capacity: string;
+  memory_capacity: string;
+  cpu_usage?: string;
+  memory_usage?: string;
+  cpu_usage_percent?: number;
+  memory_usage_percent?: number;
+  disk_pressure: boolean;
+  memory_pressure: boolean;
+  pid_pressure: boolean;
+  unschedulable: boolean;
+  kubelet_version: string;
+}
+
+export interface ResourcePressureSummary {
+  metrics_available: boolean;
+  cpu_usage_percent?: number;
+  memory_usage_percent?: number;
+  memory_pressure_nodes: number;
+  disk_pressure_nodes: number;
+  pid_pressure_nodes: number;
+}
+
+export interface ProblemPod {
+  name: string;
+  namespace: string;
+  status: string;
+  restarts: number;
+  node: string;
+  reason: string;
+  age_minutes: number;
+  message?: string;
+}
+
+export interface HealthSummary {
+  not_ready_nodes: number;
+  crashloop_pods: number;
+  failed_mount_events: number;
+  pending_pods: number;
+  warning_events: number;
+  recommended_actions: string[];
+}
+
+export interface ClusterTroubleshootingSummary {
+  namespace: string;
+  generated_at: string;
+  health_summary: HealthSummary;
+  insights: TroubleshootingInsight[];
+  nodes: NodeHealthRow[];
+  resource_pressure: ResourcePressureSummary;
+  problem_pods: ProblemPod[];
+}
+
+export interface PodCondition {
+  type: string;
+  status: string;
+  reason?: string;
+  message?: string;
+}
+
+export interface ContainerDiag {
+  name: string;
+  image: string;
+  ready: boolean;
+  restart_count: number;
+  state: string;
+  state_reason: string;
+  state_message: string;
+  exit_code: number;
+  last_terminated_reason?: string;
+}
+
+export interface ResourceMetrics {
+  cpu_request: string;
+  cpu_limit: string;
+  mem_request: string;
+  mem_limit: string;
+  cpu_usage: string;
+  mem_usage: string;
+}
+
+export interface PodDiagnostics {
+  name: string;
+  namespace: string;
+  phase: string;
+  node_name: string;
+  service_account: string;
+  created_at: string;
+  conditions: PodCondition[];
+  container_statuses: ContainerDiag[];
+  events: KubeEvent[];
+  resource_usage?: ResourceMetrics;
+  owner_chain: Array<{ kind: string; name: string; uid: string }>;
+  labels: Record<string, string>;
+  annotations: Record<string, string>;
+  tolerations?: string[];
+  node_selector?: Record<string, string>;
+  volumes?: string[];
+}
+
+export interface PodDiagnosticsResponse {
+  diagnostics: PodDiagnostics;
+  logs: string;
+}
+
 export interface KubeconfigState {
   active_path: string;
   paths: string[];
@@ -62,8 +199,14 @@ export interface SuggestedAction {
   namespace?: string;
   resource?: string;
   replicas?: number;
+  command?: string;
   explanation: string;
   requires_cr_code: boolean;
+}
+
+export interface ExecuteActionResult {
+  status: "executed" | "skipped";
+  message: string;
 }
 
 export interface TroubleshootReport {
@@ -72,6 +215,14 @@ export interface TroubleshootReport {
   RootCause: string;
   Analysis: string;
   Actions: SuggestedAction[];
+}
+
+interface TroubleshootReportWire {
+  pod_name?: string;
+  namespace?: string;
+  root_cause?: string;
+  analysis?: string;
+  actions?: SuggestedAction[];
 }
 
 export type JobStatus =
@@ -124,6 +275,33 @@ export const listDeployments = (namespace = ""): Promise<DeploymentSummary[]> =>
 export const listNodes = (): Promise<NodeSummary[]> =>
   http.get("/clusters/nodes").then((r) => r.data);
 
+export const listClusterEvents = (params?: {
+  namespace?: string;
+  kind?: string;
+  type?: string;
+  search?: string;
+  sort?: "asc" | "desc";
+  limit?: number;
+  since?: string;
+}): Promise<EventListResponse> =>
+  http.get("/events", { params }).then((r) => r.data);
+
+export const getClusterTroubleshootingSummary = (
+  namespace = ""
+): Promise<ClusterTroubleshootingSummary> =>
+  http.get("/troubleshooting/summary", { params: { namespace } }).then((r) => r.data);
+
+export const getPodDiagnostics = (
+  namespace: string,
+  pod: string,
+  tailLines = 200
+): Promise<PodDiagnosticsResponse> =>
+  http
+    .get(`/clusters/pods/${encodeURIComponent(namespace)}/${encodeURIComponent(pod)}/diagnostics`, {
+      params: { tail_lines: tailLines },
+    })
+    .then((r) => r.data);
+
 export const listKubeconfigs = (): Promise<KubeconfigState> =>
   http.get("/clusters/kubeconfigs").then((r) => r.data);
 
@@ -147,6 +325,17 @@ export const uploadKubeconfig = async (
   return resp.data;
 };
 
+export const uploadKubeconfigBase64 = (
+  contentBase64: string,
+  name?: string
+): Promise<KubeconfigState> =>
+  http
+    .post("/clusters/kubeconfigs/base64", {
+      content_base64: contentBase64,
+      name,
+    })
+    .then((r) => r.data);
+
 // ─────────────────────────────────────────
 // AI API
 // ─────────────────────────────────────────
@@ -160,7 +349,29 @@ export const troubleshootPod = (
   namespace: string,
   pod: string
 ): Promise<TroubleshootReport> =>
-  http.get(`/ai/troubleshoot/${namespace}/${pod}`).then((r) => r.data);
+  http.get(`/ai/troubleshoot/${namespace}/${pod}`).then((r) => {
+    const wire = (r.data || {}) as TroubleshootReportWire;
+    return {
+      PodName: wire.pod_name ?? pod,
+      Namespace: wire.namespace ?? namespace,
+      RootCause: wire.root_cause ?? "",
+      Analysis: wire.analysis ?? "",
+      Actions: Array.isArray(wire.actions) ? wire.actions : [],
+    };
+  });
+
+export const executeSuggestedAction = (
+  action: SuggestedAction,
+  changeId?: string,
+  crCode?: string
+): Promise<ExecuteActionResult> =>
+  http
+    .post("/ai/execute-action", {
+      action,
+      change_id: changeId,
+      cr_code: crCode,
+    })
+    .then((r) => r.data);
 
 // ─────────────────────────────────────────
 // Jobs API
@@ -276,6 +487,65 @@ export interface ServiceTopology {
   edges: DependencyEdge[];
 }
 
+  // ─────────────────────────────────────────
+  // Service Graph (ArgoCD-style canvas)
+  // ─────────────────────────────────────────
+
+  export type SGNodeKind =
+    | "Ingress"
+    | "Service"
+    | "Deployment"
+    | "StatefulSet"
+    | "DaemonSet"
+    | "Pod";
+
+  export interface SGPortInfo {
+    name: string;
+    port: number;
+    target_port: string;
+    protocol: string;
+    node_port?: number;
+  }
+
+  export interface SGNode {
+    id: string;
+    kind: SGNodeKind;
+    name: string;
+    namespace: string;
+    status: "healthy" | "degraded" | "pending" | "unknown";
+    labels?: Record<string, string>;
+    // service
+    service_type?: string;
+    ports?: SGPortInfo[];
+    cluster_ip?: string;
+    external_ips?: string[];
+    // workload
+    replicas?: number;
+    ready_replicas?: number;
+    image?: string;
+    // pod
+    phase?: string;
+    ready?: boolean;
+    restarts?: number;
+    node_name?: string;
+    // ingress
+    host?: string;
+    ingress_url?: string;
+    tls?: boolean;
+  }
+
+  export interface SGEdge {
+    from: string;
+    to: string;
+  }
+
+  export interface ServiceGraph {
+    namespace: string;
+    nodes: SGNode[];
+    edges: SGEdge[];
+  }
+
+
 export interface RemediationResult {
   step_index: number;
   action: string;
@@ -309,6 +579,11 @@ export const listAnomalies = (params?: {
 
 export const getTopology = (namespace: string): Promise<ServiceTopology> =>
   http.get(`/topology/${namespace}`).then((r) => r.data);
+
+  export const getServiceGraph = (namespace: string): Promise<ServiceGraph> =>
+    http
+      .get("/clusters/service-graph", { params: { namespace } })
+      .then((r) => r.data);
 
 export const executeRemediation = (
   reportId: string,

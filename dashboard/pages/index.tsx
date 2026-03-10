@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield } from "lucide-react";
+import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning } from "lucide-react";
 import {
   listCrashingPods,
   listNodes,
@@ -22,6 +22,7 @@ import { CRCodeManager } from "@/components/CRCodeManager";
 import { JobScheduler } from "@/components/JobScheduler";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
+import { ClusterEventsTroubleshooting } from "@/components/ClusterEventsTroubleshooting";
 import RCAPage from "@/pages/rca";
 import TopologyPage from "@/pages/topology";
 
@@ -31,7 +32,7 @@ export default function DashboardHome() {
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedAction, setSelectedAction] = useState<SuggestedAction | null>(null);
   const [crModalOpen, setCrModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "rca" | "topology" | "jobs" | "cr-codes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "rca" | "topology" | "jobs" | "events" | "cr-codes">("overview");
 
   const { data: crashingPods = [], isLoading: podsLoading } = useQuery({
     queryKey: ["crashing-pods"],
@@ -205,7 +206,7 @@ export default function DashboardHome() {
 
       {/* ── Tab Bar ──────────────────────────────────────────────── */}
       <div className="flex gap-1 px-6 pt-4 border-b border-pilot-border">
-        {(["overview", "rca", "topology", "jobs", "cr-codes"] as const).map((tab) => (
+        {(["overview", "rca", "topology", "jobs", "events", "cr-codes"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -217,7 +218,8 @@ export default function DashboardHome() {
           >
             {tab === "rca" && <FileSearch className="w-3.5 h-3.5" />}
             {tab === "topology" && <Network className="w-3.5 h-3.5" />}
-            {tab === "rca" ? "RCA" : tab}
+            {tab === "events" && <FileWarning className="w-3.5 h-3.5" />}
+            {tab === "rca" ? "RCA" : tab === "events" ? "Cluster Events" : tab}
             {tab === "rca" && anomalies.length > 0 && (
               <span className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">
                 {anomalies.length}
@@ -246,6 +248,7 @@ export default function DashboardHome() {
         {activeTab === "rca" && <RCAPage />}
         {activeTab === "topology" && <TopologyPage />}
         {activeTab === "jobs" && <JobScheduler />}
+        {activeTab === "events" && <ClusterEventsTroubleshooting />}
         {activeTab === "cr-codes" && <CRCodeManager />}
       </main>
 

@@ -4,6 +4,7 @@ import {
   addKubeconfigPath,
   listKubeconfigs,
   switchCluster,
+  uploadKubeconfigBase64,
   uploadKubeconfig,
 } from "@/lib/api";
 import { Link2, Upload, RefreshCw } from "lucide-react";
@@ -16,6 +17,8 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [newPath, setNewPath] = useState("");
+  const [base64Content, setBase64Content] = useState("");
+  const [base64Name, setBase64Name] = useState("");
   const [selectedPath, setSelectedPath] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +80,25 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
     },
   });
 
-  const busy = addPathMutation.isPending || switchMutation.isPending || uploadMutation.isPending;
+  const uploadBase64Mutation = useMutation({
+    mutationFn: (payload: { content: string; name?: string }) =>
+      uploadKubeconfigBase64(payload.content, payload.name),
+    onSuccess: async () => {
+      setError(null);
+      setBase64Content("");
+      setBase64Name("");
+      await invalidateClusterData();
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error ?? err?.message ?? "Failed to upload base64 kubeconfig");
+    },
+  });
+
+  const busy =
+    addPathMutation.isPending ||
+    switchMutation.isPending ||
+    uploadMutation.isPending ||
+    uploadBase64Mutation.isPending;
 
   return (
     <>
@@ -176,6 +197,35 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                   }}
                 />
               </label>
+            </div>
+
+            <div className="space-y-2 border-t border-pilot-border pt-4">
+              <label className="text-xs text-pilot-muted">Paste kubeconfig as base64 and connect</label>
+              <input
+                type="text"
+                value={base64Name}
+                onChange={(e) => setBase64Name(e.target.value)}
+                placeholder="Optional filename (e.g. prod-us.kubeconfig)"
+                className="w-full bg-pilot-surface border border-pilot-border rounded px-3 py-2 text-xs"
+              />
+              <textarea
+                value={base64Content}
+                onChange={(e) => setBase64Content(e.target.value)}
+                placeholder="Paste base64 kubeconfig content"
+                className="w-full min-h-28 bg-pilot-surface border border-pilot-border rounded px-3 py-2 text-xs font-mono"
+              />
+              <button
+                disabled={!base64Content.trim() || busy}
+                onClick={() =>
+                  uploadBase64Mutation.mutate({
+                    content: base64Content.trim(),
+                    name: base64Name.trim() || undefined,
+                  })
+                }
+                className="bg-pilot-accent hover:bg-blue-500 disabled:opacity-50 text-white text-xs px-3 py-2 rounded"
+              >
+                Save base64 + Connect
+              </button>
             </div>
 
             {isLoading && <div className="text-xs text-pilot-muted">Loading kubeconfig profiles...</div>}

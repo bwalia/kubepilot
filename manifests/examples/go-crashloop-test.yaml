@@ -1,0 +1,84 @@
+## Go-based crash-loop test workload.
+## Behavior:
+##   - Pod enters a 2-minute crash window and intentionally exits with code 1.
+##   - Every restart logs crash-window status and crashes again while window is active.
+##   - Deleting the pod or restarting the deployment resets the 2-minute crash window.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubepilot-test
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-crashloop-test
+  namespace: kubepilot-test
+  labels:
+    app: go-crashloop-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-crashloop-test
+  template:
+    metadata:
+      labels:
+        app: go-crashloop-test
+    spec:
+      containers:
+        - name: go-crasher
+          image: golang:1.22-alpine
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: crash-state
+              mountPath: /state
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              START_FILE="/state/crash-window-start";
+              RUN_FILE="/state/run-count";
+              WINDOW_SECONDS=120;
+
+              if [ ! -f "$START_FILE" ]; then
+                date +%s > "$START_FILE";
+              fi;
+
+              run="0";
+              if [ -f "$RUN_FILE" ]; then
+                run="$(cat "$RUN_FILE" 2>/dev/null || echo 0)";
+              fi;
+              run=$((run + 1));
+              echo "$run" > "$RUN_FILE";
+
+              start_epoch="$(cat "$START_FILE")";
+              now_epoch="$(date +%s)";
+              elapsed=$((now_epoch - start_epoch));
+              remaining=$((WINDOW_SECONDS - elapsed));
+
+              echo "[go-crashloop-test] run #$run at $(date -u +%Y-%m-%dT%H:%M:%SZ)";
+
+              if [ "$remaining" -gt 0 ]; then
+                echo "[go-crashloop-test] crash mode ACTIVE (${remaining}s remaining in 2m window)";
+                echo "[go-crashloop-test] intentional crash to simulate unstable workload";
+                sleep 5;
+                echo "[go-crashloop-test] exiting with code 1";
+                exit 1;
+              fi;
+
+              echo "[go-crashloop-test] crash window elapsed; pod now stable until externally reset";
+              while true; do
+                echo "[go-crashloop-test] stable mode heartbeat $(date -u +%Y-%m-%dT%H:%M:%SZ)";
+                sleep 20;
+              done
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: crash-state
+          emptyDir: {}
