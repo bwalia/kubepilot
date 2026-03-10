@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -38,6 +39,13 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("ollama-api-key", "", "Ollama API key — optional, only needed if Ollama is behind an auth proxy (or set KUBEPILOT_OLLAMA_API_KEY)")
 	cmd.Flags().String("ollama-model", "", "Ollama model name, e.g. llama3, mistral, codellama (default: llama3)")
 	cmd.Flags().String("prometheus-url", "", "Prometheus server URL for metrics-based anomaly detection (optional)")
+	cmd.Flags().Bool("dashboard-auth-enabled", false, "Enable dashboard/API auth middleware")
+	cmd.Flags().String("dashboard-auth-token", "", "Bearer token for dashboard/API auth (optional if username/password is set)")
+	cmd.Flags().String("dashboard-auth-username", "", "Basic auth username for dashboard/API auth")
+	cmd.Flags().String("dashboard-auth-password", "", "Basic auth password for dashboard/API auth")
+	cmd.Flags().Bool("enable-kubeconfig-mutations", false, "Enable kubeconfig mutation endpoints (upload/switch/add)")
+	cmd.Flags().Bool("enable-action-mutations", false, "Enable action mutation endpoints (execute-action/remediate)")
+	cmd.Flags().String("cors-allowed-origins", "http://localhost:8383,http://127.0.0.1:8383", "Comma-separated CORS allowed origins")
 
 	_ = viper.BindPFlag("mcp_port", cmd.Flags().Lookup("mcp-port"))
 	_ = viper.BindPFlag("dashboard_port", cmd.Flags().Lookup("dashboard-port"))
@@ -46,6 +54,13 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("ollama_api_key", cmd.Flags().Lookup("ollama-api-key"))
 	_ = viper.BindPFlag("ollama_model", cmd.Flags().Lookup("ollama-model"))
 	_ = viper.BindPFlag("prometheus_url", cmd.Flags().Lookup("prometheus-url"))
+	_ = viper.BindPFlag("dashboard_auth_enabled", cmd.Flags().Lookup("dashboard-auth-enabled"))
+	_ = viper.BindPFlag("dashboard_auth_token", cmd.Flags().Lookup("dashboard-auth-token"))
+	_ = viper.BindPFlag("dashboard_auth_username", cmd.Flags().Lookup("dashboard-auth-username"))
+	_ = viper.BindPFlag("dashboard_auth_password", cmd.Flags().Lookup("dashboard-auth-password"))
+	_ = viper.BindPFlag("enable_kubeconfig_mutations", cmd.Flags().Lookup("enable-kubeconfig-mutations"))
+	_ = viper.BindPFlag("enable_action_mutations", cmd.Flags().Lookup("enable-action-mutations"))
+	_ = viper.BindPFlag("cors_allowed_origins", cmd.Flags().Lookup("cors-allowed-origins"))
 
 	return cmd
 }
@@ -93,13 +108,34 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	}()
 
 	// Start dashboard server.
+	authEnabled := viper.GetBool("dashboard_auth_enabled")
+	authToken := strings.TrimSpace(viper.GetString("dashboard_auth_token"))
+	authUsername := strings.TrimSpace(viper.GetString("dashboard_auth_username"))
+	authPassword := strings.TrimSpace(viper.GetString("dashboard_auth_password"))
+	if authEnabled {
+		hasBearer := authToken != ""
+		hasBasic := authUsername != "" && authPassword != ""
+		if !hasBearer && !hasBasic {
+			return fmt.Errorf("dashboard auth is enabled but no credentials were configured; set dashboard_auth_token or dashboard_auth_username+dashboard_auth_password")
+		}
+	}
+
 	dashServer := dashboard.NewServer(dashboard.Config{
-		Port:      viper.GetInt("dashboard_port"),
-		AIEngine:  aiEngine,
-		Scheduler: scheduler,
-		K8sClient: k8sClient,
-		RCAStore:  rcaStore,
+		Port:           viper.GetInt("dashboard_port"),
+		AIEngine:       aiEngine,
+		Scheduler:      scheduler,
+		K8sClient:      k8sClient,
+		RCAStore:       rcaStore,
 		KubeconfigPath: viper.GetString("kubeconfig"),
+		Auth: dashboard.AuthConfig{
+			Enabled:  authEnabled,
+			Token:    authToken,
+			Username: authUsername,
+			Password: authPassword,
+		},
+		EnableKubeconfigMutationEndpoints: viper.GetBool("enable_kubeconfig_mutations"),
+		EnableActionMutationEndpoints:     viper.GetBool("enable_action_mutations"),
+		AllowedCORSOrigins:                parseCSV(viper.GetString("cors_allowed_origins")),
 	}, log)
 
 	go func() {
@@ -114,4 +150,17 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	<-ctx.Done()
 	log.Info("KubePilot shutting down")
 	return nil
+}
+
+func parseCSV(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		v := strings.TrimSpace(part)
+		if v == "" {
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }

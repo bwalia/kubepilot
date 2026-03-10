@@ -115,6 +115,22 @@ export KUBEPILOT_OLLAMA_MODEL="llama3"
 ./dist/kubepilot serve --dashboard-port=8383
 ```
 
+### Security Hardening (Recommended for shared/network access)
+
+Enable auth and keep mutation endpoints disabled unless explicitly needed:
+
+```bash
+KUBEPILOT_DASHBOARD_AUTH_ENABLED=true \
+KUBEPILOT_DASHBOARD_AUTH_USERNAME=admin \
+KUBEPILOT_DASHBOARD_AUTH_PASSWORD='change-me' \
+KUBEPILOT_ENABLE_KUBECONFIG_MUTATIONS=false \
+KUBEPILOT_ENABLE_ACTION_MUTATIONS=false \
+KUBEPILOT_CORS_ALLOWED_ORIGINS='https://kubepilot.example.com' \
+./dist/kubepilot serve --dashboard-port=8383
+```
+
+You can also use Bearer token auth via `KUBEPILOT_DASHBOARD_AUTH_TOKEN`.
+
 ## Dashboard Guide
 
 ### Overview tab

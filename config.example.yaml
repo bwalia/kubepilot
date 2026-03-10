@@ -8,6 +8,13 @@
 ##   KUBEPILOT_OLLAMA_MODEL=llama3
 ##   KUBEPILOT_LOG_LEVEL=debug
 ##   KUBEPILOT_MCP_PORT=9090
+##   KUBEPILOT_DASHBOARD_AUTH_ENABLED=true
+##   KUBEPILOT_DASHBOARD_AUTH_TOKEN=<strong-random-token>
+##   KUBEPILOT_DASHBOARD_AUTH_USERNAME=admin
+##   KUBEPILOT_DASHBOARD_AUTH_PASSWORD=<strong-password>
+##   KUBEPILOT_ENABLE_KUBECONFIG_MUTATIONS=false
+##   KUBEPILOT_ENABLE_ACTION_MUTATIONS=false
+##   KUBEPILOT_CORS_ALLOWED_ORIGINS=http://localhost:8383,http://127.0.0.1:8383
 ## ─────────────────────────────────────────────────────────────────────────────
 
 # Path to kubeconfig. Leave empty to use in-cluster config when running inside a pod.
@@ -27,6 +34,28 @@ dashboard_port: 9080
 # ollama_api_key is optional (only needed if Ollama is behind an auth proxy).
 ollama_base_url: "http://localhost:11434/v1"
 ollama_model: llama3
+
+# Security settings for dashboard/API.
+#
+# Auth supports either:
+#  1) Bearer token auth (dashboard_auth_token)
+#  2) Basic auth (dashboard_auth_username + dashboard_auth_password)
+#
+# Keep disabled for local-only dev; enable for any network-accessible deployment.
+dashboard_auth_enabled: false
+dashboard_auth_token: ""
+dashboard_auth_username: ""
+dashboard_auth_password: ""
+
+# Mutation endpoint controls (default secure posture: disabled).
+# - enable_kubeconfig_mutations: upload/add/switch kubeconfig APIs
+# - enable_action_mutations: AI execute-action + remediate APIs
+enable_kubeconfig_mutations: false
+enable_action_mutations: false
+
+# Comma-separated list of allowed browser origins for CORS.
+# Leave default for local UI, set explicitly for remote deployments.
+cors_allowed_origins: "http://localhost:8383,http://127.0.0.1:8383"
 
 # Operator settings.
 operator:

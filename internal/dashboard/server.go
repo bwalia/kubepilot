@@ -30,12 +30,16 @@ import (
 
 // Config holds dashboard server configuration.
 type Config struct {
-	Port           int
-	AIEngine       *ai.Engine
-	Scheduler      *jobs.Scheduler
-	K8sClient      *k8s.Client
-	RCAStore       *observability.RCAStore
-	KubeconfigPath string
+	Port                              int
+	AIEngine                          *ai.Engine
+	Scheduler                         *jobs.Scheduler
+	K8sClient                         *k8s.Client
+	RCAStore                          *observability.RCAStore
+	KubeconfigPath                    string
+	Auth                              AuthConfig
+	EnableKubeconfigMutationEndpoints bool
+	EnableActionMutationEndpoints     bool
+	AllowedCORSOrigins                []string
 }
 
 // Server serves the Kubernetes Cockpit dashboard and REST API.
@@ -102,10 +106,17 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Cluster overview
 	api.HandleFunc("/clusters/kubeconfigs", s.handleListKubeconfigs).Methods(http.MethodGet)
-	api.HandleFunc("/clusters/kubeconfigs", s.handleAddKubeconfig).Methods(http.MethodPost)
-	api.HandleFunc("/clusters/kubeconfigs/upload", s.handleUploadKubeconfig).Methods(http.MethodPost)
-	api.HandleFunc("/clusters/kubeconfigs/base64", s.handleUploadKubeconfigBase64).Methods(http.MethodPost)
-	api.HandleFunc("/clusters/switch", s.handleSwitchCluster).Methods(http.MethodPost)
+	if s.cfg.EnableKubeconfigMutationEndpoints {
+		api.HandleFunc("/clusters/kubeconfigs", s.handleAddKubeconfig).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/kubeconfigs/upload", s.handleUploadKubeconfig).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/kubeconfigs/base64", s.handleUploadKubeconfigBase64).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/switch", s.handleSwitchCluster).Methods(http.MethodPost)
+	} else {
+		api.HandleFunc("/clusters/kubeconfigs", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/kubeconfigs/upload", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/kubeconfigs/base64", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/switch", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
+	}
 
 	api.HandleFunc("/clusters/pods", s.handleListPods).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/pods/{namespace}/{pod}/diagnostics", s.handlePodDiagnostics).Methods(http.MethodGet)
@@ -119,14 +130,22 @@ func (s *Server) Start(ctx context.Context) error {
 	// AI
 	api.HandleFunc("/ai/interpret", s.handleAIInterpret).Methods(http.MethodPost)
 	api.HandleFunc("/ai/troubleshoot/{namespace}/{pod}", s.handleTroubleshoot).Methods(http.MethodGet)
-	api.HandleFunc("/ai/execute-action", s.handleExecuteSuggestedAction).Methods(http.MethodPost)
+	if s.cfg.EnableActionMutationEndpoints {
+		api.HandleFunc("/ai/execute-action", s.handleExecuteSuggestedAction).Methods(http.MethodPost)
+	} else {
+		api.HandleFunc("/ai/execute-action", s.handleMutationDisabled("action execution endpoints are disabled")).Methods(http.MethodPost)
+	}
 
 	// RCA & Anomalies
 	api.HandleFunc("/rca", s.handleListRCAReports).Methods(http.MethodGet)
 	api.HandleFunc("/rca/{id}", s.handleGetRCAReport).Methods(http.MethodGet)
 	api.HandleFunc("/anomalies", s.handleListAnomalies).Methods(http.MethodGet)
 	api.HandleFunc("/topology/{namespace}", s.handleTopology).Methods(http.MethodGet)
-	api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
+	if s.cfg.EnableActionMutationEndpoints {
+		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
+	} else {
+		api.HandleFunc("/remediate", s.handleMutationDisabled("action execution endpoints are disabled")).Methods(http.MethodPost)
+	}
 
 	// Jobs (Jira-style job management)
 	api.HandleFunc("/jobs", s.handleListJobs).Methods(http.MethodGet)
@@ -149,9 +168,14 @@ func (s *Server) Start(ctx context.Context) error {
 	// During development, Next.js dev server runs separately on port 3000.
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./dashboard/out")))
 
+	handler := withCORS(router, s.cfg.AllowedCORSOrigins)
+	if s.cfg.Auth.Enabled {
+		handler = withAuth(handler, s.cfg.Auth)
+	}
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.cfg.Port),
-		Handler:      withCORS(router),
+		Handler:      handler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute, // AI endpoints may take time with local LLMs.
 	}
@@ -903,18 +927,48 @@ func httpError(w http.ResponseWriter, err error, code int) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 }
 
-// withCORS adds permissive CORS headers for the local dashboard.
-// Tighten this for any network-accessible deployment.
-func withCORS(next http.Handler) http.Handler {
+func (s *Server) handleMutationDisabled(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		httpError(w, fmt.Errorf(msg), http.StatusForbidden)
+	}
+}
+
+// withCORS adds CORS headers for configured origins.
+// If no origins are configured, localhost dashboard origins are allowed by default.
+func withCORS(next http.Handler, allowedOrigins []string) http.Handler {
+	origins := make(map[string]struct{}, len(allowedOrigins))
+	for _, origin := range allowedOrigins {
+		o := strings.TrimSpace(origin)
+		if o == "" {
+			continue
+		}
+		origins[o] = struct{}{}
+	}
+	if len(origins) == 0 {
+		origins["http://localhost:8383"] = struct{}{}
+		origins["http://127.0.0.1:8383"] = struct{}{}
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
-			origin = "*"
+			// Non-browser or same-origin requests may omit Origin.
+			w.Header().Set("Access-Control-Allow-Origin", "")
+		} else {
+			if _, ok := origins[origin]; ok {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+			}
 		}
-		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if r.Method == http.MethodOptions {
+			if origin != "" {
+				if _, ok := origins[origin]; !ok {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+			}
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
