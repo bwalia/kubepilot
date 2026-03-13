@@ -15,22 +15,38 @@ nameOverride: ""
 fullnameOverride: ""
 
 # ── Service ─────────────────────────────────────────────────────────────────
+# Supported types: ClusterIP, NodePort, LoadBalancer.
+# For quick local access:   type: NodePort  + nodePort values below.
+# For production + ingress: type: ClusterIP + ingress.enabled=true.
 service:
   type: ClusterIP
   dashboardPort: 8080
   mcpPort: 9090
+  # NodePort values — only used when service.type=NodePort (range 30000-32767).
+  nodePorts:
+    dashboard: ""   # e.g. 30080
+    mcp: ""         # e.g. 30090
+  annotations: {}
 
 # ── Ingress ──────────────────────────────────────────────────────────────────
+# Enable to expose the dashboard via a domain name.
+# Requires an Ingress controller (nginx, traefik, etc.) installed in the cluster.
 ingress:
   enabled: false
-  className: ""
+  className: "nginx"   # Set to your ingress class: nginx | traefik | haproxy | etc.
   annotations: {}
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
     - host: kubepilot.local
       paths:
         - path: /
           pathType: Prefix
   tls: []
+  # - secretName: kubepilot-tls
+  #   hosts:
+  #     - kubepilot.local
 
 # ── KubePilot configuration ──────────────────────────────────────────────────
 kubepilot:
@@ -95,7 +111,16 @@ metrics:
     namespace: monitoring
     interval: 30s
 
+# ── Network Policy ───────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: false  # Enable to restrict traffic to/from kubepilot pods.
+
 # ── Node scheduling ──────────────────────────────────────────────────────────
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+# ── Pod Disruption Budget ────────────────────────────────────────────────────
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1

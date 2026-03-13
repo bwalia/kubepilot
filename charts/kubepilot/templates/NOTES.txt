@@ -1,0 +1,42 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  KubePilot has been installed!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- if .Values.ingress.enabled }}
+
+  Access via Ingress:
+  {{- range .Values.ingress.hosts }}
+    http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+
+{{- else if contains "NodePort" .Values.service.type }}
+
+  Access via NodePort:
+
+    export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+    export DASHBOARD_PORT=$(kubectl get svc {{ include "kubepilot.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='{.spec.ports[?(@.name=="dashboard")].nodePort}')
+    echo "Dashboard: http://$NODE_IP:$DASHBOARD_PORT"
+
+{{- else if contains "LoadBalancer" .Values.service.type }}
+
+  Access via LoadBalancer:
+
+    NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+    kubectl get svc {{ include "kubepilot.fullname" . }} -n {{ .Release.Namespace }} -w
+
+{{- else }}
+
+  Access via port-forward:
+
+    kubectl port-forward svc/{{ include "kubepilot.fullname" . }} {{ .Values.service.dashboardPort }}:{{ .Values.service.dashboardPort }} -n {{ .Release.Namespace }}
+    echo "Dashboard: http://localhost:{{ .Values.service.dashboardPort }}"
+
+{{- end }}
+
+  MCP Server port: {{ .Values.service.mcpPort }}
+
+{{- if .Values.metrics.enabled }}
+  Metrics endpoint: :{{ .Values.operator.metricsPort }}/metrics
+{{- end }}
+
+  Documentation: https://github.com/kubepilot/kubepilot

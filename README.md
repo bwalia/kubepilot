@@ -85,13 +85,187 @@ docker run --rm -p 8383:8383 -p 9090:9090 \
 	serve --dashboard-port=8383
 ```
 
-### Option C: Kubernetes deployment and Helm chart
+### Option C: Helm chart (recommended for Kubernetes)
 
-Helm chart files live in `charts/kubepilot/`.
+Helm chart files live in `charts/kubepilot/`. Requires Helm 3.10+.
+
+#### Quick install (ClusterIP + port-forward)
+
+The fastest way to get KubePilot running as a pod analysis tool:
 
 ```bash
-helm upgrade --install kubepilot charts/kubepilot -n kubepilot --create-namespace
+# Install into its own namespace
+helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace
+
+# Port-forward to access the dashboard locally
+kubectl port-forward svc/kubepilot -n kubepilot 8080:8080
+
+# Open http://localhost:8080
 ```
+
+#### Install with NodePort (direct node access)
+
+Expose the dashboard on a fixed node port — useful for bare-metal clusters, local Kind/Minikube setups, or when you don't have an ingress controller:
+
+```bash
+helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace \
+  --set service.type=NodePort \
+  --set service.nodePorts.dashboard=30080 \
+  --set service.nodePorts.mcp=30090
+
+# Access via any node IP:
+# Dashboard: http://<NODE_IP>:30080
+# MCP:       http://<NODE_IP>:30090
+```
+
+#### Install with Ingress (domain access)
+
+Expose KubePilot behind a domain name. Requires an Ingress controller (nginx, traefik, etc.) already running in the cluster:
+
+```bash
+helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set "ingress.hosts[0].host=kubepilot.example.com" \
+  --set "ingress.hosts[0].paths[0].path=/" \
+  --set "ingress.hosts[0].paths[0].pathType=Prefix"
+```
+
+With TLS (cert-manager):
+
+```bash
+helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set "ingress.annotations.cert-manager\.io/cluster-issuer=letsencrypt-prod" \
+  --set "ingress.hosts[0].host=kubepilot.example.com" \
+  --set "ingress.hosts[0].paths[0].path=/" \
+  --set "ingress.hosts[0].paths[0].pathType=Prefix" \
+  --set "ingress.tls[0].secretName=kubepilot-tls" \
+  --set "ingress.tls[0].hosts[0]=kubepilot.example.com"
+```
+
+#### Install with LoadBalancer
+
+For cloud providers (AWS, GCP, Azure) that provision external load balancers:
+
+```bash
+helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace \
+  --set service.type=LoadBalancer
+```
+
+#### Custom values file
+
+For production deployments, use a values override file:
+
+```bash
+helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace \
+  -f my-values.yaml
+```
+
+Example `my-values.yaml`:
+
+```yaml
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kubepilot/kubepilot
+  tag: "0.1.0"
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: kubepilot.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: kubepilot-tls
+      hosts:
+        - kubepilot.example.com
+
+kubepilot:
+  ollamaBaseURL: "http://ollama.ollama.svc:11434/v1"
+  ollamaModel: llama3
+  logLevel: info
+
+networkPolicy:
+  enabled: true
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+```
+
+#### Uninstall
+
+```bash
+helm uninstall kubepilot -n kubepilot
+kubectl delete namespace kubepilot
+```
+
+### Option D: Plain Kubernetes manifests (no Helm)
+
+If you prefer raw manifests without Helm, generate them with `helm template`:
+
+```bash
+helm template kubepilot charts/kubepilot \
+  -n kubepilot \
+  --set service.type=NodePort \
+  --set service.nodePorts.dashboard=30080 \
+  > kubepilot-manifests.yaml
+
+kubectl create namespace kubepilot
+kubectl apply -f kubepilot-manifests.yaml -n kubepilot
+```
+
+Or apply the CRDs and generated manifests separately:
+
+```bash
+kubectl apply -f manifests/crds/
+helm template kubepilot charts/kubepilot -n kubepilot | kubectl apply -n kubepilot -f -
+```
+
+### Helm Chart Reference
+
+| Parameter | Description | Default |
+|---|---|---|
+| `replicaCount` | Number of KubePilot replicas | `1` |
+| `image.repository` | Container image | `ghcr.io/kubepilot/kubepilot` |
+| `image.tag` | Image tag (defaults to chart appVersion) | `""` |
+| `service.type` | Service type: ClusterIP, NodePort, LoadBalancer | `ClusterIP` |
+| `service.dashboardPort` | Dashboard/API port | `8080` |
+| `service.mcpPort` | MCP server port | `9090` |
+| `service.nodePorts.dashboard` | NodePort for dashboard (when type=NodePort) | `""` |
+| `service.nodePorts.mcp` | NodePort for MCP (when type=NodePort) | `""` |
+| `ingress.enabled` | Enable Ingress resource | `false` |
+| `ingress.className` | Ingress class name | `nginx` |
+| `ingress.hosts` | Ingress host rules | `[{host: kubepilot.local}]` |
+| `ingress.tls` | Ingress TLS configuration | `[]` |
+| `kubepilot.ollamaBaseURL` | Ollama API endpoint | `http://localhost:11434/v1` |
+| `kubepilot.ollamaModel` | AI model name | `llama3` |
+| `kubepilot.logLevel` | Log level | `info` |
+| `networkPolicy.enabled` | Enable NetworkPolicy | `false` |
+| `metrics.enabled` | Enable metrics endpoint | `true` |
+| `metrics.serviceMonitor.enabled` | Enable Prometheus ServiceMonitor | `false` |
+| `podDisruptionBudget.enabled` | Enable PDB | `false` |
+| `serviceAccount.create` | Create ServiceAccount | `true` |
 
 ## Configuration
 
