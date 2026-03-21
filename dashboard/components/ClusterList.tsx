@@ -11,50 +11,55 @@ export function ClusterList({ nodes, loading }: Props) {
 
   return (
     <section>
-      <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-        <Server className="w-4 h-4 text-pilot-accent" />
-        Cluster Nodes ({nodes.length})
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border border-pilot-border rounded-lg overflow-hidden">
-          <thead className="bg-pilot-surface text-pilot-muted text-xs uppercase tracking-widest">
-            <tr>
-              <th className="text-left px-4 py-3">Node</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">CPU</th>
-              <th className="text-left px-4 py-3">Memory</th>
-              <th className="text-left px-4 py-3">Kubelet</th>
-              <th className="text-left px-4 py-3">Pressure</th>
-            </tr>
-          </thead>
-          <tbody>
-            {nodes.map((node) => (
-              <tr
-                key={node.Name}
-                className="border-t border-pilot-border hover:bg-pilot-surface/50 transition-colors"
-              >
-                <td className="px-4 py-3 font-mono text-xs text-white">{node.Name}</td>
-                <td className="px-4 py-3">
-                  {node.Ready ? (
-                    <span className="flex items-center gap-1 text-pilot-success text-xs">
-                      <CheckCircle className="w-3.5 h-3.5" /> Ready
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-pilot-danger text-xs">
-                      <AlertTriangle className="w-3.5 h-3.5" /> NotReady
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-xs text-pilot-muted">{node.CPUCapacity}</td>
-                <td className="px-4 py-3 text-xs text-pilot-muted">{node.MemoryCapacity}</td>
-                <td className="px-4 py-3 text-xs text-pilot-muted">{node.KubeletVersion}</td>
-                <td className="px-4 py-3">
-                  <PressureBadges node={node} />
-                </td>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <Server className="w-5 h-5 text-pilot-accent" />
+          Cluster Nodes
+        </h2>
+        <span className="text-sm text-pilot-muted font-medium">{nodes.length} total</span>
+      </div>
+      <div className="bg-pilot-surface border border-pilot-border rounded-xl overflow-hidden shadow-card">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-pilot-surface-2 text-pilot-muted text-xs uppercase tracking-wider">
+                <th className="text-left px-5 py-3.5 font-semibold">Node</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Status</th>
+                <th className="text-left px-5 py-3.5 font-semibold">CPU</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Memory</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Kubelet</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Pressure</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-pilot-border">
+              {nodes.map((node) => (
+                <tr
+                  key={node.Name}
+                  className="hover:bg-pilot-surface-2/50"
+                >
+                  <td className="px-5 py-3.5 font-mono text-sm text-white">{node.Name}</td>
+                  <td className="px-5 py-3.5">
+                    {node.Ready ? (
+                      <span className="inline-flex items-center gap-1.5 text-pilot-success text-sm font-medium">
+                        <CheckCircle className="w-4 h-4" /> Ready
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-pilot-danger text-sm font-medium">
+                        <AlertTriangle className="w-4 h-4" /> NotReady
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{node.CPUCapacity}</td>
+                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{node.MemoryCapacity}</td>
+                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary font-mono">{node.KubeletVersion}</td>
+                  <td className="px-5 py-3.5">
+                    <PressureBadges node={node} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
@@ -67,14 +72,14 @@ function PressureBadges({ node }: { node: NodeSummary }) {
     { label: "PID", active: node.PIDPressure },
   ].filter((b) => b.active);
 
-  if (badges.length === 0) return <span className="text-xs text-pilot-muted">—</span>;
+  if (badges.length === 0) return <span className="text-sm text-pilot-muted">None</span>;
 
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="flex gap-1.5 flex-wrap">
       {badges.map((b) => (
         <span
           key={b.label}
-          className="text-xs bg-pilot-warning text-black px-1.5 py-0.5 rounded font-bold"
+          className="text-xs bg-pilot-warning/20 text-pilot-warning px-2 py-0.5 rounded-md font-semibold border border-pilot-warning/30"
         >
           {b.label}
         </span>
@@ -85,9 +90,10 @@ function PressureBadges({ node }: { node: NodeSummary }) {
 
 function Skeleton() {
   return (
-    <div className="animate-pulse space-y-2">
+    <div className="space-y-3">
+      <div className="h-5 w-40 bg-pilot-surface rounded animate-pulse" />
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-10 bg-pilot-surface rounded" />
+        <div key={i} className="h-14 bg-pilot-surface rounded-xl animate-pulse" />
       ))}
     </div>
   );

@@ -3,401 +3,537 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KubePilot | AI-Powered Kubernetes Troubleshooting</title>
+    <title>KubePilot | AI-Powered Kubernetes Troubleshooting & Observability</title>
     <meta
       name="description"
-      content="KubePilot is an AI-assisted Kubernetes operations platform for topology visibility, cluster troubleshooting, and faster incident resolution."
+      content="KubePilot is an open-source, AI-assisted Kubernetes operations platform. Get topology visibility, automated root-cause analysis, and faster incident resolution — all from a single dashboard."
     />
+    <meta name="theme-color" content="#0a0f1c" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #050914;
-        --panel: #0a1329;
-        --panel-2: #0d1a33;
-        --line: #1a2b4f;
-        --text: #e8eefc;
-        --muted: #9db0d8;
+        --bg: #0a0f1c;
+        --surface: #111827;
+        --surface-2: #1f2937;
+        --surface-3: #283548;
+        --border: rgba(255,255,255,0.08);
+        --border-hover: rgba(255,255,255,0.16);
+        --text: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --muted: #94a3b8;
         --brand: #3b82f6;
-        --brand-2: #22c55e;
-        --warn: #f59e0b;
+        --brand-light: #60a5fa;
+        --brand-glow: rgba(59,130,246,0.15);
+        --green: #22c55e;
+        --green-bg: rgba(34,197,94,0.1);
+        --green-border: rgba(34,197,94,0.25);
+        --purple: #a78bfa;
+        --amber: #fbbf24;
+        --radius: 16px;
+        --radius-sm: 10px;
       }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
       body {
-        margin: 0;
-        padding: 0;
-        font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         color: var(--text);
-        background: radial-gradient(circle at 15% 0%, #0d2246 0%, var(--bg) 48%) fixed;
+        background: var(--bg);
+        line-height: 1.7;
+        overflow-x: hidden;
+        font-size: 18px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
+      a { color: inherit; text-decoration: none; }
+      img { max-width: 100%; height: auto; }
 
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
+      /* ── Layout ── */
+      .wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 28px; }
 
-      .wrap {
-        width: min(1180px, 92vw);
-        margin: 0 auto;
-      }
-
+      /* ── Nav ── */
       .nav {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        backdrop-filter: blur(8px);
-        background: rgba(5, 9, 20, 0.72);
-        border-bottom: 1px solid rgba(157, 176, 216, 0.16);
+        position: sticky; top: 0; z-index: 50;
+        background: rgba(10,15,28,0.88);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
       }
-
       .nav-inner {
-        min-height: 70px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+        display: flex; align-items: center; justify-content: space-between;
+        height: 72px; gap: 16px;
       }
-
-      .logo {
-        font-weight: 800;
-        letter-spacing: 0.4px;
-        font-size: 1.24rem;
+      .logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; white-space: nowrap; }
+      .logo span { color: var(--brand); }
+      .nav-links { display: flex; align-items: center; gap: 6px; }
+      .nav-links a {
+        font-size: 1rem; font-weight: 500; color: var(--muted);
+        padding: 8px 16px; border-radius: var(--radius-sm); transition: color 0.2s, background 0.2s;
       }
+      .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.06); }
 
-      .logo span {
-        color: var(--brand);
-      }
-
-      .actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
+      /* ── Buttons ── */
       .btn {
-        border: 1px solid var(--line);
-        color: var(--text);
-        background: linear-gradient(180deg, #10254a, #0b1a36);
-        padding: 10px 14px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: transform 0.16s ease, border-color 0.16s ease;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        font-size: 1rem; font-weight: 600; padding: 12px 24px; border-radius: var(--radius-sm);
+        border: 1px solid var(--border); color: var(--text);
+        background: var(--surface); transition: all 0.2s; cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn:hover { border-color: var(--border-hover); background: var(--surface-2); transform: translateY(-1px); }
+      .btn-primary {
+        background: var(--brand); border-color: var(--brand); color: #fff;
+        box-shadow: 0 4px 24px var(--brand-glow);
+      }
+      .btn-primary:hover { background: #2563eb; border-color: #2563eb; box-shadow: 0 6px 32px rgba(59,130,246,0.25); }
+      .btn-lg { padding: 16px 32px; font-size: 1.1rem; border-radius: 12px; }
+
+      /* ── Mobile menu ── */
+      .menu-toggle { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 8px; }
+      .menu-toggle svg { display: block; }
+
+      /* ── Hero ── */
+      .hero { padding: 100px 0 80px; text-align: center; }
+      .hero-bg {
+        position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+        width: 800px; height: 600px;
+        background: radial-gradient(ellipse at center, var(--brand-glow) 0%, transparent 70%);
+        pointer-events: none; z-index: -1;
+      }
+      .badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 0.875rem; font-weight: 600;
+        letter-spacing: 0.04em; text-transform: uppercase; color: var(--green);
+        background: var(--green-bg); border: 1px solid var(--green-border);
+        padding: 8px 18px; border-radius: 999px; margin-bottom: 28px;
+      }
+      .badge::before { content: ''; width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+      .hero h1 {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        line-height: 1.1; margin-bottom: 24px; font-weight: 900;
+        letter-spacing: -0.03em;
+      }
+      .hero h1 .gradient {
+        background: linear-gradient(135deg, var(--brand-light) 0%, var(--purple) 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .hero .subtitle {
+        color: var(--text-secondary); font-size: clamp(1.15rem, 2.5vw, 1.35rem);
+        max-width: 720px; margin: 0 auto 40px; line-height: 1.7;
+      }
+      .hero-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+      /* ── Trust bar ── */
+      .trust-bar {
+        padding: 32px 0 0;
+        text-align: center; color: var(--muted); font-size: 0.95rem;
+      }
+      .trust-bar strong { color: var(--text-secondary); font-weight: 600; }
+
+      /* ── Highlights ── */
+      .highlights {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+        padding: 56px 0;
+      }
+      .highlight {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 28px 24px; text-align: center;
+        transition: border-color 0.2s, transform 0.2s;
+      }
+      .highlight:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .highlight-icon {
+        font-size: 2.25rem; margin-bottom: 14px; display: block;
+        line-height: 1;
+      }
+      .highlight h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+      .highlight p { font-size: 1rem; color: var(--muted); line-height: 1.6; }
+
+      /* ── Section ── */
+      .section { padding: 80px 0; }
+      .section-header { text-align: center; margin-bottom: 48px; }
+      .section-header h2 {
+        font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 900;
+        margin-bottom: 12px; letter-spacing: -0.02em;
+      }
+      .section-header p { color: var(--text-secondary); font-size: 1.15rem; max-width: 600px; margin: 0 auto; }
+      .section-divider {
+        width: 60px; height: 4px; background: var(--brand);
+        border-radius: 2px; margin: 0 auto 20px;
       }
 
-      .btn:hover {
-        transform: translateY(-1px);
-        border-color: #3a5e9f;
+      /* ── Feature cards ── */
+      .features { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .feature {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 32px;
+        transition: border-color 0.2s, transform 0.2s;
+      }
+      .feature:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .feature-icon {
+        display: flex; align-items: center; justify-content: center;
+        width: 48px; height: 48px; border-radius: 12px;
+        background: var(--brand-glow); margin-bottom: 18px;
+        font-size: 1.5rem;
+      }
+      .feature h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; }
+      .feature p { font-size: 1.05rem; color: var(--muted); line-height: 1.7; }
+
+      /* ── Screenshots ── */
+      .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .screenshot {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); overflow: hidden;
+        transition: border-color 0.2s, transform 0.2s;
+      }
+      .screenshot:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .screenshot img { width: 100%; display: block; }
+      .screenshot figcaption {
+        padding: 16px 20px; font-size: 0.95rem; color: var(--muted); line-height: 1.6;
       }
 
-      .btn.primary {
-        background: linear-gradient(180deg, #3b82f6, #2563eb);
-        border-color: #4f8ef6;
-      }
-
-      .hero {
-        padding: 72px 0 46px;
-        display: grid;
-        grid-template-columns: 1.08fr 0.92fr;
-        gap: 24px;
-        align-items: center;
-      }
-
-      .eyebrow {
-        display: inline-block;
-        font-size: 0.8rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--brand-2);
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        background: rgba(34, 197, 94, 0.1);
-        padding: 5px 10px;
-        border-radius: 999px;
-        margin-bottom: 12px;
-      }
-
-      h1 {
-        margin: 0;
-        line-height: 1.1;
-        font-size: clamp(2rem, 5vw, 3.4rem);
-      }
-
-      .hero p {
-        color: var(--muted);
-        margin: 14px 0 24px;
-        font-size: 1.04rem;
-      }
-
-      .hero-card {
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 18px;
-        background: linear-gradient(180deg, rgba(17, 35, 68, 0.8), rgba(8, 18, 38, 0.9));
-      }
-
-      .hero-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-
-      .metric {
-        background: #091428;
-        border: 1px solid rgba(157, 176, 216, 0.22);
-        border-radius: 12px;
-        padding: 10px;
-      }
-
-      .metric b {
-        font-size: 1.18rem;
-      }
-
-      .metric small {
-        display: block;
-        margin-top: 4px;
-        color: var(--muted);
-      }
-
-      section {
-        padding: 42px 0;
-      }
-
-      h2 {
-        font-size: clamp(1.5rem, 3vw, 2.1rem);
-        margin: 0 0 10px;
-      }
-
-      .lead {
-        margin: 0 0 20px;
-        color: var(--muted);
-      }
-
-      .cards {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .card {
-        background: linear-gradient(180deg, var(--panel), var(--panel-2));
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 14px;
-      }
-
-      .card h3 {
-        margin: 0 0 8px;
-        font-size: 1.05rem;
-      }
-
-      .card p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.96rem;
-      }
-
-      .shot-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-      }
-
-      .shot {
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        overflow: hidden;
-        background: #091427;
-      }
-
-      .shot img {
-        width: 100%;
-        display: block;
-      }
-
-      .shot figcaption {
-        padding: 10px 12px;
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
-
-      .flow {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-      }
-
+      /* ── Steps ── */
+      .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
       .step {
-        border: 1px dashed #3860a7;
-        border-radius: 12px;
-        padding: 12px;
-        background: rgba(12, 25, 49, 0.7);
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 28px 22px; counter-increment: step; position: relative;
+        transition: border-color 0.2s, transform 0.2s;
       }
-
-      .step b {
-        color: var(--brand);
+      .step:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .step::before {
+        content: counter(step); display: flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; border-radius: 50%; font-size: 1rem; font-weight: 800;
+        background: var(--brand); color: #fff; margin-bottom: 14px;
       }
+      .step h4 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+      .step p { font-size: 1rem; color: var(--muted); line-height: 1.6; }
 
+      /* ── Install ── */
+      .install-block {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 32px; overflow-x: auto;
+      }
+      .install-block pre {
+        margin: 0; color: var(--text-secondary); font-size: 0.95rem;
+        line-height: 1.8; white-space: pre-wrap; word-break: break-all;
+      }
+      .install-block code {
+        font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+      }
+      .install-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+      .install-tab {
+        font-size: 0.95rem; font-weight: 600; padding: 10px 20px; border-radius: var(--radius-sm);
+        background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer;
+        transition: all 0.2s; font-family: inherit;
+      }
+      .install-tab:hover, .install-tab.active {
+        color: var(--text); background: var(--surface-2); border-color: var(--border-hover);
+      }
+      .install-content { display: none; }
+      .install-content.active { display: block; }
+
+      /* ── CTA Section ── */
+      .cta-section {
+        text-align: center; padding: 80px 0;
+      }
+      .cta-card {
+        background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+        border: 1px solid var(--border); border-radius: 24px;
+        padding: 64px 40px; position: relative; overflow: hidden;
+      }
+      .cta-card::before {
+        content: ''; position: absolute; top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        background: radial-gradient(circle at 50% 50%, var(--brand-glow) 0%, transparent 50%);
+        pointer-events: none;
+      }
+      .cta-card h2 {
+        font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 900;
+        margin-bottom: 16px; position: relative;
+      }
+      .cta-card p {
+        color: var(--text-secondary); font-size: 1.15rem;
+        max-width: 540px; margin: 0 auto 32px; position: relative;
+      }
+      .cta-card .hero-actions { position: relative; }
+
+      /* ── Footer ── */
       .footer {
-        border-top: 1px solid rgba(157, 176, 216, 0.18);
-        margin-top: 38px;
-        padding: 24px 0 34px;
-        color: var(--muted);
+        border-top: 1px solid var(--border); margin-top: 0; padding: 32px 0;
+        text-align: center; color: var(--muted); font-size: 0.95rem;
+        line-height: 2;
       }
+      .footer a { color: var(--brand-light); transition: color 0.2s; }
+      .footer a:hover { text-decoration: underline; color: var(--text); }
 
-      .tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.86rem;
-        border: 1px solid rgba(245, 158, 11, 0.34);
-        color: #ffd48a;
-        background: rgba(245, 158, 11, 0.1);
-        border-radius: 999px;
-        padding: 5px 10px;
-        margin-top: 12px;
+      /* ── Mobile responsive ── */
+      @media (max-width: 1024px) {
+        .highlights { grid-template-columns: repeat(2, 1fr); }
+        .steps { grid-template-columns: repeat(2, 1fr); }
       }
-
-      @media (max-width: 1000px) {
-        .hero {
-          grid-template-columns: 1fr;
+      @media (max-width: 768px) {
+        body { font-size: 17px; }
+        .wrap { padding: 0 20px; }
+        .menu-toggle { display: block; }
+        .nav-links {
+          display: none; position: absolute; top: 72px; left: 0; right: 0;
+          flex-direction: column; background: var(--bg); border-bottom: 1px solid var(--border);
+          padding: 16px 20px; gap: 4px;
         }
-        .cards,
-        .flow {
-          grid-template-columns: 1fr 1fr;
-        }
+        .nav-links.open { display: flex; }
+        .nav-links a { padding: 14px 16px; width: 100%; font-size: 1.1rem; }
+        .hero { padding: 64px 0 48px; }
+        .hero h1 { font-size: clamp(2rem, 8vw, 2.75rem); }
+        .highlights { grid-template-columns: 1fr 1fr; gap: 12px; }
+        .features { grid-template-columns: 1fr; }
+        .screenshots { grid-template-columns: 1fr; }
+        .steps { grid-template-columns: 1fr 1fr; gap: 12px; }
+        .section { padding: 56px 0; }
+        .cta-card { padding: 48px 24px; }
       }
-
-      @media (max-width: 700px) {
-        .cards,
-        .shot-grid,
-        .flow,
-        .hero-grid {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 480px) {
+        body { font-size: 16px; }
+        .highlights { grid-template-columns: 1fr; }
+        .steps { grid-template-columns: 1fr; }
+        .hero-actions { flex-direction: column; align-items: stretch; }
+        .hero-actions .btn { width: 100%; }
+        .hero { padding: 48px 0 40px; }
+        .feature { padding: 24px; }
+        .install-block { padding: 20px; }
       }
     </style>
   </head>
   <body>
+
+    <!-- Nav -->
     <header class="nav">
       <div class="wrap nav-inner">
         <div class="logo">Kube<span>Pilot</span></div>
-        <div class="actions">
-          <a class="btn" href="../../README.md">Read Docs</a>
-          <a class="btn" href="https://github.com/kubepilot/kubepilot">GitHub</a>
-          <a class="btn primary" href="https://github.com/kubepilot/kubepilot/issues/new">Request Demo</a>
-        </div>
+        <button class="menu-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <nav class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How It Works</a>
+          <a href="#screenshots">Screenshots</a>
+          <a href="#install">Install</a>
+          <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
+          <a href="https://github.com/bwalia/kubepilot" class="btn" style="margin-left:4px">GitHub</a>
+        </nav>
       </div>
     </header>
 
-    <main class="wrap">
-      <section class="hero">
-        <div>
-          <span class="eyebrow">AI for SRE and Platform Teams</span>
-          <h1>Troubleshoot Kubernetes faster with AI-guided diagnosis.</h1>
-          <p>
-            KubePilot combines cluster events, node pressure, pod diagnostics, and topology views into one workflow.
-            Engineers can inspect incidents and run AI analysis without jumping across multiple tools.
+    <main>
+      <!-- Hero -->
+      <section class="hero" style="position:relative;">
+        <div class="hero-bg"></div>
+        <div class="wrap">
+          <span class="badge">Open Source &middot; Built for SRE Teams</span>
+          <h1>Kubernetes Ops,<br><span class="gradient">Powered by AI</span></h1>
+          <p class="subtitle">
+            A single dashboard for cluster events, pod diagnostics, service topology,
+            and AI-driven root-cause analysis. Resolve incidents faster&mdash;without
+            jumping between tools.
           </p>
-          <div class="actions">
-            <a class="btn primary" href="https://github.com/kubepilot/kubepilot">Start with GitHub</a>
-            <a class="btn" href="../../README.md#quick-start">Install in minutes</a>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Get Started Free</a>
+            <a class="btn btn-lg" href="#install">Quick Install</a>
           </div>
-          <div class="tag">Built for CrashLoopBackOff, scheduling failures, mount issues, and noisy clusters</div>
         </div>
+      </section>
 
-        <aside class="hero-card">
-          <div class="hero-grid">
-            <div class="metric">
-              <b>1 view</b>
-              <small>for events + health + diagnostics</small>
+      <!-- Trust bar -->
+      <div class="trust-bar wrap">
+        <p><strong>Single binary.</strong> No external dependencies. Connects to any kubeconfig. Works with Ollama, Llama, Mistral, and more.</p>
+      </div>
+
+      <!-- Highlights -->
+      <div class="wrap">
+        <div class="highlights">
+          <div class="highlight">
+            <span class="highlight-icon">&#9881;&#65039;</span>
+            <h3>Unified Dashboard</h3>
+            <p>Events, health, and diagnostics consolidated in a single view</p>
+          </div>
+          <div class="highlight">
+            <span class="highlight-icon">&#129504;</span>
+            <h3>AI Root-Cause Analysis</h3>
+            <p>Automated triage with remediation suggestions from local LLMs</p>
+          </div>
+          <div class="highlight">
+            <span class="highlight-icon">&#128268;</span>
+            <h3>Service Topology</h3>
+            <p>Visual map from Ingress to Service to Workload to Pod</p>
+          </div>
+          <div class="highlight">
+            <span class="highlight-icon">&#9729;&#65039;</span>
+            <h3>Multi-Cluster Ready</h3>
+            <p>Switch between kubeconfigs and contexts from the UI</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <section id="features" class="section">
+        <div class="wrap">
+          <div class="section-header">
+            <div class="section-divider"></div>
+            <h2>Everything Your Team Needs</h2>
+            <p>A practical incident workflow that blends observability with AI-powered recommendations.</p>
+          </div>
+          <div class="features">
+            <article class="feature">
+              <div class="feature-icon">&#128200;</div>
+              <h3>Cluster Events Hub</h3>
+              <p>Filter and search Kubernetes events in real time, correlate with failing pods, and surface warning patterns before they escalate.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#128187;</div>
+              <h3>Node &amp; Resource Health</h3>
+              <p>Detect CPU pressure, memory hotspots, and capacity bottlenecks early with at-a-glance resource visibility across all nodes.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#128270;</div>
+              <h3>Pod Deep Inspection</h3>
+              <p>Status, conditions, events, restart history, and live logs in one drill-down panel. No more switching between kubectl commands.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#10024;</div>
+              <h3>AI-Powered Guidance</h3>
+              <p>Get probable root causes and safer remediation strategies generated by your local LLM. No data leaves your infrastructure.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#128274;</div>
+              <h3>Security-First Design</h3>
+              <p>Optional auth, read-only defaults, mutation controls, and CORS policies. Safe for production from day one.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#128640;</div>
+              <h3>MCP Agent Protocol</h3>
+              <p>Built-in MCP server for multi-cluster agent orchestration, remote AI coordination, and programmatic access.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section id="how-it-works" class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="wrap">
+          <div class="section-header">
+            <div class="section-divider"></div>
+            <h2>Resolve Incidents in Four Steps</h2>
+            <p>A clear workflow that reduces mean-time-to-resolution.</p>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <h4>Spot Issues</h4>
+              <p>Open Cluster Events to identify warnings, resource pressure, and failing pods at a glance.</p>
             </div>
-            <div class="metric">
-              <b>AI Analyze</b>
-              <small>for root cause and next actions</small>
+            <div class="step">
+              <h4>Inspect</h4>
+              <p>Drill into a problematic pod to view logs, event history, container state, and restart reasons.</p>
             </div>
-            <div class="metric">
-              <b>Topology Canvas</b>
-              <small>Ingress -> Service -> Workload -> Pod</small>
+            <div class="step">
+              <h4>Analyze</h4>
+              <p>Run AI Analyze to get a probable root cause and step-by-step remediation strategy.</p>
             </div>
-            <div class="metric">
-              <b>Multi-cluster</b>
-              <small>via kubeconfig switcher</small>
+            <div class="step">
+              <h4>Validate</h4>
+              <p>Check impact via the service topology map and cluster health overview before taking action.</p>
             </div>
           </div>
-        </aside>
-      </section>
-
-      <section>
-        <h2>What teams get from KubePilot</h2>
-        <p class="lead">A practical incident workflow that blends observability context with AI recommendations.</p>
-        <div class="cards">
-          <article class="card">
-            <h3>Cluster Events Hub</h3>
-            <p>Filter and search Kubernetes events, correlate with failing pods, and prioritize warning patterns.</p>
-          </article>
-          <article class="card">
-            <h3>Node and Resource Health</h3>
-            <p>Detect pressure signals and capacity hotspots early with CPU and memory utilization visibility.</p>
-          </article>
-          <article class="card">
-            <h3>Pod Deep Inspection</h3>
-            <p>Open pod diagnostics for status, conditions, events, and logs in one drill-down panel.</p>
-          </article>
-          <article class="card">
-            <h3>AI Root-Cause Guidance</h3>
-            <p>Use AI suggestions to triage faster and identify safer remediation actions during incidents.</p>
-          </article>
         </div>
       </section>
 
-      <section>
-        <h2>Product Screenshots</h2>
-        <p class="lead">These screenshots are sourced from the repository docs folder for GitHub-friendly documentation.</p>
-        <div class="shot-grid">
-          <figure class="shot">
-            <img src="../screenshots/dashboard-overview.svg" alt="KubePilot dashboard overview with cluster cards and tabs" />
-            <figcaption>Overview tab: cluster KPIs, node readiness, deployment health, and navigation to RCA, topology, jobs, and events.</figcaption>
-          </figure>
-          <figure class="shot">
-            <img src="../screenshots/cluster-events-ai.svg" alt="Cluster Events and troubleshooting with AI Analyze actions" />
-            <figcaption>Cluster Events tab: health summary, node pressure, problematic pods, and AI Analyze actions for deep troubleshooting.</figcaption>
-          </figure>
+      <!-- Screenshots -->
+      <section id="screenshots" class="section">
+        <div class="wrap">
+          <div class="section-header">
+            <div class="section-divider"></div>
+            <h2>See It in Action</h2>
+            <p>The KubePilot dashboard gives you everything in one place.</p>
+          </div>
+          <div class="screenshots">
+            <figure class="screenshot">
+              <img src="../screenshots/dashboard-overview.svg" alt="KubePilot dashboard overview showing cluster KPIs, node readiness, and deployment health" loading="lazy" />
+              <figcaption>Overview &mdash; cluster KPIs, node readiness, deployment health, and quick navigation tabs.</figcaption>
+            </figure>
+            <figure class="screenshot">
+              <img src="../screenshots/cluster-events-ai.svg" alt="Cluster events and AI troubleshooting panel" loading="lazy" />
+              <figcaption>Cluster Events &mdash; health summary, node pressure, problematic pods, and one-click AI analysis.</figcaption>
+            </figure>
+          </div>
         </div>
       </section>
 
-      <section>
-        <h2>How incident triage works</h2>
-        <p class="lead">A simple 4-step loop to reduce mean-time-to-resolution.</p>
-        <div class="flow">
-          <div class="step"><b>1.</b> Open Cluster Events and identify warnings, pressure, and failing pods.</div>
-          <div class="step"><b>2.</b> Inspect a problematic pod for logs, event history, and container state.</div>
-          <div class="step"><b>3.</b> Run AI Analyze to infer probable root cause and remediation strategy.</div>
-          <div class="step"><b>4.</b> Validate impact using topology and cluster health before/after action.</div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Install and run</h2>
-        <p class="lead">Use source build for now and run locally on your current kubeconfig context.</p>
-        <div class="card">
-<pre><code>git clone https://github.com/kubepilot/kubepilot.git
+      <!-- Install -->
+      <section id="install" class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="wrap">
+          <div class="section-header">
+            <div class="section-divider"></div>
+            <h2>Up and Running in Minutes</h2>
+            <p>Choose the installation method that fits your workflow.</p>
+          </div>
+          <div class="install-block">
+            <div class="install-tabs">
+              <button class="install-tab active" onclick="switchTab('source')">Build from Source</button>
+              <button class="install-tab" onclick="switchTab('helm')">Helm Chart</button>
+              <button class="install-tab" onclick="switchTab('docker')">Docker</button>
+            </div>
+            <div id="tab-source" class="install-content active">
+<pre><code>git clone https://github.com/bwalia/kubepilot.git
 cd kubepilot
-make dashboard-install
-make dashboard
-make build
-KUBEPILOT_KUBECONFIG="$HOME/.kube/config" ./dist/kubepilot serve --dashboard-port=8383
-</code></pre>
+make dashboard-install &amp;&amp; make dashboard &amp;&amp; make build
+KUBEPILOT_KUBECONFIG="$HOME/.kube/config" ./dist/kubepilot serve --dashboard-port=8383</code></pre>
+            </div>
+            <div id="tab-helm" class="install-content">
+<pre><code>helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace
+
+# Access via port-forward
+kubectl port-forward svc/kubepilot -n kubepilot 8080:8080</code></pre>
+            </div>
+            <div id="tab-docker" class="install-content">
+<pre><code>docker run --rm -p 8383:8383 -p 9090:9090 \
+  -v "$HOME/.kube:/root/.kube:ro" \
+  ghcr.io/kubepilot/kubepilot:latest \
+  serve --dashboard-port=8383</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section class="cta-section">
+        <div class="wrap">
+          <div class="cta-card">
+            <h2>Ready to Simplify Kubernetes Ops?</h2>
+            <p>KubePilot is free, open source, and built for teams that want faster incident resolution without vendor lock-in.</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Star on GitHub</a>
+              <a class="btn btn-lg" href="https://github.com/bwalia/kubepilot/issues/new">Request a Feature</a>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="footer">
       <div class="wrap">
-        KubePilot landing page | <a href="https://github.com/kubepilot/kubepilot">GitHub</a> | <a href="../../README.md">Documentation</a>
+        KubePilot &copy; 2025&ndash;2026 &middot;
+        <a href="https://github.com/bwalia/kubepilot">GitHub</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot#readme">Documentation</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot/issues">Issues</a>
       </div>
     </footer>
+
+    <script>
+      function switchTab(name) {
+        document.querySelectorAll('.install-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.install-content').forEach(function(c) { c.classList.remove('active'); });
+        document.getElementById('tab-' + name).classList.add('active');
+        document.querySelector('[onclick="switchTab(\'' + name + '\')"]').classList.add('active');
+      }
+    </script>
   </body>
 </html>

@@ -2,25 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 html, body {
-  background-color: #0a0e1a;
-  color: #fff;
+  background-color: #0b1120;
+  color: #e2e8f0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility: monospace identifiers */
+.font-mono {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #111827;
+  background: #131c2e;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
-  border-radius: 3px;
+  background: #1e2d4a;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #2a3f66;
+}
+
+/* Smooth transitions on interactive elements */
+button, a, input, select, textarea {
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Focus ring for accessibility */
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+/* Table row hover */
+tbody tr {
+  transition: background-color 0.1s ease;
+}
+
+/* Better select appearance on dark backgrounds */
+select {
+  appearance: auto;
+  background-color: #131c2e;
+}
+select option {
+  background-color: #131c2e;
+  color: #e2e8f0;
 }
