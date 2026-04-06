@@ -13,10 +13,10 @@ keywords:
   - troubleshooting
   - pod-analysis
   - incident-response
-home: https://github.com/kubepilot/kubepilot
+home: https://github.com/bwalia/kubepilot
 sources:
-  - https://github.com/kubepilot/kubepilot
+  - https://github.com/bwalia/kubepilot
 maintainers:
   - name: KubePilot Authors
-    url: https://github.com/kubepilot
-icon: https://raw.githubusercontent.com/kubepilot/kubepilot/main/docs/logo.png
+    url: https://github.com/bwalia
+icon: https://raw.githubusercontent.com/bwalia/kubepilot/master/docs/logo.png

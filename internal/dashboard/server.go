@@ -51,6 +51,7 @@ type Server struct {
 
 	k8sClient            *k8s.Client
 	activeKubeconfigPath string
+	activeContext        string
 	knownKubeconfigPaths map[string]struct{}
 	stateFilePath        string
 	uploadDir            string
@@ -82,6 +83,9 @@ func NewServer(cfg Config, log *zap.Logger) *Server {
 			if srv.activeKubeconfigPath == "" && st.ActivePath != "" {
 				srv.activeKubeconfigPath = st.ActivePath
 			}
+			if srv.activeContext == "" && st.ActiveContext != "" {
+				srv.activeContext = st.ActiveContext
+			}
 		} else {
 			log.Warn("Failed to load persisted kubeconfig state", zap.Error(loadErr))
 		}
@@ -106,16 +110,19 @@ func (s *Server) Start(ctx context.Context) error {
 
 	// Cluster overview
 	api.HandleFunc("/clusters/kubeconfigs", s.handleListKubeconfigs).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/contexts", s.handleListContexts).Methods(http.MethodGet)
 	if s.cfg.EnableKubeconfigMutationEndpoints {
 		api.HandleFunc("/clusters/kubeconfigs", s.handleAddKubeconfig).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/kubeconfigs/upload", s.handleUploadKubeconfig).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/kubeconfigs/base64", s.handleUploadKubeconfigBase64).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/switch", s.handleSwitchCluster).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/switch-context", s.handleSwitchContext).Methods(http.MethodPost)
 	} else {
 		api.HandleFunc("/clusters/kubeconfigs", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/kubeconfigs/upload", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/kubeconfigs/base64", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/switch", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/switch-context", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 	}
 
 	api.HandleFunc("/clusters/pods", s.handleListPods).Methods(http.MethodGet)
@@ -128,6 +135,7 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/troubleshooting/summary", s.handleClusterTroubleshooting).Methods(http.MethodGet)
 
 	// AI
+	api.HandleFunc("/ai/health", s.handleAIHealth).Methods(http.MethodGet)
 	api.HandleFunc("/ai/interpret", s.handleAIInterpret).Methods(http.MethodPost)
 	api.HandleFunc("/ai/troubleshoot/{namespace}/{pod}", s.handleTroubleshoot).Methods(http.MethodGet)
 	if s.cfg.EnableActionMutationEndpoints {
@@ -259,6 +267,11 @@ func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
 // ─────────────────────────────────────────
 // AI handlers
 // ─────────────────────────────────────────
+
+func (s *Server) handleAIHealth(w http.ResponseWriter, r *http.Request) {
+	status := s.cfg.AIEngine.CheckHealth(r.Context())
+	writeJSON(w, status)
+}
 
 func (s *Server) handleAIInterpret(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -603,16 +616,104 @@ func (s *Server) handleRemediate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleListKubeconfigs(w http.ResponseWriter, _ *http.Request) {
 	s.mu.RLock()
 	active := s.activeKubeconfigPath
+	activeCtx := s.activeContext
 	paths := make([]string, 0, len(s.knownKubeconfigPaths))
 	for p := range s.knownKubeconfigPaths {
 		paths = append(paths, p)
 	}
 	s.mu.RUnlock()
 	sort.Strings(paths)
+
+	resp := map[string]any{
+		"active_path":    active,
+		"active_context": activeCtx,
+		"paths":          paths,
+	}
+
+	// Include contexts for the active kubeconfig.
+	if active != "" {
+		if contexts, current, err := k8s.ListContexts(active); err == nil {
+			resp["contexts"] = contexts
+			if activeCtx == "" {
+				resp["active_context"] = current
+			}
+		}
+	}
+
+	writeJSON(w, resp)
+}
+
+func (s *Server) handleListContexts(w http.ResponseWriter, _ *http.Request) {
+	s.mu.RLock()
+	active := s.activeKubeconfigPath
+	activeCtx := s.activeContext
+	s.mu.RUnlock()
+
+	if active == "" {
+		writeJSON(w, map[string]any{
+			"active_context": "",
+			"contexts":       []any{},
+		})
+		return
+	}
+
+	contexts, current, err := k8s.ListContexts(active)
+	if err != nil {
+		httpError(w, fmt.Errorf("listing contexts: %w", err), http.StatusInternalServerError)
+		return
+	}
+	if activeCtx == "" {
+		activeCtx = current
+	}
 	writeJSON(w, map[string]any{
-		"active_path": active,
-		"paths":       paths,
+		"active_context": activeCtx,
+		"contexts":       contexts,
 	})
+}
+
+func (s *Server) handleSwitchContext(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Context string `json:"context"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+	if req.Context == "" {
+		httpError(w, fmt.Errorf("context is required"), http.StatusBadRequest)
+		return
+	}
+
+	s.mu.RLock()
+	kubeconfigPath := s.activeKubeconfigPath
+	s.mu.RUnlock()
+
+	if kubeconfigPath == "" {
+		httpError(w, fmt.Errorf("no active kubeconfig to switch context on"), http.StatusBadRequest)
+		return
+	}
+
+	client, err := k8s.NewClientWithContext(kubeconfigPath, req.Context)
+	if err != nil {
+		httpError(w, fmt.Errorf("connecting with context %q: %w", req.Context, err), http.StatusBadRequest)
+		return
+	}
+
+	s.mu.Lock()
+	s.k8sClient = client
+	s.guard = security.NewGuard(client.Core, s.log)
+	s.activeContext = req.Context
+	if s.cfg.AIEngine != nil {
+		s.cfg.AIEngine.SetK8sClient(client)
+	}
+	if s.cfg.Scheduler != nil {
+		s.cfg.Scheduler.SetK8sClient(client)
+	}
+	s.persistKubeconfigStateLocked()
+	s.mu.Unlock()
+
+	s.log.Info("Switched Kubernetes context", zap.String("context", req.Context), zap.String("kubeconfig", kubeconfigPath))
+	s.handleListKubeconfigs(w, r)
 }
 
 func (s *Server) handleAddKubeconfig(w http.ResponseWriter, r *http.Request) {
@@ -805,6 +906,7 @@ func (s *Server) switchCluster(rawPath string) error {
 	s.k8sClient = client
 	s.guard = security.NewGuard(client.Core, s.log)
 	s.activeKubeconfigPath = path
+	s.activeContext = "" // reset to current-context in the new kubeconfig
 	s.knownKubeconfigPaths[path] = struct{}{}
 	if s.cfg.AIEngine != nil {
 		s.cfg.AIEngine.SetK8sClient(client)
@@ -901,8 +1003,9 @@ func (s *Server) persistKubeconfigStateLocked() {
 		paths = append(paths, p)
 	}
 	st := &kubeconfigState{
-		ActivePath: s.activeKubeconfigPath,
-		Paths:      paths,
+		ActivePath:    s.activeKubeconfigPath,
+		ActiveContext: s.activeContext,
+		Paths:         paths,
 	}
 	if err := saveKubeconfigState(s.stateFilePath, st); err != nil {
 		s.log.Warn("Failed to persist kubeconfig state", zap.Error(err))

@@ -28,13 +28,24 @@ type Client struct {
 // If kubeconfigPath is empty it falls back to in-cluster configuration,
 // which is the expected path when running inside a Kubernetes pod.
 func NewClient(kubeconfigPath string) (*Client, error) {
+	return NewClientWithContext(kubeconfigPath, "")
+}
+
+// NewClientWithContext builds a Client from a kubeconfig path using the
+// specified context. If contextName is empty the current-context is used.
+func NewClientWithContext(kubeconfigPath, contextName string) (*Client, error) {
 	var (
 		cfg *rest.Config
 		err error
 	)
 
 	if kubeconfigPath != "" {
-		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
+		overrides := &clientcmd.ConfigOverrides{}
+		if contextName != "" {
+			overrides.CurrentContext = contextName
+		}
+		cfg, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	} else {
 		cfg, err = rest.InClusterConfig()
 	}
@@ -68,4 +79,34 @@ func NewClient(kubeconfigPath string) (*Client, error) {
 		Metrics:    metricsClient,
 		RestConfig: cfg,
 	}, nil
+}
+
+// ContextInfo describes a single context inside a kubeconfig file.
+type ContextInfo struct {
+	Name    string `json:"name"`
+	Cluster string `json:"cluster"`
+	User    string `json:"user"`
+}
+
+// ListContexts returns the contexts available in the given kubeconfig file
+// along with the current-context name.
+func ListContexts(kubeconfigPath string) (contexts []ContextInfo, currentContext string, err error) {
+	if kubeconfigPath == "" {
+		return nil, "", fmt.Errorf("kubeconfig path is required to list contexts")
+	}
+
+	rawCfg, err := clientcmd.LoadFromFile(kubeconfigPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("loading kubeconfig: %w", err)
+	}
+
+	currentContext = rawCfg.CurrentContext
+	for name, ctx := range rawCfg.Contexts {
+		contexts = append(contexts, ContextInfo{
+			Name:    name,
+			Cluster: ctx.Cluster,
+			User:    ctx.AuthInfo,
+		})
+	}
+	return contexts, currentContext, nil
 }

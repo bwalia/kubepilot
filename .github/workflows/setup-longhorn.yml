@@ -1,0 +1,80 @@
+name: Setup Longhorn + Nexus
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'scripts/setup-longhorn.sh'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      dry_run:
+        description: 'Dry run (no changes)'
+        required: false
+        default: true
+        type: boolean
+      skip_longhorn:
+        description: 'Skip Longhorn install'
+        required: false
+        default: false
+        type: boolean
+      skip_nexus:
+        description: 'Skip Nexus install'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  setup:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    env:
+      KUBECONFIG: /tmp/k3s-kubeconfig.yaml
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Write kubeconfig
+        run: |
+          echo "${{ secrets.K3S_KUBECONFIG }}" | base64 -d > "$KUBECONFIG"
+          chmod 600 "$KUBECONFIG"
+
+      - name: Verify cluster connectivity
+        run: kubectl --kubeconfig="$KUBECONFIG" cluster-info
+
+      - name: Run setup script
+        run: |
+          chmod +x scripts/setup-longhorn.sh
+
+          ARGS="--kubeconfig $KUBECONFIG"
+
+          # Manual trigger with inputs
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              ARGS="$ARGS --dry-run"
+            fi
+            if [[ "${{ inputs.skip_longhorn }}" == "true" ]]; then
+              ARGS="$ARGS --skip-longhorn"
+            fi
+            if [[ "${{ inputs.skip_nexus }}" == "true" ]]; then
+              ARGS="$ARGS --skip-nexus"
+            fi
+          else
+            # Auto-trigger on push: always dry-run first
+            ARGS="$ARGS --dry-run"
+          fi
+
+          ./scripts/setup-longhorn.sh $ARGS
+
+      - name: Cleanup kubeconfig
+        if: always()
+        run: rm -f "$KUBECONFIG"

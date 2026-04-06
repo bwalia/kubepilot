@@ -181,9 +181,17 @@ export interface PodDiagnosticsResponse {
   logs: string;
 }
 
+export interface ContextInfo {
+  name: string;
+  cluster: string;
+  user: string;
+}
+
 export interface KubeconfigState {
   active_path: string;
+  active_context: string;
   paths: string[];
+  contexts?: ContextInfo[];
 }
 
 export type ActionType =
@@ -314,6 +322,9 @@ export const addKubeconfigPath = (
 export const switchCluster = (path: string): Promise<KubeconfigState> =>
   http.post("/clusters/switch", { path }).then((r) => r.data);
 
+export const switchContext = (context: string): Promise<KubeconfigState> =>
+  http.post("/clusters/switch-context", { context }).then((r) => r.data);
+
 export const uploadKubeconfig = async (
   file: File
 ): Promise<KubeconfigState> => {
@@ -339,6 +350,17 @@ export const uploadKubeconfigBase64 = (
 // ─────────────────────────────────────────
 // AI API
 // ─────────────────────────────────────────
+
+export interface AIHealthStatus {
+  healthy: boolean;
+  model: string;
+  base_url: string;
+  latency_ms: number;
+  error?: string;
+}
+
+export const getAIHealth = (): Promise<AIHealthStatus> =>
+  http.get("/ai/health").then((r) => r.data);
 
 export const interpretCommand = (
   command: string

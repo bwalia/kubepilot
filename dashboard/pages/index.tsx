@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound } from "lucide-react";
+import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, Brain } from "lucide-react";
 import {
   listCrashingPods,
   listNodes,
@@ -12,7 +12,9 @@ import {
   listAnomalies,
   listKubeconfigs,
   interpretCommand,
+  getAIHealth,
   type SuggestedAction,
+  type AIHealthStatus,
 } from "@/lib/api";
 import { ClusterList } from "@/components/ClusterList";
 import { PodTable } from "@/components/PodTable";
@@ -70,6 +72,12 @@ export default function DashboardHome() {
     queryKey: ["kubeconfigs"],
     queryFn: listKubeconfigs,
     refetchInterval: 15_000,
+  });
+
+  const { data: aiHealth } = useQuery({
+    queryKey: ["ai-health"],
+    queryFn: getAIHealth,
+    refetchInterval: 30_000,
   });
 
   const handleAICommand = async () => {
@@ -132,6 +140,23 @@ export default function DashboardHome() {
             >
               {activeKubeconfigBasename}
             </span>
+            <div
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                aiHealth?.healthy
+                  ? "text-pilot-success bg-emerald-500/10"
+                  : "text-pilot-danger bg-red-500/10"
+              }`}
+              title={
+                aiHealth
+                  ? aiHealth.healthy
+                    ? `AI Model: ${aiHealth.model} (${aiHealth.latency_ms}ms)`
+                    : `AI Error: ${aiHealth.error || "unreachable"}`
+                  : "Checking AI..."
+              }
+            >
+              <Brain className="w-3.5 h-3.5" />
+              {aiHealth ? (aiHealth.healthy ? `AI: ${aiHealth.model}` : "AI: Offline") : "AI: ..."}
+            </div>
             <div className="flex items-center gap-1.5 text-xs font-medium text-pilot-success bg-emerald-500/10 px-2.5 py-1 rounded-full">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pilot-success opacity-75" />

@@ -10,8 +10,9 @@ import (
 )
 
 type kubeconfigState struct {
-	ActivePath string   `json:"active_path"`
-	Paths      []string `json:"paths"`
+	ActivePath    string   `json:"active_path"`
+	ActiveContext string   `json:"active_context,omitempty"`
+	Paths         []string `json:"paths"`
 }
 
 func defaultStatePaths() (stateFile string, uploadDir string, err error) {

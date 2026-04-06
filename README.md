@@ -39,7 +39,7 @@ You can replace these SVG assets with PNG/JPG captures at any time.
 ### 1) Clone and install dashboard dependencies
 
 ```bash
-git clone https://github.com/kubepilot/kubepilot.git
+git clone https://github.com/bwalia/kubepilot.git
 cd kubepilot
 make dashboard-install
 ```
@@ -89,11 +89,23 @@ docker run --rm -p 8383:8383 -p 9090:9090 \
 
 Helm chart files live in `charts/kubepilot/`. Requires Helm 3.10+.
 
+#### Add the Helm repository
+
+```bash
+helm repo add kubepilot https://bwalia.github.io/kubepilot
+helm repo update
+```
+
 #### Quick install (ClusterIP + port-forward)
 
 The fastest way to get KubePilot running as a pod analysis tool:
 
 ```bash
+# Install from the published repo
+helm upgrade --install kubepilot kubepilot/kubepilot \
+  -n kubepilot --create-namespace
+
+# Or install from local source
 # Install into its own namespace
 helm upgrade --install kubepilot charts/kubepilot \
   -n kubepilot --create-namespace

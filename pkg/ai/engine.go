@@ -9,12 +9,22 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 )
+
+// AIHealthStatus reports the health of the AI/Ollama backend.
+type AIHealthStatus struct {
+	Healthy   bool   `json:"healthy"`
+	Model     string `json:"model"`
+	BaseURL   string `json:"base_url"`
+	LatencyMs int64  `json:"latency_ms"`
+	Error     string `json:"error,omitempty"`
+}
 
 const (
 	// DefaultOllamaBaseURL is the default Ollama API endpoint.
@@ -118,6 +128,33 @@ func NewEngine(cfg Config, k8sClient *k8s.Client, log *zap.Logger) *Engine {
 	}
 	e.rca = NewRCAEngine(e, k8sClient, log)
 	return e
+}
+
+// CheckHealth tests the Ollama API connection by listing models.
+// Returns health status including latency and any errors.
+func (e *Engine) CheckHealth(ctx context.Context) AIHealthStatus {
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	status := AIHealthStatus{
+		Model:   e.cfg.Model,
+		BaseURL: e.cfg.OllamaBaseURL,
+	}
+	if status.BaseURL == "" {
+		status.BaseURL = DefaultOllamaBaseURL
+	}
+
+	_, err := e.client.ListModels(ctx)
+	status.LatencyMs = time.Since(start).Milliseconds()
+	if err != nil {
+		status.Healthy = false
+		status.Error = err.Error()
+		e.log.Warn("AI health check failed", zap.Error(err))
+	} else {
+		status.Healthy = true
+	}
+	return status
 }
 
 // Interpret takes a natural language command, builds cluster context,
