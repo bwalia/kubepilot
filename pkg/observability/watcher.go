@@ -26,6 +26,10 @@ type ClusterWatcher struct {
 	mu             sync.Mutex
 	seenAnomalies  map[string]time.Time
 	dedupeWindow   time.Duration
+
+	// rcaSem limits concurrent RCA goroutines to avoid starving interactive
+	// AI endpoints (Ask AI, troubleshoot) when Ollama processes requests sequentially.
+	rcaSem         chan struct{}
 }
 
 // WatcherConfig holds configuration for the ClusterWatcher.
@@ -61,6 +65,7 @@ func NewClusterWatcher(k8sClient *k8s.Client, rcaEngine *ai.RCAEngine, store *RC
 		log:           log,
 		seenAnomalies: make(map[string]time.Time),
 		dedupeWindow:  dedupeWindow,
+		rcaSem:        make(chan struct{}, 2), // max 2 concurrent RCA analyses
 	}
 }
 
@@ -135,7 +140,16 @@ func (w *ClusterWatcher) poll(ctx context.Context) {
 }
 
 // triggerRCA runs an RCA analysis for the anomaly's target resource.
+// Uses a semaphore to limit concurrency so interactive AI requests aren't starved.
 func (w *ClusterWatcher) triggerRCA(ctx context.Context, anomaly *Anomaly) {
+	// Acquire semaphore slot — blocks if max concurrent RCAs are running.
+	select {
+	case w.rcaSem <- struct{}{}:
+		defer func() { <-w.rcaSem }()
+	case <-ctx.Done():
+		return
+	}
+
 	w.log.Info("Triggering RCA for anomaly",
 		zap.String("anomaly_id", anomaly.ID),
 		zap.String("resource", anomaly.Resource.Name),
