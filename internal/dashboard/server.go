@@ -25,6 +25,7 @@ import (
 	"github.com/kubepilot/kubepilot/pkg/jobs"
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/observability"
+	"github.com/kubepilot/kubepilot/pkg/runbooks"
 	"github.com/kubepilot/kubepilot/pkg/security"
 )
 
@@ -35,6 +36,7 @@ type Config struct {
 	Scheduler                         *jobs.Scheduler
 	K8sClient                         *k8s.Client
 	RCAStore                          *observability.RCAStore
+	RunbookEngine                     *runbooks.Engine
 	KubeconfigPath                    string
 	Auth                              AuthConfig
 	EnableKubeconfigMutationEndpoints bool
@@ -155,6 +157,14 @@ func (s *Server) Start(ctx context.Context) error {
 		api.HandleFunc("/remediate", s.handleMutationDisabled("action execution endpoints are disabled")).Methods(http.MethodPost)
 	}
 
+	// Runbooks
+	api.HandleFunc("/runbooks", s.handleListRunbooks).Methods(http.MethodGet)
+	if s.cfg.EnableActionMutationEndpoints {
+		api.HandleFunc("/runbooks/execute", s.handleExecuteRunbookStep).Methods(http.MethodPost)
+	} else {
+		api.HandleFunc("/runbooks/execute", s.handleMutationDisabled("action execution endpoints are disabled")).Methods(http.MethodPost)
+	}
+
 	// Jobs (Jira-style job management)
 	api.HandleFunc("/jobs", s.handleListJobs).Methods(http.MethodGet)
 	api.HandleFunc("/jobs", s.handleSubmitJob).Methods(http.MethodPost)
@@ -271,6 +281,51 @@ func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAIHealth(w http.ResponseWriter, r *http.Request) {
 	status := s.cfg.AIEngine.CheckHealth(r.Context())
 	writeJSON(w, status)
+}
+
+// ─────────────────────────────────────────
+// Runbook handlers
+// ─────────────────────────────────────────
+
+func (s *Server) handleListRunbooks(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.RunbookEngine == nil {
+		writeJSON(w, []runbooks.Runbook{})
+		return
+	}
+	writeJSON(w, s.cfg.RunbookEngine.List())
+}
+
+func (s *Server) handleExecuteRunbookStep(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.RunbookEngine == nil {
+		httpError(w, fmt.Errorf("runbook engine not available"), http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		RunbookID string            `json:"runbook_id"`
+		Step      int               `json:"step"`
+		Params    map[string]string `json:"params,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+	if req.RunbookID == "" {
+		httpError(w, fmt.Errorf("runbook_id is required"), http.StatusBadRequest)
+		return
+	}
+
+	// Ensure the runbook engine has the latest k8s client in case of context switch.
+	s.mu.RLock()
+	k8sClient := s.k8sClient
+	s.mu.RUnlock()
+	s.cfg.RunbookEngine.SetK8sClient(k8sClient)
+
+	result := s.cfg.RunbookEngine.Execute(r.Context(), req.RunbookID, req.Step, req.Params)
+	writeJSON(w, map[string]any{
+		"runbook_id": req.RunbookID,
+		"step":       req.Step,
+		"result":     result,
+	})
 }
 
 func (s *Server) handleAIInterpret(w http.ResponseWriter, r *http.Request) {

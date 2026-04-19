@@ -17,6 +17,7 @@ import (
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/mcp/server"
 	"github.com/kubepilot/kubepilot/pkg/observability"
+	"github.com/kubepilot/kubepilot/pkg/runbooks"
 )
 
 // newServeCmd returns the 'serve' subcommand which starts the full
@@ -93,6 +94,9 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{}, log)
 	go watcher.Start(ctx)
 
+	// Build runbook execution engine.
+	runbookEngine := runbooks.NewEngine(k8sClient, aiEngine, log)
+
 	// Start MCP server.
 	mcpServer := server.New(server.Config{
 		Port:      viper.GetInt("mcp_port"),
@@ -126,6 +130,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		Scheduler:      scheduler,
 		K8sClient:      k8sClient,
 		RCAStore:       rcaStore,
+		RunbookEngine:  runbookEngine,
 		KubeconfigPath: viper.GetString("kubeconfig"),
 		Auth: dashboard.AuthConfig{
 			Enabled:  authEnabled,

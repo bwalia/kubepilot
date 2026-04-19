@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, Brain } from "lucide-react";
+import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, Brain, BookOpen } from "lucide-react";
 import {
   listCrashingPods,
   listNodes,
@@ -23,6 +23,7 @@ import { CRCodeApproval } from "@/components/CRCodeApproval";
 import { CRCodeManager } from "@/components/CRCodeManager";
 import { JobScheduler } from "@/components/JobScheduler";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
+import { RunbooksPanel } from "@/components/RunbooksPanel";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { ClusterEventsTroubleshooting } from "@/components/ClusterEventsTroubleshooting";
 import RCAPage from "@/pages/rca";
@@ -31,6 +32,7 @@ import TopologyPage from "@/pages/topology";
 const TABS = [
   { key: "overview" as const, label: "Overview", icon: Activity },
   { key: "rca" as const, label: "RCA", icon: FileSearch },
+  { key: "runbooks" as const, label: "Runbooks", icon: BookOpen },
   { key: "topology" as const, label: "Topology", icon: Network },
   { key: "jobs" as const, label: "Jobs", icon: CalendarClock },
   { key: "events" as const, label: "Cluster Events", icon: FileWarning },
@@ -302,6 +304,7 @@ export default function DashboardHome() {
           </>
         )}
         {activeTab === "rca" && <RCAPage />}
+        {activeTab === "runbooks" && <RunbooksPanel />}
         {activeTab === "topology" && <TopologyPage />}
         {activeTab === "jobs" && <JobScheduler />}
         {activeTab === "events" && <ClusterEventsTroubleshooting />}

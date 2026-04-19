@@ -607,6 +607,41 @@ export const getTopology = (namespace: string): Promise<ServiceTopology> =>
       .get("/clusters/service-graph", { params: { namespace } })
       .then((r) => r.data);
 
+// ─────────────────────────────────────────
+// Runbooks API
+// ─────────────────────────────────────────
+
+export interface Runbook {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  steps: string[];
+  actions: string[];
+  risk: string;
+}
+
+export interface RunbookStepResult {
+  status: "ok" | "error" | "manual";
+  message: string;
+}
+
+export const listRunbooks = (): Promise<Runbook[]> =>
+  http.get("/runbooks").then((r) => r.data);
+
+export const executeRunbookStep = (
+  runbookId: string,
+  step: number,
+  params?: Record<string, string>
+): Promise<{ runbook_id: string; step: number; result: RunbookStepResult }> =>
+  http
+    .post("/runbooks/execute", {
+      runbook_id: runbookId,
+      step,
+      params: params || {},
+    })
+    .then((r) => r.data);
+
 export const executeRemediation = (
   reportId: string,
   step: number,
