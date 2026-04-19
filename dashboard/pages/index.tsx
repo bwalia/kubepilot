@@ -24,6 +24,7 @@ import { CRCodeManager } from "@/components/CRCodeManager";
 import { JobScheduler } from "@/components/JobScheduler";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
 import { RunbooksPanel } from "@/components/RunbooksPanel";
+import { ClusterResourceCharts } from "@/components/ClusterResourceCharts";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { ClusterEventsTroubleshooting } from "@/components/ClusterEventsTroubleshooting";
 import RCAPage from "@/pages/rca";
@@ -169,6 +170,11 @@ export default function DashboardHome() {
           </div>
         </div>
       </header>
+
+      {/* ── Cluster Resource Charts ─────────────────────────────── */}
+      <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-pilot-border bg-pilot-surface/30">
+        <ClusterResourceCharts />
+      </div>
 
       {/* ── KPI Bar ──────────────────────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-pilot-border bg-pilot-surface/30">

@@ -97,6 +97,15 @@ export interface ResourcePressureSummary {
   memory_pressure_nodes: number;
   disk_pressure_nodes: number;
   pid_pressure_nodes: number;
+  cpu_usage_milli?: number;
+  cpu_capacity_milli?: number;
+  memory_usage_bytes?: number;
+  memory_capacity_bytes?: number;
+  storage_usage_percent?: number;
+  storage_bound_bytes?: number;
+  storage_capacity_bytes?: number;
+  storage_pvc_count?: number;
+  storage_pvc_bound?: number;
 }
 
 export interface ProblemPod {

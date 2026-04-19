@@ -60,12 +60,21 @@ type nodeHealthRow struct {
 }
 
 type resourcePressureSummary struct {
-	MetricsAvailable    bool `json:"metrics_available"`
-	CPUUsagePercent     int  `json:"cpu_usage_percent,omitempty"`
-	MemoryUsagePercent  int  `json:"memory_usage_percent,omitempty"`
-	MemoryPressureNodes int  `json:"memory_pressure_nodes"`
-	DiskPressureNodes   int  `json:"disk_pressure_nodes"`
-	PIDPressureNodes    int  `json:"pid_pressure_nodes"`
+	MetricsAvailable     bool  `json:"metrics_available"`
+	CPUUsagePercent      int   `json:"cpu_usage_percent,omitempty"`
+	MemoryUsagePercent   int   `json:"memory_usage_percent,omitempty"`
+	MemoryPressureNodes  int   `json:"memory_pressure_nodes"`
+	DiskPressureNodes    int   `json:"disk_pressure_nodes"`
+	PIDPressureNodes     int   `json:"pid_pressure_nodes"`
+	CPUUsageMilli        int64 `json:"cpu_usage_milli,omitempty"`
+	CPUCapacityMilli     int64 `json:"cpu_capacity_milli,omitempty"`
+	MemoryUsageBytes     int64 `json:"memory_usage_bytes,omitempty"`
+	MemoryCapacityBytes  int64 `json:"memory_capacity_bytes,omitempty"`
+	StorageUsagePercent  int   `json:"storage_usage_percent,omitempty"`
+	StorageBoundBytes    int64 `json:"storage_bound_bytes,omitempty"`
+	StorageCapacityBytes int64 `json:"storage_capacity_bytes,omitempty"`
+	StoragePVCCount      int   `json:"storage_pvc_count,omitempty"`
+	StoragePVCBound      int   `json:"storage_pvc_bound,omitempty"`
 }
 
 type problemPod struct {
@@ -212,6 +221,7 @@ func (s *Server) buildClusterTroubleshooting(ctx context.Context, namespace stri
 	}
 
 	nodeRows, resourcePressure := buildNodeHealthRows(nodes, nodeMetrics)
+	enrichStorageSummary(ctx, k8sClient, &resourcePressure)
 	problemPods := buildProblemPods(podList.Items, events)
 	insights := buildTroubleshootingInsights(problemPods, events, nodes)
 	health := buildHealthSummary(problemPods, events, nodes, insights)
@@ -311,9 +321,13 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 
 	if totalCPUMilli > 0 {
 		pressure.CPUUsagePercent = int((totalCPUUsageMilli * 100) / totalCPUMilli)
+		pressure.CPUUsageMilli = totalCPUUsageMilli
+		pressure.CPUCapacityMilli = totalCPUMilli
 	}
 	if totalMemBytes > 0 {
 		pressure.MemoryUsagePercent = int((totalMemUsageBytes * 100) / totalMemBytes)
+		pressure.MemoryUsageBytes = totalMemUsageBytes
+		pressure.MemoryCapacityBytes = totalMemBytes
 	}
 
 	sort.Slice(rows, func(i, j int) bool {
@@ -329,6 +343,42 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 	})
 
 	return rows, pressure
+}
+
+// enrichStorageSummary aggregates cluster-wide storage capacity and usage by
+// summing bound PersistentVolumes. Failures are non-fatal — we just leave the
+// storage fields zero so the UI can skip the chart gracefully.
+func enrichStorageSummary(ctx context.Context, k8sClient *k8s.Client, pressure *resourcePressureSummary) {
+	pvs, err := k8sClient.Core.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	var totalBytes, boundBytes int64
+	for _, pv := range pvs.Items {
+		if qty, ok := pv.Spec.Capacity[corev1.ResourceStorage]; ok {
+			bytes := quantityByteValue(qty.String())
+			totalBytes += bytes
+			if pv.Status.Phase == corev1.VolumeBound {
+				boundBytes += bytes
+			}
+		}
+	}
+	pressure.StorageCapacityBytes = totalBytes
+	pressure.StorageBoundBytes = boundBytes
+	if totalBytes > 0 {
+		pressure.StorageUsagePercent = int((boundBytes * 100) / totalBytes)
+	}
+
+	pvcs, err := k8sClient.Core.CoreV1().PersistentVolumeClaims("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	pressure.StoragePVCCount = len(pvcs.Items)
+	for _, pvc := range pvcs.Items {
+		if pvc.Status.Phase == corev1.ClaimBound {
+			pressure.StoragePVCBound++
+		}
+	}
 }
 
 func buildProblemPods(pods []corev1.Pod, events []k8s.Event) []problemPod {
