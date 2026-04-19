@@ -13,6 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 )
@@ -70,11 +72,26 @@ type resourcePressureSummary struct {
 	CPUCapacityMilli     int64 `json:"cpu_capacity_milli,omitempty"`
 	MemoryUsageBytes     int64 `json:"memory_usage_bytes,omitempty"`
 	MemoryCapacityBytes  int64 `json:"memory_capacity_bytes,omitempty"`
-	StorageUsagePercent  int   `json:"storage_usage_percent,omitempty"`
-	StorageBoundBytes    int64 `json:"storage_bound_bytes,omitempty"`
-	StorageCapacityBytes int64 `json:"storage_capacity_bytes,omitempty"`
-	StoragePVCCount      int   `json:"storage_pvc_count,omitempty"`
-	StoragePVCBound      int   `json:"storage_pvc_bound,omitempty"`
+
+	// Storage: real physical disk usage sourced from Longhorn node CRDs
+	// when available, otherwise from node.status.capacity ephemeral-storage
+	// (which gives capacity but no usage).
+	StorageUsagePercent  int    `json:"storage_usage_percent,omitempty"`
+	StorageUsedBytes     int64  `json:"storage_used_bytes,omitempty"`
+	StorageCapacityBytes int64  `json:"storage_capacity_bytes,omitempty"`
+	StorageSource        string `json:"storage_source,omitempty"` // longhorn | ephemeral-storage
+
+	// StorageClasses breaks down per-StorageClass provisioned capacity.
+	StorageClasses []storageClassSummary `json:"storage_classes,omitempty"`
+}
+
+type storageClassSummary struct {
+	Name               string `json:"name"`
+	Provisioner        string `json:"provisioner"`
+	ProvisionedBytes   int64  `json:"provisioned_bytes"`
+	BoundBytes         int64  `json:"bound_bytes"`
+	PVCount            int    `json:"pv_count"`
+	PVBoundCount       int    `json:"pv_bound_count"`
 }
 
 type problemPod struct {
@@ -221,7 +238,7 @@ func (s *Server) buildClusterTroubleshooting(ctx context.Context, namespace stri
 	}
 
 	nodeRows, resourcePressure := buildNodeHealthRows(nodes, nodeMetrics)
-	enrichStorageSummary(ctx, k8sClient, &resourcePressure)
+	enrichStorageSummary(ctx, k8sClient, nodes, &resourcePressure)
 	problemPods := buildProblemPods(podList.Items, events)
 	insights := buildTroubleshootingInsights(problemPods, events, nodes)
 	health := buildHealthSummary(problemPods, events, nodes, insights)
@@ -345,40 +362,126 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 	return rows, pressure
 }
 
-// enrichStorageSummary aggregates cluster-wide storage capacity and usage by
-// summing bound PersistentVolumes. Failures are non-fatal — we just leave the
-// storage fields zero so the UI can skip the chart gracefully.
-func enrichStorageSummary(ctx context.Context, k8sClient *k8s.Client, pressure *resourcePressureSummary) {
+// enrichStorageSummary populates cluster-wide storage fields:
+//   - Primary metric (gauge): real physical disk usage, sourced from Longhorn
+//     Node CRDs when available, else from node.status.capacity ephemeral-storage.
+//     Longhorn is preferred because it reports actual used vs total; bare
+//     PV capacity metrics would be meaningless (dynamic provisioners report
+//     100% bound). Ephemeral-storage fallback gives capacity but no usage.
+//   - Per-StorageClass breakdown: how much each class has provisioned,
+//     independent of physical disk usage.
+// All failures are non-fatal — missing fields cause the UI to render a
+// best-effort view.
+func enrichStorageSummary(ctx context.Context, k8sClient *k8s.Client, nodes []k8s.NodeSummary, pressure *resourcePressureSummary) {
+	// 1. Physical disk stats via Longhorn (preferred).
+	if used, total, ok := longhornDiskTotals(ctx, k8sClient); ok {
+		pressure.StorageUsedBytes = used
+		pressure.StorageCapacityBytes = total
+		pressure.StorageSource = "longhorn"
+		if total > 0 {
+			pressure.StorageUsagePercent = int((used * 100) / total)
+		}
+	} else {
+		// Fall back to node ephemeral-storage capacity — capacity only, no usage.
+		var total int64
+		for _, n := range nodes {
+			total += quantityByteValue(n.EphemeralStorageCapacity)
+		}
+		if total > 0 {
+			pressure.StorageCapacityBytes = total
+			pressure.StorageSource = "ephemeral-storage"
+		}
+	}
+
+	// 2. Per-StorageClass provisioned breakdown.
 	pvs, err := k8sClient.Core.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return
 	}
-	var totalBytes, boundBytes int64
+	scs, err := k8sClient.Core.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
+	provisionerByClass := map[string]string{}
+	if err == nil {
+		for _, sc := range scs.Items {
+			provisionerByClass[sc.Name] = sc.Provisioner
+		}
+	}
+	byClass := map[string]*storageClassSummary{}
 	for _, pv := range pvs.Items {
-		if qty, ok := pv.Spec.Capacity[corev1.ResourceStorage]; ok {
+		class := pv.Spec.StorageClassName
+		if class == "" {
+			class = "(none)"
+		}
+		entry, ok := byClass[class]
+		if !ok {
+			entry = &storageClassSummary{
+				Name:        class,
+				Provisioner: provisionerByClass[class],
+			}
+			byClass[class] = entry
+		}
+		entry.PVCount++
+		if qty, has := pv.Spec.Capacity[corev1.ResourceStorage]; has {
 			bytes := quantityByteValue(qty.String())
-			totalBytes += bytes
+			entry.ProvisionedBytes += bytes
 			if pv.Status.Phase == corev1.VolumeBound {
-				boundBytes += bytes
+				entry.BoundBytes += bytes
+				entry.PVBoundCount++
 			}
 		}
 	}
-	pressure.StorageCapacityBytes = totalBytes
-	pressure.StorageBoundBytes = boundBytes
-	if totalBytes > 0 {
-		pressure.StorageUsagePercent = int((boundBytes * 100) / totalBytes)
+	out := make([]storageClassSummary, 0, len(byClass))
+	for _, v := range byClass {
+		out = append(out, *v)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ProvisionedBytes > out[j].ProvisionedBytes
+	})
+	pressure.StorageClasses = out
+}
 
-	pvcs, err := k8sClient.Core.CoreV1().PersistentVolumeClaims("").List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return
+// longhornDiskTotals queries Longhorn Node CRDs to sum real disk usage/capacity
+// across all Longhorn-managed disks. Returns (used, total, true) on success.
+func longhornDiskTotals(ctx context.Context, k8sClient *k8s.Client) (int64, int64, bool) {
+	gvr := schema.GroupVersionResource{Group: "longhorn.io", Version: "v1beta2", Resource: "nodes"}
+	list, err := k8sClient.Dynamic.Resource(gvr).Namespace("longhorn-system").List(ctx, metav1.ListOptions{})
+	if err != nil || list == nil || len(list.Items) == 0 {
+		return 0, 0, false
 	}
-	pressure.StoragePVCCount = len(pvcs.Items)
-	for _, pvc := range pvcs.Items {
-		if pvc.Status.Phase == corev1.ClaimBound {
-			pressure.StoragePVCBound++
+	var totalMax, totalAvail int64
+	for _, node := range list.Items {
+		disks, found, err := unstructured.NestedMap(node.Object, "status", "diskStatus")
+		if err != nil || !found {
+			continue
+		}
+		for _, raw := range disks {
+			disk, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			totalMax += asInt64(disk["storageMaximum"])
+			totalAvail += asInt64(disk["storageAvailable"])
 		}
 	}
+	if totalMax == 0 {
+		return 0, 0, false
+	}
+	used := totalMax - totalAvail
+	if used < 0 {
+		used = 0
+	}
+	return used, totalMax, true
+}
+
+func asInt64(v interface{}) int64 {
+	switch n := v.(type) {
+	case int64:
+		return n
+	case float64:
+		return int64(n)
+	case int:
+		return int64(n)
+	}
+	return 0
 }
 
 func buildProblemPods(pods []corev1.Pod, events []k8s.Event) []problemPod {

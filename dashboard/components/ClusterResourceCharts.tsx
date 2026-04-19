@@ -4,8 +4,8 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
-import { Cpu, MemoryStick, HardDrive } from "lucide-react";
-import { getClusterTroubleshootingSummary, type ResourcePressureSummary } from "@/lib/api";
+import { Cpu, MemoryStick, HardDrive, Database } from "lucide-react";
+import { getClusterTroubleshootingSummary, type ResourcePressureSummary, type StorageClassSummary } from "@/lib/api";
 
 function formatBytes(bytes: number | undefined): string {
   if (!bytes || bytes <= 0) return "0";
@@ -90,39 +90,92 @@ export function ClusterResourceCharts() {
   const cpuSecondary = `of ${formatCPU(rp?.cpu_capacity_milli)}`;
   const memPrimary = formatBytes(rp?.memory_usage_bytes);
   const memSecondary = `of ${formatBytes(rp?.memory_capacity_bytes)}`;
-  const storagePrimary = formatBytes(rp?.storage_bound_bytes);
-  const storageSecondary = `of ${formatBytes(rp?.storage_capacity_bytes)}`;
+
+  // Storage label varies based on data source:
+  //   - longhorn: real physical disk usage
+  //   - ephemeral-storage: capacity only (no usage reported by metrics-server)
+  const storageSource = rp?.storage_source ?? "";
+  const hasStorageUsage = storageSource === "longhorn" && (rp?.storage_capacity_bytes ?? 0) > 0;
+  const storagePrimary = hasStorageUsage
+    ? formatBytes(rp?.storage_used_bytes)
+    : formatBytes(rp?.storage_capacity_bytes);
+  const storageSecondary = hasStorageUsage
+    ? `of ${formatBytes(rp?.storage_capacity_bytes)}`
+    : "capacity";
+  const storageLabel =
+    storageSource === "longhorn"
+      ? "Cluster Storage (Longhorn)"
+      : "Cluster Storage";
 
   // Color based on utilization: green < 60%, amber < 85%, red >=85%
   const colorFor = (p: number) =>
     p >= 85 ? "#ef4444" : p >= 60 ? "#f59e0b" : "#10b981";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-      <Gauge
-        label="Cluster CPU"
-        icon={<Cpu className="w-5 h-5" />}
-        percent={cpuPercent}
-        primary={cpuPrimary}
-        secondary={cpuSecondary}
-        color={colorFor(cpuPercent)}
-      />
-      <Gauge
-        label="Cluster Memory"
-        icon={<MemoryStick className="w-5 h-5" />}
-        percent={memPercent}
-        primary={memPrimary}
-        secondary={memSecondary}
-        color={colorFor(memPercent)}
-      />
-      <Gauge
-        label="Cluster Storage"
-        icon={<HardDrive className="w-5 h-5" />}
-        percent={storagePercent}
-        primary={storagePrimary}
-        secondary={storageSecondary}
-        color={colorFor(storagePercent)}
-      />
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <Gauge
+          label="Cluster CPU"
+          icon={<Cpu className="w-5 h-5" />}
+          percent={cpuPercent}
+          primary={cpuPrimary}
+          secondary={cpuSecondary}
+          color={colorFor(cpuPercent)}
+        />
+        <Gauge
+          label="Cluster Memory"
+          icon={<MemoryStick className="w-5 h-5" />}
+          percent={memPercent}
+          primary={memPrimary}
+          secondary={memSecondary}
+          color={colorFor(memPercent)}
+        />
+        <Gauge
+          label={storageLabel}
+          icon={<HardDrive className="w-5 h-5" />}
+          percent={storagePercent}
+          primary={storagePrimary}
+          secondary={storageSecondary}
+          color={colorFor(storagePercent)}
+        />
+      </div>
+
+      {rp?.storage_classes && rp.storage_classes.length > 0 && (
+        <StorageClassBreakdown classes={rp.storage_classes} />
+      )}
+    </div>
+  );
+}
+
+function StorageClassBreakdown({ classes }: { classes: StorageClassSummary[] }) {
+  return (
+    <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Database className="w-4 h-4 text-pilot-accent" />
+        <span className="text-xs uppercase tracking-wider text-pilot-muted font-medium">
+          Provisioned by StorageClass
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {classes.map((sc) => (
+          <div key={sc.name} className="bg-pilot-bg border border-pilot-border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-semibold text-white truncate" title={sc.name}>
+                {sc.name}
+              </span>
+              <span className="text-2xs text-pilot-muted font-mono">
+                {sc.pv_bound_count}/{sc.pv_count} PV
+              </span>
+            </div>
+            <div className="text-lg font-bold text-pilot-accent">
+              {formatBytes(sc.bound_bytes)}
+            </div>
+            <div className="text-2xs text-pilot-muted font-mono mt-0.5 truncate" title={sc.provisioner}>
+              {sc.provisioner || "—"}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

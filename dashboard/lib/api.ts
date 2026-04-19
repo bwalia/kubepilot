@@ -90,6 +90,15 @@ export interface NodeHealthRow {
   kubelet_version: string;
 }
 
+export interface StorageClassSummary {
+  name: string;
+  provisioner: string;
+  provisioned_bytes: number;
+  bound_bytes: number;
+  pv_count: number;
+  pv_bound_count: number;
+}
+
 export interface ResourcePressureSummary {
   metrics_available: boolean;
   cpu_usage_percent?: number;
@@ -102,10 +111,10 @@ export interface ResourcePressureSummary {
   memory_usage_bytes?: number;
   memory_capacity_bytes?: number;
   storage_usage_percent?: number;
-  storage_bound_bytes?: number;
+  storage_used_bytes?: number;
   storage_capacity_bytes?: number;
-  storage_pvc_count?: number;
-  storage_pvc_bound?: number;
+  storage_source?: string;
+  storage_classes?: StorageClassSummary[];
 }
 
 export interface ProblemPod {

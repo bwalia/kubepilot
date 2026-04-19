@@ -10,15 +10,16 @@ import (
 
 // NodeSummary represents a cluster node's health and resource pressure state.
 type NodeSummary struct {
-	Name            string
-	Ready           bool
-	MemoryPressure  bool
-	DiskPressure    bool
-	PIDPressure     bool
-	CPUCapacity     string
-	MemoryCapacity  string
-	KubeletVersion  string
-	Unschedulable   bool
+	Name                     string
+	Ready                    bool
+	MemoryPressure           bool
+	DiskPressure             bool
+	PIDPressure              bool
+	CPUCapacity              string
+	MemoryCapacity           string
+	EphemeralStorageCapacity string
+	KubeletVersion           string
+	Unschedulable            bool
 }
 
 // ListNodes returns a summary of all nodes in the cluster.
@@ -64,6 +65,9 @@ func toNodeSummary(node corev1.Node) NodeSummary {
 	}
 	if mem, ok := node.Status.Capacity[corev1.ResourceMemory]; ok {
 		s.MemoryCapacity = mem.String()
+	}
+	if eph, ok := node.Status.Capacity[corev1.ResourceEphemeralStorage]; ok {
+		s.EphemeralStorageCapacity = eph.String()
 	}
 
 	for _, cond := range node.Status.Conditions {
