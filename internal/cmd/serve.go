@@ -47,6 +47,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().Bool("enable-kubeconfig-mutations", false, "Enable kubeconfig mutation endpoints (upload/switch/add)")
 	cmd.Flags().Bool("enable-action-mutations", false, "Enable action mutation endpoints (execute-action/remediate)")
 	cmd.Flags().String("cors-allowed-origins", "http://localhost:8383,http://127.0.0.1:8383", "Comma-separated CORS allowed origins")
+	cmd.Flags().String("runbooks-dir", "", "Directory containing user runbook YAML files (watched for changes; auto-created if missing)")
 
 	_ = viper.BindPFlag("mcp_port", cmd.Flags().Lookup("mcp-port"))
 	_ = viper.BindPFlag("dashboard_port", cmd.Flags().Lookup("dashboard-port"))
@@ -62,6 +63,7 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("enable_kubeconfig_mutations", cmd.Flags().Lookup("enable-kubeconfig-mutations"))
 	_ = viper.BindPFlag("enable_action_mutations", cmd.Flags().Lookup("enable-action-mutations"))
 	_ = viper.BindPFlag("cors_allowed_origins", cmd.Flags().Lookup("cors-allowed-origins"))
+	_ = viper.BindPFlag("runbooks_dir", cmd.Flags().Lookup("runbooks-dir"))
 
 	return cmd
 }
@@ -94,8 +96,14 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{}, log)
 	go watcher.Start(ctx)
 
-	// Build runbook execution engine.
+	// Build runbook execution engine and optionally hot-reload user runbooks
+	// from a directory of YAML files.
 	runbookEngine := runbooks.NewEngine(k8sClient, aiEngine, log)
+	if runbooksDir := strings.TrimSpace(viper.GetString("runbooks_dir")); runbooksDir != "" {
+		if err := runbooks.WatchDir(ctx, runbooksDir, runbookEngine, log); err != nil {
+			log.Sugar().Warnf("Runbook directory watcher failed: %v", err)
+		}
+	}
 
 	// Start MCP server.
 	mcpServer := server.New(server.Config{

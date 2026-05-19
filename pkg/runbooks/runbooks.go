@@ -18,13 +18,13 @@ import (
 
 // Runbook is a named automation workflow with ordered steps and corresponding actions.
 type Runbook struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Category    string   `json:"category"` // diagnostic, recovery, rollback, health, migration
-	Steps       []string `json:"steps"`
-	Actions     []string `json:"actions"`
-	Risk        string   `json:"risk"` // low, medium, high
+	ID          string   `json:"id" yaml:"id"`
+	Name        string   `json:"name" yaml:"name"`
+	Description string   `json:"description" yaml:"description"`
+	Category    string   `json:"category" yaml:"category"` // diagnostic, recovery, rollback, health, migration
+	Steps       []string `json:"steps" yaml:"steps"`
+	Actions     []string `json:"actions" yaml:"actions"`
+	Risk        string   `json:"risk" yaml:"risk"` // low, medium, high
 }
 
 // StepResult is returned from executing a single runbook step.
@@ -35,10 +35,11 @@ type StepResult struct {
 
 // Engine executes runbook actions against the cluster and AI subsystems.
 type Engine struct {
-	mu   sync.RWMutex
-	k8s  *k8s.Client
-	ai   *ai.Engine
-	log  *zap.Logger
+	mu       sync.RWMutex
+	k8s      *k8s.Client
+	ai       *ai.Engine
+	log      *zap.Logger
+	userRBs  []Runbook // loaded from disk; overrides builtins by ID
 }
 
 // NewEngine constructs a runbook execution engine.
@@ -53,14 +54,38 @@ func (e *Engine) SetK8sClient(c *k8s.Client) {
 	e.k8s = c
 }
 
-// List returns all registered runbooks.
+// SetUserRunbooks replaces the user-loaded runbook set.
+// User runbooks with the same ID override builtins, allowing customization.
+func (e *Engine) SetUserRunbooks(rbs []Runbook) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.userRBs = rbs
+	e.log.Info("User runbooks updated", zap.Int("count", len(rbs)))
+}
+
+// List returns all registered runbooks (builtins + user-loaded, with user overrides applied).
 func (e *Engine) List() []Runbook {
-	return Builtin()
+	e.mu.RLock()
+	user := append([]Runbook(nil), e.userRBs...)
+	e.mu.RUnlock()
+
+	byID := map[string]Runbook{}
+	for _, rb := range Builtin() {
+		byID[rb.ID] = rb
+	}
+	for _, rb := range user {
+		byID[rb.ID] = rb // override builtins by ID
+	}
+	out := make([]Runbook, 0, len(byID))
+	for _, rb := range byID {
+		out = append(out, rb)
+	}
+	return out
 }
 
 // Get returns a runbook by ID.
 func (e *Engine) Get(id string) (Runbook, bool) {
-	for _, rb := range Builtin() {
+	for _, rb := range e.List() {
 		if rb.ID == id {
 			return rb, true
 		}
