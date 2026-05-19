@@ -7,9 +7,11 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/internal/dashboard"
 	"github.com/kubepilot/kubepilot/pkg/ai"
@@ -48,6 +50,11 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().Bool("enable-action-mutations", false, "Enable action mutation endpoints (execute-action/remediate)")
 	cmd.Flags().String("cors-allowed-origins", "http://localhost:8383,http://127.0.0.1:8383", "Comma-separated CORS allowed origins")
 	cmd.Flags().String("runbooks-dir", "", "Directory containing user runbook YAML files (watched for changes; auto-created if missing)")
+	cmd.Flags().String("state-dir", "", "Directory to persist RCA reports + anomalies to SQLite (state.db). Empty = in-memory only")
+	cmd.Flags().Duration("state-retention", 30*24*time.Hour, "Retention window for persisted RCA history (0 = keep forever)")
+	cmd.Flags().String("slack-webhook-url", "", "Slack incoming webhook URL for high-severity anomaly notifications")
+	cmd.Flags().String("slack-min-severity", "high", "Minimum severity to notify on (critical|high|medium|low|info)")
+	cmd.Flags().String("notifier-dashboard-url", "", "Public dashboard URL included in Slack messages (e.g. https://kubepilot.example.com)")
 
 	_ = viper.BindPFlag("mcp_port", cmd.Flags().Lookup("mcp-port"))
 	_ = viper.BindPFlag("dashboard_port", cmd.Flags().Lookup("dashboard-port"))
@@ -64,6 +71,11 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("enable_action_mutations", cmd.Flags().Lookup("enable-action-mutations"))
 	_ = viper.BindPFlag("cors_allowed_origins", cmd.Flags().Lookup("cors-allowed-origins"))
 	_ = viper.BindPFlag("runbooks_dir", cmd.Flags().Lookup("runbooks-dir"))
+	_ = viper.BindPFlag("state_dir", cmd.Flags().Lookup("state-dir"))
+	_ = viper.BindPFlag("state_retention", cmd.Flags().Lookup("state-retention"))
+	_ = viper.BindPFlag("slack_webhook_url", cmd.Flags().Lookup("slack-webhook-url"))
+	_ = viper.BindPFlag("slack_min_severity", cmd.Flags().Lookup("slack-min-severity"))
+	_ = viper.BindPFlag("notifier_dashboard_url", cmd.Flags().Lookup("notifier-dashboard-url"))
 
 	return cmd
 }
@@ -93,7 +105,35 @@ func runServe(cmd *cobra.Command, _ []string) error {
 
 	// Start continuous cluster watcher for anomaly detection and auto-RCA.
 	rcaStore := observability.NewRCAStore(1000)
-	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{}, log)
+
+	// Optional persistence: SQLite-backed durability for RCA history.
+	var persistence *observability.Persistence
+	if stateDir := strings.TrimSpace(viper.GetString("state_dir")); stateDir != "" {
+		dbPath := stateDir + "/state.db"
+		p, err := observability.NewPersistence(ctx, dbPath, rcaStore, viper.GetDuration("state_retention"), log)
+		if err != nil {
+			log.Sugar().Warnf("RCA persistence disabled: %v", err)
+		} else {
+			persistence = p
+			defer func() { _ = persistence.Close() }()
+		}
+	}
+
+	// Optional Slack notifier for high-severity events.
+	var notifier observability.AnomalyNotifier
+	if slack := observability.NewSlackNotifier(observability.SlackConfig{
+		WebhookURL:   viper.GetString("slack_webhook_url"),
+		MinSeverity:  viper.GetString("slack_min_severity"),
+		DashboardURL: viper.GetString("notifier_dashboard_url"),
+	}, log); slack != nil {
+		notifier = slack
+		log.Info("Slack notifier enabled", zap.String("min_severity", viper.GetString("slack_min_severity")))
+	}
+
+	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{
+		Persistence: persistence,
+		Notifier:    notifier,
+	}, log)
 	go watcher.Start(ctx)
 
 	// Build runbook execution engine and optionally hot-reload user runbooks

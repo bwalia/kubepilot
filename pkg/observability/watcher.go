@@ -14,12 +14,14 @@ import (
 // ClusterWatcher continuously monitors the cluster, detects anomalies,
 // and triggers RCA analysis for detected issues.
 type ClusterWatcher struct {
-	k8s      *k8s.Client
-	rca      *ai.RCAEngine
-	store    *RCAStore
-	interval time.Duration
-	rules    []AnomalyRule
-	log      *zap.Logger
+	k8s         *k8s.Client
+	rca         *ai.RCAEngine
+	store       *RCAStore
+	persistence *Persistence
+	notifier    AnomalyNotifier
+	interval    time.Duration
+	rules       []AnomalyRule
+	log         *zap.Logger
 
 	// seenAnomalies tracks recently detected anomalies to avoid duplicate RCA triggers.
 	// Key is "resource_kind/namespace/name/rule".
@@ -37,6 +39,8 @@ type WatcherConfig struct {
 	Interval      time.Duration
 	Rules         []AnomalyRule
 	DedupeWindow  time.Duration
+	Persistence   *Persistence
+	Notifier      AnomalyNotifier
 }
 
 // NewClusterWatcher creates a watcher that polls the cluster at the given interval.
@@ -60,6 +64,8 @@ func NewClusterWatcher(k8sClient *k8s.Client, rcaEngine *ai.RCAEngine, store *RC
 		k8s:           k8sClient,
 		rca:           rcaEngine,
 		store:         store,
+		persistence:   cfg.Persistence,
+		notifier:      cfg.Notifier,
 		interval:      interval,
 		rules:         rules,
 		log:           log,
@@ -124,9 +130,15 @@ func (w *ClusterWatcher) poll(ctx context.Context) {
 	for i := range allAnomalies {
 		anomaly := &allAnomalies[i]
 		w.store.AddAnomaly(anomaly)
+		if w.persistence != nil {
+			w.persistence.PersistAnomaly(ctx, anomaly)
+		}
 
 		if w.isNew(anomaly) {
 			w.markSeen(anomaly)
+			if w.notifier != nil {
+				go w.notifier.NotifyAnomaly(ctx, anomaly)
+			}
 
 			// Only trigger RCA for Pod-level anomalies.
 			if anomaly.Resource.Kind == "Pod" && anomaly.Resource.Namespace != "" {
@@ -167,6 +179,13 @@ func (w *ClusterWatcher) triggerRCA(ctx context.Context, anomaly *Anomaly) {
 
 	w.store.AddReport(report)
 	anomaly.RCAReportID = report.ID
+	if w.persistence != nil {
+		w.persistence.PersistReport(ctx, report)
+		w.persistence.PersistAnomaly(ctx, anomaly) // re-persist with rca_report_id
+	}
+	if w.notifier != nil {
+		go w.notifier.NotifyReport(ctx, report)
+	}
 
 	w.log.Info("RCA report stored",
 		zap.String("report_id", report.ID),
