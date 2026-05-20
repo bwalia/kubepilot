@@ -1,4 +1,4 @@
-// Package dashboard serves the KubePilot "Kubernetes Cockpit" UI and its REST/WebSocket API.
+// Package dashboard serves the KubePilot "Kubernetes Troubleshooting powered by AI" UI and its REST/WebSocket API.
 // The Go server embeds the pre-built Next.js static export and exposes all
 // backend API endpoints that the dashboard UI consumes.
 package dashboard
@@ -44,7 +44,7 @@ type Config struct {
 	AllowedCORSOrigins                []string
 }
 
-// Server serves the Kubernetes Cockpit dashboard and REST API.
+// Server serves the KubePilot dashboard ("Kubernetes Troubleshooting powered by AI") and REST API.
 type Server struct {
 	mu    sync.RWMutex
 	cfg   Config

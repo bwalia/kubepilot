@@ -1,5 +1,5 @@
 /**
- * KubePilot – Kubernetes Cockpit
+ * KubePilot — Kubernetes Troubleshooting powered by AI
  * Dashboard home: cluster health overview, AI command bar, crashing pods, nodes.
  */
 import { useState } from "react";
@@ -126,7 +126,7 @@ export default function DashboardHome() {
             <div>
               <span className="text-lg font-bold tracking-tight">KubePilot</span>
               <span className="hidden sm:inline text-xs text-pilot-muted ml-2 bg-pilot-surface px-2 py-0.5 rounded-md font-medium">
-                Kubernetes Cockpit
+                Kubernetes Troubleshooting powered by AI
               </span>
             </div>
           </div>
