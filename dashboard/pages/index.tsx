@@ -136,7 +136,7 @@ export default function DashboardHome() {
             <div>
               <span className="text-lg font-bold tracking-tight">KubePilot</span>
               <span className="hidden sm:inline text-xs text-pilot-muted ml-2 bg-pilot-surface px-2 py-0.5 rounded-md font-medium">
-                Kubernetes Troubleshooting powered by AI
+                Kubernetes CoPilot
               </span>
             </div>
           </div>

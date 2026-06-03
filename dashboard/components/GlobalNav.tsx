@@ -8,7 +8,7 @@ import { useRouter } from "next/router";
 import { Layers } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/", label: "AI Troubleshooting" },
+  { href: "/", label: "Kubernetes CoPilot" },
   { href: "/dashboard", label: "Kubernetes Dashboard" },
 ];
 

@@ -700,7 +700,7 @@ function PodDiagnosticsModal({
             ) : (
               <section className="bg-pilot-surface border border-pilot-border rounded-xl p-5 space-y-5">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-pilot-muted mb-2 font-semibold">AI Troubleshooting</p>
+                  <p className="text-xs uppercase tracking-wider text-pilot-muted mb-2 font-semibold">AI SRE</p>
                   <p className="text-sm text-pilot-muted">
                     Analyze pod status, recent events, and logs to infer likely root cause and next remediation steps.
                   </p>
