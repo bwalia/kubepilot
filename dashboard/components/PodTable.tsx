@@ -3,13 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import type { PodSummary } from "@/lib/api";
 import { troubleshootPod } from "@/lib/api";
 import { AlertTriangle, CheckCircle, RefreshCw, Search, X } from "lucide-react";
+import { PortForwardButton } from "@/components/PortForwardButton";
 
 interface Props {
   pods: PodSummary[];
   loading: boolean;
+  // When provided, clicking a pod row (outside the action buttons) invokes this
+  // callback — used by the Kubernetes Dashboard to open the pod detail drawer.
+  onRowClick?: (namespace: string, name: string) => void;
+  // Enables the per-row Port Forward control when the server allows mutations.
+  mutationsEnabled?: boolean;
 }
 
-export function PodTable({ pods, loading }: Props) {
+export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }: Props) {
   const [search, setSearch] = useState("");
   const [troubleshootTarget, setTroubleshootTarget] = useState<{
     namespace: string;
@@ -63,7 +69,8 @@ export function PodTable({ pods, loading }: Props) {
                 {filtered.map((pod) => (
                   <tr
                     key={`${pod.Namespace}/${pod.Name}`}
-                    className="hover:bg-pilot-surface-2/50"
+                    onClick={onRowClick ? () => onRowClick(pod.Namespace, pod.Name) : undefined}
+                    className={`hover:bg-pilot-surface-2/50 ${onRowClick ? "cursor-pointer" : ""}`}
                   >
                     <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.Namespace}</td>
                     <td className="px-5 py-3.5 text-sm text-white font-mono">{pod.Name}</td>
@@ -86,14 +93,23 @@ export function PodTable({ pods, loading }: Props) {
                     </td>
                     <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.NodeName || "\u2014"}</td>
                     <td className="px-5 py-3.5">
-                      <button
-                        onClick={() =>
-                          setTroubleshootTarget({ namespace: pod.Namespace, pod: pod.Name })
-                        }
-                        className="text-sm bg-pilot-accent/10 text-pilot-accent-light px-3 py-1.5 rounded-lg hover:bg-pilot-accent/20 font-medium"
-                      >
-                        AI Diagnose
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTroubleshootTarget({ namespace: pod.Namespace, pod: pod.Name });
+                          }}
+                          className="text-sm bg-pilot-accent/10 text-pilot-accent-light px-3 py-1.5 rounded-lg hover:bg-pilot-accent/20 font-medium"
+                        >
+                          AI Diagnose
+                        </button>
+                        <PortForwardButton
+                          kind="pod"
+                          namespace={pod.Namespace}
+                          name={pod.Name}
+                          mutationsEnabled={mutationsEnabled}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}

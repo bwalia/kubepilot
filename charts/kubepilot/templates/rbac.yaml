@@ -26,12 +26,20 @@ rules:
   - apiGroups: [""]
     resources: [pods]
     verbs: [delete]
+  # Port-forwarding into pods (kubectl-style tunnels from the dashboard).
+  - apiGroups: [""]
+    resources: [pods/portforward]
+    verbs: [create, get]
   - apiGroups: [apps]
     resources: [deployments, replicasets, statefulsets, daemonsets]
     verbs: [get, list, watch, update, patch]
   - apiGroups: [apps]
     resources: [deployments/scale]
     verbs: [get, update, patch]
+  # Networking — read access for the service topology graph and Network section.
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, networkpolicies]
+    verbs: [get, list, watch]
   # Secrets — restricted to kubepilot-security namespace for CR code management.
   - apiGroups: [""]
     resources: [secrets]

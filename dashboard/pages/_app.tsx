@@ -1,5 +1,6 @@
 import type { AppProps } from "next/app";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GlobalNav } from "@/components/GlobalNav";
 import "../styles/globals.css";
 
 const queryClient = new QueryClient({
@@ -15,6 +16,7 @@ const queryClient = new QueryClient({
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
+      <GlobalNav />
       <Component {...pageProps} />
     </QueryClientProvider>
   );

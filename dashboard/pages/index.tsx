@@ -13,6 +13,7 @@ import {
   listKubeconfigs,
   interpretCommand,
   getAIHealth,
+  getServerConfig,
   type SuggestedAction,
   type AIHealthStatus,
 } from "@/lib/api";
@@ -27,6 +28,7 @@ import { RunbooksPanel } from "@/components/RunbooksPanel";
 import { ClusterResourceCharts } from "@/components/ClusterResourceCharts";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { ClusterEventsTroubleshooting } from "@/components/ClusterEventsTroubleshooting";
+import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel";
 import RCAPage from "@/pages/rca";
 import TopologyPage from "@/pages/topology";
 
@@ -82,6 +84,14 @@ export default function DashboardHome() {
     queryFn: getAIHealth,
     refetchInterval: 30_000,
   });
+
+  const { data: serverConfig } = useQuery({
+    queryKey: ["server-config"],
+    queryFn: getServerConfig,
+    staleTime: 60_000,
+    refetchInterval: false,
+  });
+  const mutationsEnabled = serverConfig?.mutations_enabled ?? false;
 
   const handleAICommand = async () => {
     if (!command.trim()) return;
@@ -303,9 +313,10 @@ export default function DashboardHome() {
                 <h2 className="text-base font-bold text-pilot-danger mb-4 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5" /> Crashing Pods
                 </h2>
-                <PodTable pods={crashingPods} loading={podsLoading} />
+                <PodTable pods={crashingPods} loading={podsLoading} mutationsEnabled={mutationsEnabled} />
               </section>
             )}
+            <PortForwardSessionsPanel mutationsEnabled={mutationsEnabled} />
             <MetricsPanel deployments={deployments} />
           </>
         )}

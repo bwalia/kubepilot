@@ -164,6 +164,7 @@ export interface ContainerDiag {
   state_message: string;
   exit_code: number;
   last_terminated_reason?: string;
+  ports?: number[];
 }
 
 export interface ResourceMetrics {
@@ -674,3 +675,207 @@ export const executeRemediation = (
       cr_code: crCode,
     })
     .then((r) => r.data);
+
+// ─────────────────────────────────────────
+// Kubernetes Dashboard browser types
+// (PascalCase JSON to mirror the Go summary structs)
+// ─────────────────────────────────────────
+
+export interface NamespaceSummary {
+  Name: string;
+  Status: string;
+  CreatedAt: string;
+}
+
+export interface StatefulSetSummary {
+  Name: string;
+  Namespace: string;
+  Replicas: number;
+  ReadyReplicas: number;
+  Image: string;
+  ServiceName: string;
+}
+
+export interface DaemonSetSummary {
+  Name: string;
+  Namespace: string;
+  DesiredNumberScheduled: number;
+  NumberReady: number;
+  Image: string;
+}
+
+export interface K8sJobSummary {
+  Name: string;
+  Namespace: string;
+  Status: string; // Complete | Failed | Active | Pending
+  Completions: number;
+  Succeeded: number;
+  Failed: number;
+  StartTime?: string;
+  CompletionTime?: string;
+}
+
+export interface CronJobSummary {
+  Name: string;
+  Namespace: string;
+  Schedule: string;
+  Suspend: boolean;
+  Active: number;
+  LastScheduleTime?: string;
+}
+
+export interface IngressSummary {
+  Name: string;
+  Namespace: string;
+  Host: string;
+  IngressURL: string;
+  TLS: boolean;
+}
+
+export interface ServiceEndpointSummary {
+  name: string;
+  namespace: string;
+  type: string;
+  cluster_ip: string;
+  ports: Array<{ name: string; port: number; target_port: string; protocol: string }>;
+}
+
+export interface ConfigMapSummary {
+  Name: string;
+  Namespace: string;
+  KeyCount: number;
+}
+
+export interface SecretSummary {
+  Name: string;
+  Namespace: string;
+  Type: string;
+  KeyCount: number;
+  // Secret values are intentionally never exposed by the backend.
+}
+
+export interface PVCSummary {
+  Name: string;
+  Namespace: string;
+  Status: string;
+  StorageClass: string;
+  Capacity: string;
+  VolumeName: string;
+  AccessModes: string[];
+}
+
+export interface StorageClassInfo {
+  Name: string;
+  Provisioner: string;
+  ReclaimPolicy: string;
+  VolumeBindingMode: string;
+  AllowVolumeExpansion: boolean;
+}
+
+export interface ServerConfig {
+  mutations_enabled: boolean;
+}
+
+// ─────────────────────────────────────────
+// Kubernetes Dashboard browser API
+// ─────────────────────────────────────────
+
+export const listNamespaces = (): Promise<NamespaceSummary[]> =>
+  http.get("/namespaces").then((r) => r.data);
+
+export const listStatefulSets = (namespace = ""): Promise<StatefulSetSummary[]> =>
+  http.get("/clusters/statefulsets", { params: { namespace } }).then((r) => r.data);
+
+export const listDaemonSets = (namespace = ""): Promise<DaemonSetSummary[]> =>
+  http.get("/clusters/daemonsets", { params: { namespace } }).then((r) => r.data);
+
+export const listK8sJobs = (namespace = ""): Promise<K8sJobSummary[]> =>
+  http.get("/clusters/jobs", { params: { namespace } }).then((r) => r.data);
+
+export const listCronJobs = (namespace = ""): Promise<CronJobSummary[]> =>
+  http.get("/clusters/cronjobs", { params: { namespace } }).then((r) => r.data);
+
+export const listIngresses = (namespace = ""): Promise<IngressSummary[]> =>
+  http.get("/clusters/ingresses", { params: { namespace } }).then((r) => r.data);
+
+export const listServiceEndpoints = (namespace = ""): Promise<ServiceEndpointSummary[]> =>
+  http.get("/clusters/services", { params: { namespace } }).then((r) => r.data);
+
+export const listConfigMaps = (namespace = ""): Promise<ConfigMapSummary[]> =>
+  http.get("/clusters/configmaps", { params: { namespace } }).then((r) => r.data);
+
+export const listSecrets = (namespace = ""): Promise<SecretSummary[]> =>
+  http.get("/clusters/secrets", { params: { namespace } }).then((r) => r.data);
+
+export const listPVCs = (namespace = ""): Promise<PVCSummary[]> =>
+  http.get("/clusters/pvcs", { params: { namespace } }).then((r) => r.data);
+
+export const listStorageClasses = (): Promise<StorageClassInfo[]> =>
+  http.get("/clusters/storageclasses").then((r) => r.data);
+
+export const getPodLogs = (
+  namespace: string,
+  pod: string,
+  container = "",
+  tail = 200
+): Promise<string> =>
+  http
+    .get(
+      `/clusters/pods/${encodeURIComponent(namespace)}/${encodeURIComponent(pod)}/logs`,
+      { params: { container, tail }, responseType: "text" }
+    )
+    .then((r) => r.data);
+
+export const getResourceYAML = (
+  kind: string,
+  namespace: string,
+  name: string
+): Promise<string> =>
+  http
+    .get(
+      `/resource/${encodeURIComponent(kind)}/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/yaml`,
+      { responseType: "text" }
+    )
+    .then((r) => r.data);
+
+export const getServerConfig = (): Promise<ServerConfig> =>
+  http.get("/config").then((r) => r.data);
+
+// ─────────────────────────────────────────
+// Port Forward API
+// ─────────────────────────────────────────
+
+export type PortForwardKind = "pod" | "service";
+export type PortForwardStatus = "active" | "stopped" | "error";
+
+export interface PortForwardSession {
+  id: string;
+  kind: PortForwardKind;
+  namespace: string;
+  name: string;
+  local_port: number;
+  remote_port: number;
+  address: string; // "localhost:<port>" on the server host
+  proxy_path: string; // HTTP proxy path reachable via the dashboard port
+  status: PortForwardStatus;
+  error?: string;
+  created_at: string;
+}
+
+export interface StartPortForwardRequest {
+  kind: PortForwardKind;
+  namespace: string;
+  name: string;
+  remote_port?: number; // omit/0 = auto-pick first container/service port
+}
+
+export const startPortForward = (
+  req: StartPortForwardRequest
+): Promise<PortForwardSession> =>
+  http.post("/portforward", req).then((r) => r.data);
+
+export const listPortForwards = (): Promise<PortForwardSession[]> =>
+  http.get("/portforward").then((r) => r.data);
+
+export const stopPortForward = (id: string): Promise<void> =>
+  http.delete(`/portforward/${encodeURIComponent(id)}`).then(() => undefined);

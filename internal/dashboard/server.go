@@ -57,6 +57,7 @@ type Server struct {
 	knownKubeconfigPaths map[string]struct{}
 	stateFilePath        string
 	uploadDir            string
+	pfManager            *PortForwardManager
 }
 
 // NewServer creates a dashboard Server.
@@ -68,6 +69,7 @@ func NewServer(cfg Config, log *zap.Logger) *Server {
 		k8sClient:            cfg.K8sClient,
 		activeKubeconfigPath: cfg.KubeconfigPath,
 		knownKubeconfigPaths: map[string]struct{}{},
+		pfManager:            NewPortForwardManager(log),
 	}
 
 	if cfg.KubeconfigPath != "" {
@@ -136,6 +138,37 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/events", s.handleListEvents).Methods(http.MethodGet)
 	api.HandleFunc("/troubleshooting/summary", s.handleClusterTroubleshooting).Methods(http.MethodGet)
 
+	// Kubernetes Dashboard browser (read-only resource listing + YAML/logs viewers)
+	api.HandleFunc("/namespaces", s.handleListNamespaces).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/statefulsets", s.handleListStatefulSets).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/daemonsets", s.handleListDaemonSets).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/jobs", s.handleListK8sJobs).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/cronjobs", s.handleListCronJobs).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/ingresses", s.handleListIngresses).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/services", s.handleListServices).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/configmaps", s.handleListConfigMaps).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/secrets", s.handleListSecrets).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/pvcs", s.handleListPVCs).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/storageclasses", s.handleListStorageClasses).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/pods/{namespace}/{pod}/logs", s.handleGetPodLogs).Methods(http.MethodGet)
+	api.HandleFunc("/resource/{kind}/{namespace}/{name}/yaml", s.handleGetResourceYAML).Methods(http.MethodGet)
+	api.HandleFunc("/config", s.handleGetServerConfig).Methods(http.MethodGet)
+
+	// Port forwarding. Listing sessions is always read-only; starting/stopping a
+	// forward opens a tunnel into the cluster and is gated like other mutations.
+	api.HandleFunc("/portforward", s.handleListPortForwards).Methods(http.MethodGet)
+	if s.cfg.EnableActionMutationEndpoints {
+		api.HandleFunc("/portforward", s.handleStartPortForward).Methods(http.MethodPost)
+		api.HandleFunc("/portforward/{id}", s.handleStopPortForward).Methods(http.MethodDelete)
+	} else {
+		api.HandleFunc("/portforward", s.handleMutationDisabled("port-forward endpoints are disabled")).Methods(http.MethodPost)
+		api.HandleFunc("/portforward/{id}", s.handleMutationDisabled("port-forward endpoints are disabled")).Methods(http.MethodDelete)
+	}
+	// HTTP reverse-proxy to a session's forwarded port. Reachable through the
+	// dashboard port (works in containers where the local port isn't published).
+	// Only functions for sessions that already exist, so it needs no separate gate.
+	api.PathPrefix("/forward/{id}/").HandlerFunc(s.handleForwardProxy)
+
 	// AI
 	api.HandleFunc("/ai/health", s.handleAIHealth).Methods(http.MethodGet)
 	api.HandleFunc("/ai/interpret", s.handleAIInterpret).Methods(http.MethodPost)
@@ -200,6 +233,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
+		s.pfManager.StopAll()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(shutdownCtx)

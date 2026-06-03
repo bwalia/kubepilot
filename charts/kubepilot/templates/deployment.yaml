@@ -36,6 +36,9 @@ spec:
             - --log-level={{ .Values.kubepilot.logLevel }}
             - --ollama-base-url={{ .Values.kubepilot.ollamaBaseURL }}
             - --ollama-model={{ .Values.kubepilot.ollamaModel }}
+            {{- if .Values.kubepilot.enableActionMutations }}
+            - --enable-action-mutations
+            {{- end }}
           env:
             {{- if .Values.kubepilot.ollamaAPIKeySecret.name }}
             - name: KUBEPILOT_OLLAMA_API_KEY

@@ -18,15 +18,16 @@ type PodCondition struct {
 
 // ContainerDiag holds diagnostic information for a single container.
 type ContainerDiag struct {
-	Name         string `json:"name"`
-	Image        string `json:"image"`
-	Ready        bool   `json:"ready"`
-	RestartCount int32  `json:"restart_count"`
-	State        string `json:"state"`           // Running, Waiting, Terminated
-	StateReason  string `json:"state_reason"`     // CrashLoopBackOff, OOMKilled, etc.
-	StateMessage string `json:"state_message"`
-	ExitCode     int32  `json:"exit_code"`
-	LastTerminatedReason string `json:"last_terminated_reason,omitempty"`
+	Name                 string  `json:"name"`
+	Image                string  `json:"image"`
+	Ready                bool    `json:"ready"`
+	RestartCount         int32   `json:"restart_count"`
+	State                string  `json:"state"`        // Running, Waiting, Terminated
+	StateReason          string  `json:"state_reason"` // CrashLoopBackOff, OOMKilled, etc.
+	StateMessage         string  `json:"state_message"`
+	ExitCode             int32   `json:"exit_code"`
+	LastTerminatedReason string  `json:"last_terminated_reason,omitempty"`
+	Ports                []int32 `json:"ports,omitempty"` // declared container ports (for port-forward)
 }
 
 // OwnerRef traces the ownership chain of a resource.
@@ -38,37 +39,37 @@ type OwnerRef struct {
 
 // PodDiagnostics provides comprehensive pod information for AI troubleshooting.
 type PodDiagnostics struct {
-	Name              string           `json:"name"`
-	Namespace         string           `json:"namespace"`
-	Phase             string           `json:"phase"`
-	NodeName          string           `json:"node_name"`
-	ServiceAccount    string           `json:"service_account"`
-	CreatedAt         time.Time        `json:"created_at"`
-	Conditions        []PodCondition   `json:"conditions"`
-	ContainerStatuses []ContainerDiag  `json:"container_statuses"`
-	Events            []Event          `json:"events"`
-	ResourceUsage     *ResourceMetrics `json:"resource_usage,omitempty"`
-	OwnerChain        []OwnerRef       `json:"owner_chain"`
+	Name              string            `json:"name"`
+	Namespace         string            `json:"namespace"`
+	Phase             string            `json:"phase"`
+	NodeName          string            `json:"node_name"`
+	ServiceAccount    string            `json:"service_account"`
+	CreatedAt         time.Time         `json:"created_at"`
+	Conditions        []PodCondition    `json:"conditions"`
+	ContainerStatuses []ContainerDiag   `json:"container_statuses"`
+	Events            []Event           `json:"events"`
+	ResourceUsage     *ResourceMetrics  `json:"resource_usage,omitempty"`
+	OwnerChain        []OwnerRef        `json:"owner_chain"`
 	Labels            map[string]string `json:"labels"`
 	Annotations       map[string]string `json:"annotations"`
-	Tolerations       []string         `json:"tolerations,omitempty"`
+	Tolerations       []string          `json:"tolerations,omitempty"`
 	NodeSelector      map[string]string `json:"node_selector,omitempty"`
-	Volumes           []string         `json:"volumes,omitempty"`
+	Volumes           []string          `json:"volumes,omitempty"`
 }
 
 // DeploymentDiagnostics provides comprehensive deployment information.
 type DeploymentDiagnostics struct {
-	Name              string           `json:"name"`
-	Namespace         string           `json:"namespace"`
-	Replicas          int32            `json:"replicas"`
-	ReadyReplicas     int32            `json:"ready_replicas"`
-	UpdatedReplicas   int32            `json:"updated_replicas"`
-	AvailableReplicas int32            `json:"available_replicas"`
-	Strategy          string           `json:"strategy"`
-	Events            []Event          `json:"events"`
-	Conditions        []string         `json:"conditions"`
+	Name              string            `json:"name"`
+	Namespace         string            `json:"namespace"`
+	Replicas          int32             `json:"replicas"`
+	ReadyReplicas     int32             `json:"ready_replicas"`
+	UpdatedReplicas   int32             `json:"updated_replicas"`
+	AvailableReplicas int32             `json:"available_replicas"`
+	Strategy          string            `json:"strategy"`
+	Events            []Event           `json:"events"`
+	Conditions        []string          `json:"conditions"`
 	Labels            map[string]string `json:"labels"`
-	PodTemplate       string           `json:"pod_template_hash,omitempty"`
+	PodTemplate       string            `json:"pod_template_hash,omitempty"`
 }
 
 // GetPodDiagnostics returns full diagnostic information for a pod, including
@@ -128,14 +129,18 @@ func (c *Client) GetPodDiagnostics(ctx context.Context, namespace, podName strin
 			cd.LastTerminatedReason = cs.LastTerminationState.Terminated.Reason
 		}
 
-		// Determine image from container spec if not in status.
-		if cd.Image == "" {
-			for _, container := range pod.Spec.Containers {
-				if container.Name == cs.Name {
-					cd.Image = container.Image
-					break
-				}
+		// Pull image (if missing from status) and declared ports from the spec.
+		for _, container := range pod.Spec.Containers {
+			if container.Name != cs.Name {
+				continue
 			}
+			if cd.Image == "" {
+				cd.Image = container.Image
+			}
+			for _, cp := range container.Ports {
+				cd.Ports = append(cd.Ports, cp.ContainerPort)
+			}
+			break
 		}
 
 		diag.ContainerStatuses = append(diag.ContainerStatuses, cd)
@@ -222,11 +227,11 @@ func buildOwnerChain(refs []metav1.OwnerReference) []OwnerRef {
 
 // ClusterSnapshot captures a point-in-time view of the entire cluster for anomaly detection.
 type ClusterSnapshot struct {
-	Timestamp   time.Time            `json:"timestamp"`
-	Pods        []PodSummary         `json:"pods"`
-	Nodes       []NodeSummary        `json:"nodes"`
-	Deployments []DeploymentSummary  `json:"deployments"`
-	Events      []Event              `json:"events"`
+	Timestamp   time.Time           `json:"timestamp"`
+	Pods        []PodSummary        `json:"pods"`
+	Nodes       []NodeSummary       `json:"nodes"`
+	Deployments []DeploymentSummary `json:"deployments"`
+	Events      []Event             `json:"events"`
 }
 
 // TakeClusterSnapshot collects a comprehensive snapshot of the cluster state.

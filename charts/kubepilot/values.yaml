@@ -67,6 +67,10 @@ kubepilot:
   # Log level: debug | info | warn | error
   logLevel: "info"
 
+  # Enable action mutation endpoints (execute-action / remediate / port-forward
+  # start+stop). Required for the dashboard's port-forwarding feature.
+  enableActionMutations: false
+
   # Namespaces to monitor for AI-driven troubleshooting. Empty = all namespaces.
   watchNamespaces: []
 

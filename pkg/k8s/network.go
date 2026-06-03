@@ -10,23 +10,23 @@ import (
 
 // NetworkPolicySummary is a concise view of a Kubernetes NetworkPolicy.
 type NetworkPolicySummary struct {
-	Name      string   `json:"name"`
-	Namespace string   `json:"namespace"`
-	PodSelector string `json:"pod_selector"`
-	PolicyTypes []string `json:"policy_types"`
-	IngressRules int   `json:"ingress_rules"`
-	EgressRules  int   `json:"egress_rules"`
+	Name         string   `json:"name"`
+	Namespace    string   `json:"namespace"`
+	PodSelector  string   `json:"pod_selector"`
+	PolicyTypes  []string `json:"policy_types"`
+	IngressRules int      `json:"ingress_rules"`
+	EgressRules  int      `json:"egress_rules"`
 }
 
 // ServiceEndpoint describes a Service and its backing endpoints for topology mapping.
 type ServiceEndpoint struct {
-	Name       string   `json:"name"`
-	Namespace  string   `json:"namespace"`
-	Type       string   `json:"type"` // ClusterIP, NodePort, LoadBalancer
-	ClusterIP  string   `json:"cluster_ip"`
-	Ports      []PortInfo `json:"ports"`
-	Selector   map[string]string `json:"selector"`
-	EndpointIPs []string `json:"endpoint_ips,omitempty"`
+	Name        string            `json:"name"`
+	Namespace   string            `json:"namespace"`
+	Type        string            `json:"type"` // ClusterIP, NodePort, LoadBalancer
+	ClusterIP   string            `json:"cluster_ip"`
+	Ports       []PortInfo        `json:"ports"`
+	Selector    map[string]string `json:"selector"`
+	EndpointIPs []string          `json:"endpoint_ips,omitempty"`
 }
 
 // PortInfo holds service port metadata.
@@ -35,6 +35,48 @@ type PortInfo struct {
 	Port       int32  `json:"port"`
 	TargetPort string `json:"target_port"`
 	Protocol   string `json:"protocol"`
+}
+
+// IngressSummary is a concise view of an Ingress for the dashboard browser.
+type IngressSummary struct {
+	Name       string `json:"Name"`
+	Namespace  string `json:"Namespace"`
+	Host       string `json:"Host"`
+	IngressURL string `json:"IngressURL"`
+	TLS        bool   `json:"TLS"`
+}
+
+// ListIngresses returns all Ingresses in a namespace (or all namespaces if empty).
+func (c *Client) ListIngresses(ctx context.Context, namespace string) ([]IngressSummary, error) {
+	list, err := c.Core.NetworkingV1().Ingresses(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("listing ingresses in namespace %q: %w", namespace, err)
+	}
+
+	summaries := make([]IngressSummary, 0, len(list.Items))
+	for _, ing := range list.Items {
+		host := ""
+		if len(ing.Spec.Rules) > 0 {
+			host = ing.Spec.Rules[0].Host
+		}
+		tls := len(ing.Spec.TLS) > 0
+		ingressURL := ""
+		if host != "" {
+			scheme := "http"
+			if tls {
+				scheme = "https"
+			}
+			ingressURL = scheme + "://" + host
+		}
+		summaries = append(summaries, IngressSummary{
+			Name:       ing.Name,
+			Namespace:  ing.Namespace,
+			Host:       host,
+			IngressURL: ingressURL,
+			TLS:        tls,
+		})
+	}
+	return summaries, nil
 }
 
 // ListNetworkPolicies returns all NetworkPolicies in a namespace (or all namespaces if empty).
@@ -115,10 +157,10 @@ func toNetworkPolicySummary(np networkingv1.NetworkPolicy) NetworkPolicySummary 
 	}
 
 	return NetworkPolicySummary{
-		Name:        np.Name,
-		Namespace:   np.Namespace,
-		PodSelector: podSelector,
-		PolicyTypes: policyTypes,
+		Name:         np.Name,
+		Namespace:    np.Namespace,
+		PodSelector:  podSelector,
+		PolicyTypes:  policyTypes,
 		IngressRules: len(np.Spec.Ingress),
 		EgressRules:  len(np.Spec.Egress),
 	}
