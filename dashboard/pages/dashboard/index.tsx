@@ -16,6 +16,7 @@ import {
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { LogViewer } from "@/components/LogViewer";
 import { CRCodeApproval } from "@/components/CRCodeApproval";
+import { OverviewSection } from "@/components/dashboard/OverviewSection";
 import { WorkloadsSection } from "@/components/dashboard/WorkloadsSection";
 import { NetworkSection } from "@/components/dashboard/NetworkSection";
 import { ConfigSection } from "@/components/dashboard/ConfigSection";
@@ -25,11 +26,12 @@ import { TopologySection } from "@/components/dashboard/TopologySection";
 import { PodDetailDrawer } from "@/components/dashboard/PodDetailDrawer";
 import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
-import { Boxes, Network, Database, HeartPulse, FileWarning, Share2, X } from "lucide-react";
+import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X } from "lucide-react";
 
-type Section = "workloads" | "network" | "config" | "topology" | "health" | "events";
+type Section = "overview" | "workloads" | "network" | "config" | "topology" | "health" | "events";
 
 const SECTIONS: { key: Section; label: string; icon: typeof Boxes }[] = [
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "workloads", label: "Workloads", icon: Boxes },
   { key: "network", label: "Network", icon: Network },
   { key: "config", label: "Config & Storage", icon: Database },
@@ -46,7 +48,7 @@ interface YAMLTarget {
 
 export default function KubernetesDashboard() {
   const [namespace, setNamespace] = useState("");
-  const [section, setSection] = useState<Section>("workloads");
+  const [section, setSection] = useState<Section>("overview");
   const [selectedPod, setSelectedPod] = useState<{ namespace: string; name: string } | null>(null);
   const [yamlTarget, setYamlTarget] = useState<YAMLTarget | null>(null);
   const [crAction, setCrAction] = useState<SuggestedAction | null>(null);
@@ -129,6 +131,7 @@ export default function KubernetesDashboard() {
 
       {/* Section content */}
       <main className="px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
+        {section === "overview" && <OverviewSection namespace={namespace} />}
         {section === "workloads" && (
           <WorkloadsSection
             namespace={namespace}

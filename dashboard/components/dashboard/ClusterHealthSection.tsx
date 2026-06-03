@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getClusterTroubleshootingSummary, type NodeHealthRow, type ProblemPod } from "@/lib/api";
-import { ClusterResourceCharts } from "@/components/ClusterResourceCharts";
+import { ResourceMeters } from "@/components/dashboard/ResourceMeters";
 import { ResourceTable, type Column } from "./ResourceTable";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, Activity } from "lucide-react";
@@ -15,7 +15,7 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
 
   return (
     <div className="space-y-6">
-      <ClusterResourceCharts />
+      <ResourceMeters />
 
       {/* Health KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

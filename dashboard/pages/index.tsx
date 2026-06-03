@@ -25,7 +25,7 @@ import { CRCodeManager } from "@/components/CRCodeManager";
 import { JobScheduler } from "@/components/JobScheduler";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
 import { RunbooksPanel } from "@/components/RunbooksPanel";
-import { ClusterResourceCharts } from "@/components/ClusterResourceCharts";
+import { ResourceMeters } from "@/components/dashboard/ResourceMeters";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { ClusterEventsTroubleshooting } from "@/components/ClusterEventsTroubleshooting";
 import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel";
@@ -183,7 +183,7 @@ export default function DashboardHome() {
 
       {/* ── Cluster Resource Charts ─────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-pilot-border bg-pilot-surface/30">
-        <ClusterResourceCharts />
+        <ResourceMeters />
       </div>
 
       {/* ── KPI Bar ──────────────────────────────────────────────── */}

@@ -18,9 +18,10 @@ metadata:
   labels:
     {{- include "kubepilot.labels" . | nindent 4 }}
 rules:
-  # Core cluster read access — required for AI cluster context building.
+  # Core cluster read access — required for AI cluster context building and the
+  # dashboard resource browser / charts overview.
   - apiGroups: [""]
-    resources: [pods, pods/log, nodes, services, endpoints, namespaces, events, configmaps]
+    resources: [pods, pods/log, nodes, services, endpoints, namespaces, events, configmaps, persistentvolumeclaims, persistentvolumes]
     verbs: [get, list, watch]
   # Write access — only for AI-approved actions (scaling, restart, pod deletion).
   - apiGroups: [""]
@@ -39,6 +40,14 @@ rules:
   # Networking — read access for the service topology graph and Network section.
   - apiGroups: [networking.k8s.io]
     resources: [ingresses, networkpolicies]
+    verbs: [get, list, watch]
+  # Batch — read access for the Jobs / CronJobs views and charts overview.
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  # Storage — read access for StorageClasses (config/storage views, storage charts).
+  - apiGroups: [storage.k8s.io]
+    resources: [storageclasses]
     verbs: [get, list, watch]
   # Secrets — restricted to kubepilot-security namespace for CR code management.
   - apiGroups: [""]
