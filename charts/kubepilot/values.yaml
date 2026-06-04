@@ -50,12 +50,14 @@ ingress:
 
 # ── KubePilot configuration ──────────────────────────────────────────────────
 kubepilot:
-  # Ollama base URL — defaults to the in-cluster Ollama service if deployed together,
-  # or http://localhost:11434/v1 for single-node local setups.
-  ollamaBaseURL: "http://localhost:11434/v1"
+  # Ollama base URL. Default targets an Ollama running on the host machine,
+  # reachable from inside the cluster via host.docker.internal (works with
+  # Rancher Desktop / Docker Desktop k3s). For an in-cluster Ollama service,
+  # override with its service DNS, e.g. http://ollama.monitoring:11434/v1.
+  ollamaBaseURL: "http://host.docker.internal:11434/v1"
 
-  # Ollama model name: llama3 | mistral | codellama | etc.
-  ollamaModel: "llama3"
+  # Ollama model name: tinyllama | llama3 | mistral | codellama | etc.
+  ollamaModel: "tinyllama:latest"
 
   # ollamaAPIKeySecret is optional — only required if Ollama is behind an auth proxy.
   # Set via: --set kubepilot.ollamaAPIKeySecret.name=my-secret
