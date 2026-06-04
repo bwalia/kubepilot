@@ -56,8 +56,10 @@ kubepilot:
   # override with its service DNS, e.g. http://ollama.monitoring:11434/v1.
   ollamaBaseURL: "http://host.docker.internal:11434/v1"
 
-  # Ollama model name: tinyllama | llama3 | mistral | codellama | etc.
-  ollamaModel: "tinyllama:latest"
+  # Ollama model name: llama3.1:8b | tinyllama | mistral | codellama | etc.
+  # llama3.1:8b (~5GB) gives solid RCA quality and runs comfortably on a
+  # 16GB+ machine; drop to tinyllama for very memory-constrained hosts.
+  ollamaModel: "llama3.1:8b"
 
   # ollamaAPIKeySecret is optional — only required if Ollama is behind an auth proxy.
   # Set via: --set kubepilot.ollamaAPIKeySecret.name=my-secret
