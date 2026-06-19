@@ -188,6 +188,10 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/anomalies", s.handleListAnomalies).Methods(http.MethodGet)
 	api.HandleFunc("/topology/{namespace}", s.handleTopology).Methods(http.MethodGet)
 	api.HandleFunc("/autopilot", s.handleAutopilotStatus).Methods(http.MethodGet)
+	// The kill switch (pause) is always available — stopping automation is a
+	// safe operation. Resuming re-enables only the startup-configured mode.
+	api.HandleFunc("/autopilot/pause", s.handleAutopilotPause).Methods(http.MethodPost)
+	api.HandleFunc("/autopilot/resume", s.handleAutopilotResume).Methods(http.MethodPost)
 	if s.cfg.EnableActionMutationEndpoints {
 		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
 	} else {
@@ -341,7 +345,32 @@ func (s *Server) handleAutopilotStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	policy := s.cfg.Autopilot.Policy()
+	s.writeAutopilotStatus(w, s.cfg.Autopilot.Policy(), limit)
+}
+
+// handleAutopilotPause engages the global kill switch, immediately halting all
+// self-healing. Always available regardless of mutation-endpoint settings.
+func (s *Server) handleAutopilotPause(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Autopilot == nil {
+		httpError(w, fmt.Errorf("autopilot is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	policy := s.cfg.Autopilot.Pause()
+	s.writeAutopilotStatus(w, policy, 50)
+}
+
+// handleAutopilotResume restores the mode that was active before the last pause.
+func (s *Server) handleAutopilotResume(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Autopilot == nil {
+		httpError(w, fmt.Errorf("autopilot is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	policy := s.cfg.Autopilot.Resume()
+	s.writeAutopilotStatus(w, policy, 50)
+}
+
+// writeAutopilotStatus renders the standard autopilot status payload.
+func (s *Server) writeAutopilotStatus(w http.ResponseWriter, policy autopilot.Policy, limit int) {
 	writeJSON(w, map[string]any{
 		"enabled":   policy.Mode != autopilot.ModeOff,
 		"policy":    policy,

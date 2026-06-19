@@ -279,6 +279,50 @@ func TestWorkloadActionWithoutTargetEscalates(t *testing.T) {
 	}
 }
 
+func TestPauseResumeKillSwitch(t *testing.T) {
+	fe := &fakeExecutor{}
+	p := DefaultPolicy()
+	p.Mode = ModeActive
+	c := newController(t, p, fe)
+
+	// Pausing must halt execution immediately.
+	c.Pause()
+	if c.Policy().Mode != ModeOff {
+		t.Fatalf("pause should set mode to off, got %s", c.Policy().Mode)
+	}
+	c.HandleReport(context.Background(), crashLoopReport("apps", "web-1", 0.99))
+	if fe.count() != 0 {
+		t.Fatalf("paused autopilot must not execute, got %d", fe.count())
+	}
+
+	// Resuming must restore the previous (active) mode and act again.
+	c.Resume()
+	if c.Policy().Mode != ModeActive {
+		t.Fatalf("resume should restore active mode, got %s", c.Policy().Mode)
+	}
+	c.HandleReport(context.Background(), crashLoopReport("apps", "web-2", 0.99))
+	if fe.count() != 1 {
+		t.Fatalf("resumed autopilot should execute, got %d", fe.count())
+	}
+}
+
+func TestResumeFromNeverRunningIsDryRun(t *testing.T) {
+	c := newController(t, DefaultPolicy(), &fakeExecutor{}) // mode off, never paused
+	if c.Resume().Mode != ModeDryRun {
+		t.Fatalf("resume with no prior mode should default to dry-run, got %s", c.Policy().Mode)
+	}
+}
+
+func TestSetMode(t *testing.T) {
+	c := newController(t, DefaultPolicy(), &fakeExecutor{})
+	if c.SetMode(ModeActive).Mode != ModeActive {
+		t.Fatalf("SetMode(active) failed")
+	}
+	if c.Policy().Mode != ModeActive {
+		t.Fatalf("mode not persisted")
+	}
+}
+
 func TestParseNamespacedName(t *testing.T) {
 	cases := []struct {
 		in       string

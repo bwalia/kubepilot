@@ -133,6 +133,7 @@ type Controller struct {
 
 	mu          sync.Mutex
 	policy      Policy
+	resumeMode  Mode       // mode to restore after a Pause (kill switch)
 	decisions   []Decision // ring buffer, newest last
 	maxLedger   int
 	lastAction  map[string]time.Time // resource key -> last real action
@@ -162,6 +163,45 @@ func New(cfg Config, log *zap.Logger) *Controller {
 func (c *Controller) Policy() Policy {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.policy
+}
+
+// Pause is the global kill switch: it immediately stops all self-healing by
+// switching to ModeOff, remembering the previous mode so Resume can restore it.
+// It is idempotent and safe to call at any time.
+func (c *Controller) Pause() Policy {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.policy.Mode != ModeOff {
+		c.resumeMode = c.policy.Mode
+		c.policy.Mode = ModeOff
+		c.log.Warn("autopilot paused (kill switch engaged)", zap.String("previous_mode", string(c.resumeMode)))
+	}
+	return c.policy
+}
+
+// Resume restores the mode that was active before the last Pause. If autopilot
+// was never running, it conservatively resumes into dry-run rather than active.
+func (c *Controller) Resume() Policy {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.policy.Mode == ModeOff {
+		m := c.resumeMode
+		if m == "" || m == ModeOff {
+			m = ModeDryRun
+		}
+		c.policy.Mode = m
+		c.log.Info("autopilot resumed", zap.String("mode", string(m)))
+	}
+	return c.policy
+}
+
+// SetMode explicitly sets the operating mode (off, dry-run or active).
+func (c *Controller) SetMode(m Mode) Policy {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.policy.Mode = m
+	c.log.Info("autopilot mode changed", zap.String("mode", string(m)))
 	return c.policy
 }
 

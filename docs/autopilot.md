@@ -79,6 +79,19 @@ See `config.example.yaml` for the YAML form.
 2. Tighten `allowed_namespaces` to a low-risk namespace (e.g. `staging`).
 3. Promote to **`active`** for that namespace; widen gradually.
 
+## Dashboard
+
+An **Autopilot** page (top nav) shows the live cockpit: current mode badge,
+aggregate stats, the active policy, and the decision ledger — plus a global
+**pause / resume kill switch**.
+
+- **Pause** (`POST /api/v1/autopilot/pause`) is the kill switch: it immediately
+  switches to `off`, halting all self-healing. It is always available,
+  regardless of mutation-endpoint settings, because stopping automation is
+  always safe. It remembers the previous mode.
+- **Resume** (`POST /api/v1/autopilot/resume`) restores the pre-pause mode (or
+  `dry-run` if autopilot was never running). The UI requires a confirm click.
+
 ## Observability
 
 `GET /api/v1/autopilot?limit=50` returns:
@@ -125,8 +138,9 @@ The controller is intentionally a clean seam to build on. Prioritised follow-ups
    service suppresses redundant actions on its dependents.
 8. **MCP fan-out.** Execute remediation in spoke clusters via the MCP agents
    (`pkg/mcp/client` action executor is currently a TODO).
-9. **Dashboard panel + kill switch.** A live "Autopilot" view of the decision
-   ledger with a one-click global pause (`POST /api/v1/autopilot/pause`).
-10. **Cost/SLO awareness.** Gate `scale` actions on namespace quotas and error-
-    budget burn so self-healing respects budgets.
+9. **Cost/SLO awareness.** Gate `scale` actions on namespace quotas and error-
+   budget burn so self-healing respects budgets.
+
+> ✅ **Done:** live dashboard panel (decision ledger + policy + stats) and the
+> global pause/resume kill switch (`/api/v1/autopilot/pause` · `/resume`).
 ```

@@ -1,0 +1,284 @@
+/**
+ * AutopilotPanel — live view of KubePilot's closed-loop self-healing.
+ *
+ * Shows the current policy, aggregate stats, a global pause/resume kill switch,
+ * and the audit ledger of recent decisions (executed / dry-run / skipped /
+ * escalated / failed).
+ */
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Bot,
+  Pause,
+  Play,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  SkipForward,
+  Eye,
+  UserCog,
+} from "lucide-react";
+import {
+  getAutopilotStatus,
+  pauseAutopilot,
+  resumeAutopilot,
+  type AutopilotVerdict,
+  type AutopilotStatus,
+} from "@/lib/api";
+
+const VERDICT_META: Record<
+  AutopilotVerdict,
+  { label: string; badge: string; Icon: typeof CheckCircle2 }
+> = {
+  executed: {
+    label: "Executed",
+    badge: "bg-emerald-900/30 text-emerald-400 border-emerald-700/50",
+    Icon: CheckCircle2,
+  },
+  "dry-run": {
+    label: "Dry-run",
+    badge: "bg-sky-900/30 text-sky-400 border-sky-700/50",
+    Icon: Eye,
+  },
+  skipped: {
+    label: "Skipped",
+    badge: "bg-gray-800/50 text-gray-400 border-gray-700/50",
+    Icon: SkipForward,
+  },
+  escalated: {
+    label: "Escalated",
+    badge: "bg-amber-900/30 text-amber-400 border-amber-700/50",
+    Icon: UserCog,
+  },
+  failed: {
+    label: "Failed",
+    badge: "bg-red-900/30 text-red-400 border-red-700/50",
+    Icon: XCircle,
+  },
+};
+
+const MODE_BADGE: Record<string, string> = {
+  off: "bg-gray-800/50 text-gray-400 border-gray-700/50",
+  "dry-run": "bg-sky-900/30 text-sky-400 border-sky-700/50",
+  active: "bg-emerald-900/30 text-emerald-400 border-emerald-700/50",
+};
+
+function formatCooldown(ns?: number): string {
+  if (!ns) return "—";
+  const minutes = Math.round(ns / 1e9 / 60);
+  return minutes >= 1 ? `${minutes}m` : `${Math.round(ns / 1e9)}s`;
+}
+
+export function AutopilotPanel() {
+  const qc = useQueryClient();
+  const [pendingResume, setPendingResume] = useState(false);
+
+  const { data, isLoading } = useQuery<AutopilotStatus>({
+    queryKey: ["autopilot-status"],
+    queryFn: () => getAutopilotStatus(50),
+    refetchInterval: 10_000,
+  });
+
+  const pause = useMutation({
+    mutationFn: pauseAutopilot,
+    onSuccess: (s) => qc.setQueryData(["autopilot-status"], s),
+  });
+  const resume = useMutation({
+    mutationFn: resumeAutopilot,
+    onSuccess: (s) => {
+      qc.setQueryData(["autopilot-status"], s);
+      setPendingResume(false);
+    },
+  });
+
+  const policy = data?.policy;
+  const mode = policy?.mode ?? "off";
+  const stats = data?.stats ?? {};
+  const decisions = data?.decisions ?? [];
+
+  return (
+    <div className="space-y-6">
+      {/* Header + kill switch */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <Bot className="w-6 h-6 text-pilot-accent" />
+          <div>
+            <h1 className="text-xl font-bold leading-tight">Autopilot</h1>
+            <p className="text-sm text-pilot-muted">AI-driven self-healing</p>
+          </div>
+          <span
+            className={`ml-2 text-xs font-bold uppercase px-2 py-0.5 rounded-md border ${
+              MODE_BADGE[mode] || MODE_BADGE.off
+            }`}
+          >
+            {mode}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {mode === "off" ? (
+            <button
+              onClick={() => (pendingResume ? resume.mutate() : setPendingResume(true))}
+              disabled={resume.isPending}
+              className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border border-emerald-700/50 bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40 transition-colors disabled:opacity-50"
+            >
+              <Play className="w-4 h-4" />
+              {pendingResume ? "Confirm resume" : "Resume"}
+            </button>
+          ) : (
+            <button
+              onClick={() => pause.mutate()}
+              disabled={pause.isPending}
+              className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border border-red-700/50 bg-red-900/20 text-red-300 hover:bg-red-900/40 transition-colors disabled:opacity-50"
+            >
+              <Pause className="w-4 h-4" />
+              Pause (kill switch)
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {(["executed", "dry-run", "escalated", "skipped", "failed"] as AutopilotVerdict[]).map(
+          (v) => {
+            const meta = VERDICT_META[v];
+            return (
+              <div
+                key={v}
+                className="bg-pilot-surface border border-pilot-border rounded-xl p-3"
+              >
+                <div className="flex items-center gap-1.5 text-xs text-pilot-muted">
+                  <meta.Icon className="w-3.5 h-3.5" /> {meta.label}
+                </div>
+                <div className="text-2xl font-bold mt-1">{stats[v] ?? 0}</div>
+              </div>
+            );
+          },
+        )}
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl p-3">
+          <div className="flex items-center gap-1.5 text-xs text-pilot-muted">
+            <ShieldCheck className="w-3.5 h-3.5" /> Last hour
+          </div>
+          <div className="text-2xl font-bold mt-1">
+            {stats["actions_last_hour"] ?? 0}
+            {policy ? (
+              <span className="text-sm text-pilot-muted font-normal">
+                /{policy.max_actions_per_hour}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {/* Policy summary */}
+      {policy && (
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
+          <h2 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-pilot-accent" /> Active policy
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <Field label="Min confidence" value={`${Math.round(policy.min_confidence * 100)}%`} />
+            <Field label="Max risk" value={policy.max_risk} />
+            <Field label="Cooldown / resource" value={formatCooldown(policy.cooldown)} />
+            <Field label="Rate limit" value={`${policy.max_actions_per_hour}/hour`} />
+            <Field
+              label="Allowed actions"
+              value={policy.allowed_actions?.join(", ") || "—"}
+            />
+            <Field
+              label="Namespaces"
+              value={
+                policy.allowed_namespaces && policy.allowed_namespaces.length > 0
+                  ? policy.allowed_namespaces.join(", ")
+                  : "all (except blocked)"
+              }
+            />
+            <Field
+              label="Blocked namespaces"
+              value={policy.blocked_namespaces?.join(", ") || "—"}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Decision ledger */}
+      <div>
+        <h2 className="text-sm font-semibold mb-3">Recent decisions</h2>
+        {isLoading ? (
+          <div className="text-pilot-muted text-sm py-10 text-center">
+            Loading autopilot activity...
+          </div>
+        ) : !data?.enabled && decisions.length === 0 ? (
+          <div className="text-pilot-muted text-sm py-10 text-center bg-pilot-surface border border-pilot-border rounded-xl">
+            Autopilot is off. Start it in <span className="font-mono">dry-run</span> mode
+            (<span className="font-mono">--autopilot-mode=dry-run</span>) to preview what it
+            would do as anomalies are detected.
+          </div>
+        ) : decisions.length === 0 ? (
+          <div className="text-pilot-muted text-sm py-10 text-center bg-pilot-surface border border-pilot-border rounded-xl">
+            No decisions yet. Autopilot acts when the watcher produces a new RCA report.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {decisions.map((d, i) => (
+              <DecisionRow key={`${d.report_id}-${i}`} d={d} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-xs text-pilot-muted">{label}</div>
+      <div className="font-medium truncate">{value}</div>
+    </div>
+  );
+}
+
+function DecisionRow({ d }: { d: import("@/lib/api").AutopilotDecision }) {
+  const meta = VERDICT_META[d.verdict] ?? VERDICT_META.skipped;
+  const ts = new Date(d.time);
+  const confidence = Math.round((d.confidence ?? 0) * 100);
+
+  return (
+    <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span
+            className={`flex items-center gap-1 text-xs font-bold uppercase px-2 py-0.5 rounded-md shrink-0 border ${meta.badge}`}
+          >
+            <meta.Icon className="w-3 h-3" /> {meta.label}
+          </span>
+          {d.action ? (
+            <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-pilot-bg border border-pilot-border shrink-0">
+              {d.action}
+            </span>
+          ) : null}
+          <span className="text-sm text-white font-semibold truncate">
+            {d.root_cause || "—"}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-sm text-pilot-muted shrink-0">
+          <span className="font-medium">{confidence}%</span>
+          <span>{ts.toLocaleString()}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-2 text-sm text-pilot-muted">
+        <span className="font-mono text-xs">
+          {d.resource.namespace}/{d.resource.name}
+        </span>
+      </div>
+      <p className="text-sm text-pilot-muted mt-1.5">{d.reason}</p>
+      {d.output ? (
+        <pre className="text-xs text-pilot-muted/80 mt-1.5 whitespace-pre-wrap font-mono">
+          {d.output}
+        </pre>
+      ) : null}
+    </div>
+  );
+}

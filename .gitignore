@@ -5,6 +5,7 @@ node_modules/
 dist/
 dashboard/out/
 dashboard/.next/
+dashboard/tsconfig.tsbuildinfo
 
 # OS files
 .DS_Store
