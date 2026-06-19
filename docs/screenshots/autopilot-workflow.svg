@@ -1,0 +1,154 @@
+<svg width="1280" height="840" viewBox="0 0 1280 840" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081329"/>
+      <stop offset="1" stop-color="#040A18"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#0D1D3A"/>
+      <stop offset="1" stop-color="#0A1730"/>
+    </linearGradient>
+    <linearGradient id="detect" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#10243F"/><stop offset="1" stop-color="#0B1A30"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#23C55E"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#3B82F6"/>
+    </marker>
+    <marker id="arrowMuted" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#5B73A6"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="840" fill="url(#bg)"/>
+
+  <!-- Header -->
+  <rect x="24" y="24" width="1232" height="76" rx="12" fill="#07152D" stroke="#1C325C"/>
+  <circle cx="62" cy="62" r="16" fill="#23C55E" opacity="0.15"/>
+  <circle cx="62" cy="62" r="7" fill="#23C55E"/>
+  <text x="92" y="56" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="30" font-weight="700">KubePilot Autopilot</text>
+  <text x="92" y="84" fill="#93A8D6" font-family="Segoe UI, Arial" font-size="19">Closed-loop, AI-driven pod self-healing — detect → diagnose → decide → fix → verify</text>
+  <rect x="1086" y="44" width="146" height="36" rx="18" fill="#0C2A18" stroke="#1E6B3C"/>
+  <circle cx="1108" cy="62" r="5" fill="#23C55E"/>
+  <text x="1122" y="68" fill="#23C55E" font-family="Segoe UI, Arial" font-size="17" font-weight="600">Self-healing</text>
+
+  <!-- ===== Pipeline cards (y=150, h=180) ===== -->
+  <!-- 1 DETECT -->
+  <rect x="24" y="150" width="212" height="180" rx="14" fill="url(#detect)" stroke="#223B6A"/>
+  <circle cx="52" cy="180" r="14" fill="#3B82F6"/>
+  <text x="52" y="186" fill="#fff" font-family="Segoe UI, Arial" font-size="16" font-weight="700" text-anchor="middle">1</text>
+  <text x="78" y="186" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Detect</text>
+  <text x="44" y="218" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">ClusterWatcher polls</text>
+  <text x="44" y="238" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">every 30s + anomaly rules</text>
+  <text x="44" y="268" fill="#EF6A6A" font-family="Segoe UI, Arial" font-size="14" font-weight="600">CrashLoopBackOff</text>
+  <text x="44" y="288" fill="#93A8D6" font-family="Segoe UI, Arial" font-size="13.5">OOMKilled · ImagePull</text>
+  <text x="44" y="308" fill="#93A8D6" font-family="Segoe UI, Arial" font-size="13.5">Pending · NodePressure</text>
+
+  <!-- 2 DIAGNOSE -->
+  <rect x="279" y="150" width="212" height="180" rx="14" fill="url(#panel)" stroke="#223B6A"/>
+  <circle cx="307" cy="180" r="14" fill="#3B82F6"/>
+  <text x="307" y="186" fill="#fff" font-family="Segoe UI, Arial" font-size="16" font-weight="700" text-anchor="middle">2</text>
+  <text x="333" y="186" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Diagnose</text>
+  <text x="299" y="218" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">AI RCA Engine (Ollama)</text>
+  <text x="299" y="238" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">logs + events + metrics</text>
+  <text x="299" y="268" fill="#CBD8F5" font-family="Segoe UI, Arial" font-size="14">Root cause + evidence</text>
+  <text x="299" y="288" fill="#CBD8F5" font-family="Segoe UI, Arial" font-size="14">Remediation steps</text>
+  <text x="299" y="308" fill="#23C55E" font-family="Segoe UI, Arial" font-size="14" font-weight="600">Confidence score</text>
+
+  <!-- 3 DECIDE -->
+  <rect x="534" y="150" width="212" height="180" rx="14" fill="url(#panel)" stroke="#2E8B57" stroke-width="2"/>
+  <circle cx="562" cy="180" r="14" fill="#23C55E"/>
+  <text x="562" y="186" fill="#06210F" font-family="Segoe UI, Arial" font-size="16" font-weight="700" text-anchor="middle">3</text>
+  <text x="588" y="186" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Decide</text>
+  <text x="554" y="214" fill="#7FE3A6" font-family="Segoe UI, Arial" font-size="13.5" font-weight="600">Autopilot policy gate</text>
+  <text x="554" y="240" fill="#9FB3DC" font-family="Segoe UI, Arial" font-size="13.5">✓ confidence ≥ 80%</text>
+  <text x="554" y="260" fill="#9FB3DC" font-family="Segoe UI, Arial" font-size="13.5">✓ safe action allow-list</text>
+  <text x="554" y="280" fill="#9FB3DC" font-family="Segoe UI, Arial" font-size="13.5">✓ namespace allowed</text>
+  <text x="554" y="300" fill="#9FB3DC" font-family="Segoe UI, Arial" font-size="13.5">✓ cooldown + rate limit</text>
+  <text x="554" y="320" fill="#9FB3DC" font-family="Segoe UI, Arial" font-size="13.5">✓ no CR-code required</text>
+
+  <!-- 4 ACT -->
+  <rect x="789" y="150" width="212" height="180" rx="14" fill="url(#panel)" stroke="#223B6A"/>
+  <circle cx="817" cy="180" r="14" fill="#23C55E"/>
+  <text x="817" y="186" fill="#06210F" font-family="Segoe UI, Arial" font-size="16" font-weight="700" text-anchor="middle">4</text>
+  <text x="843" y="186" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Fix</text>
+  <text x="809" y="218" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">RemediationExecutor</text>
+  <text x="809" y="238" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">applies the safe step</text>
+  <text x="809" y="268" fill="#7FE3A6" font-family="Segoe UI, Arial" font-size="14" font-weight="600">delete pod ↻</text>
+  <text x="809" y="288" fill="#CBD8F5" font-family="Segoe UI, Arial" font-size="14">rollout restart</text>
+  <text x="809" y="308" fill="#CBD8F5" font-family="Segoe UI, Arial" font-size="14">scale workload</text>
+
+  <!-- 5 RECOVER -->
+  <rect x="1044" y="150" width="212" height="180" rx="14" fill="url(#panel)" stroke="#2E8B57" stroke-width="2"/>
+  <circle cx="1072" cy="180" r="14" fill="#23C55E"/>
+  <text x="1072" y="186" fill="#06210F" font-family="Segoe UI, Arial" font-size="16" font-weight="700" text-anchor="middle">5</text>
+  <text x="1098" y="186" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Recover</text>
+  <text x="1064" y="218" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">Controller recreates</text>
+  <text x="1064" y="238" fill="#8EA4D3" font-family="Segoe UI, Arial" font-size="14.5">the pod — back to Ready</text>
+  <text x="1064" y="270" fill="#23C55E" font-family="Segoe UI, Arial" font-size="15" font-weight="700">● Pod healthy</text>
+  <text x="1064" y="296" fill="#93A8D6" font-family="Segoe UI, Arial" font-size="13.5">Decision logged to</text>
+  <text x="1064" y="314" fill="#93A8D6" font-family="Segoe UI, Arial" font-size="13.5">the audit ledger</text>
+
+  <!-- pipeline arrows -->
+  <line x1="240" y1="240" x2="273" y2="240" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="495" y1="240" x2="528" y2="240" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="750" y1="240" x2="783" y2="240" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1005" y1="240" x2="1038" y2="240" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- ===== Branch outcomes under DECIDE ===== -->
+  <text x="640" y="372" fill="#6F86B6" font-family="Segoe UI, Arial" font-size="13" text-anchor="middle">otherwise →</text>
+  <line x1="640" y1="330" x2="640" y2="386" stroke="#5B73A6" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrowMuted)"/>
+
+  <rect x="404" y="396" width="150" height="48" rx="10" fill="#10182B" stroke="#3A4A6B"/>
+  <text x="479" y="418" fill="#9FB0D0" font-family="Segoe UI, Arial" font-size="14.5" font-weight="700" text-anchor="middle">SKIP</text>
+  <text x="479" y="436" fill="#6F86B6" font-family="Segoe UI, Arial" font-size="12" text-anchor="middle">low confidence / cooldown</text>
+
+  <rect x="567" y="396" width="150" height="48" rx="10" fill="#2A1F08" stroke="#7A5A1E"/>
+  <text x="642" y="418" fill="#F5B942" font-family="Segoe UI, Arial" font-size="14.5" font-weight="700" text-anchor="middle">ESCALATE</text>
+  <text x="642" y="436" fill="#C79A4E" font-family="Segoe UI, Arial" font-size="12" text-anchor="middle">needs human / CR code</text>
+
+  <rect x="730" y="396" width="150" height="48" rx="10" fill="#0A1E33" stroke="#2B5B8F"/>
+  <text x="805" y="418" fill="#5AB0F5" font-family="Segoe UI, Arial" font-size="14.5" font-weight="700" text-anchor="middle">DRY-RUN</text>
+  <text x="805" y="436" fill="#5C86B5" font-family="Segoe UI, Arial" font-size="12" text-anchor="middle">log only, never mutate</text>
+
+  <!-- ===== Feedback / verify loop ===== -->
+  <path d="M1150 330 C1150 470, 130 470, 130 336" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrowBlue)"/>
+  <rect x="556" y="452" width="168" height="34" rx="17" fill="#0A1830" stroke="#2B5B8F"/>
+  <text x="640" y="474" fill="#5AB0F5" font-family="Segoe UI, Arial" font-size="14" font-weight="600" text-anchor="middle">re-observe &amp; verify</text>
+
+  <!-- ===== Worked example: a crashing pod fixed automatically ===== -->
+  <rect x="24" y="520" width="1232" height="220" rx="14" fill="#07152D" stroke="#1C325C"/>
+  <text x="48" y="556" fill="#E6F0FF" font-family="Segoe UI, Arial" font-size="20" font-weight="700">Worked example — a crashing pod fixed automatically</text>
+
+  <!-- before -->
+  <rect x="48" y="576" width="360" height="140" rx="12" fill="#1A0E14" stroke="#6B2230"/>
+  <circle cx="76" cy="606" r="7" fill="#EF4444"/>
+  <text x="94" y="612" fill="#FF8A8A" font-family="Segoe UI, Arial" font-size="16" font-weight="700">BEFORE</text>
+  <text x="68" y="644" fill="#E6F0FF" font-family="Consolas, monospace" font-size="15">shop/web-7c9f</text>
+  <text x="68" y="668" fill="#FF9C9C" font-family="Segoe UI, Arial" font-size="14">Status: CrashLoopBackOff</text>
+  <text x="68" y="690" fill="#C58E96" font-family="Segoe UI, Arial" font-size="13.5">Restarts: 7 · Ready: 0/1</text>
+
+  <!-- autopilot action -->
+  <rect x="460" y="576" width="360" height="140" rx="12" fill="#0D1D3A" stroke="#2E8B57"/>
+  <circle cx="488" cy="606" r="7" fill="#23C55E"/>
+  <text x="506" y="612" fill="#7FE3A6" font-family="Segoe UI, Arial" font-size="16" font-weight="700">AUTOPILOT</text>
+  <text x="480" y="644" fill="#CBD8F5" font-family="Segoe UI, Arial" font-size="14">RCA: CrashLoop · confidence 93%</text>
+  <text x="480" y="668" fill="#CBD8F5" font-family="Segoe UI, Arial" font-size="14">Policy: passed → action = delete_pod</text>
+  <text x="480" y="690" fill="#7FE3A6" font-family="Segoe UI, Arial" font-size="14" font-weight="600">verdict: EXECUTED ✓</text>
+
+  <!-- after -->
+  <rect x="872" y="576" width="360" height="140" rx="12" fill="#0C1F14" stroke="#1E6B3C"/>
+  <circle cx="900" cy="606" r="7" fill="#23C55E"/>
+  <text x="918" y="612" fill="#7FE3A6" font-family="Segoe UI, Arial" font-size="16" font-weight="700">AFTER</text>
+  <text x="892" y="644" fill="#E6F0FF" font-family="Consolas, monospace" font-size="15">shop/web-7c9f</text>
+  <text x="892" y="668" fill="#7FE3A6" font-family="Segoe UI, Arial" font-size="14">Status: Running</text>
+  <text x="892" y="690" fill="#9FD8B4" font-family="Segoe UI, Arial" font-size="13.5">Restarts: 0 · Ready: 1/1</text>
+
+  <line x1="412" y1="646" x2="455" y2="646" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="824" y1="646" x2="867" y2="646" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- Footer safety strip -->
+  <text x="48" y="780" fill="#6F86B6" font-family="Segoe UI, Arial" font-size="14">Safety: off by default · roll out dry-run → active · system namespaces blocked · global rate limit · one-click pause (kill switch)</text>
+</svg>

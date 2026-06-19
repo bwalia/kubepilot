@@ -24,6 +24,7 @@ The repo is prepared to show screenshots directly on GitHub.
 
 ![KubePilot Dashboard Overview](docs/screenshots/dashboard-overview.svg)
 ![Cluster Events and AI Troubleshooting](docs/screenshots/cluster-events-ai.svg)
+![Autopilot Self-Healing Workflow](docs/screenshots/autopilot-workflow.svg)
 
 You can replace these SVG assets with PNG/JPG captures at any time.
 

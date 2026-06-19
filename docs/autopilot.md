@@ -19,6 +19,8 @@ safe issues automatically**.
                                               └───────────────────────────────────────────────┘
 ```
 
+![KubePilot Autopilot workflow](screenshots/autopilot-workflow.svg)
+
 It deliberately **reuses** existing building blocks rather than adding a parallel
 path: `observability.ClusterWatcher` for detection, `ai.RCAEngine` for diagnosis,
 and `ai.RemediationExecutor` for the actual cluster mutations (restart / delete
