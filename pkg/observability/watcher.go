@@ -25,22 +25,32 @@ type ClusterWatcher struct {
 
 	// seenAnomalies tracks recently detected anomalies to avoid duplicate RCA triggers.
 	// Key is "resource_kind/namespace/name/rule".
-	mu             sync.Mutex
-	seenAnomalies  map[string]time.Time
-	dedupeWindow   time.Duration
+	mu            sync.Mutex
+	seenAnomalies map[string]time.Time
+	dedupeWindow  time.Duration
 
 	// rcaSem limits concurrent RCA goroutines to avoid starving interactive
 	// AI endpoints (Ask AI, troubleshoot) when Ollama processes requests sequentially.
-	rcaSem         chan struct{}
+	rcaSem chan struct{}
+
+	// reportHook, if set, is invoked with every freshly stored RCA report.
+	// It is the integration point for the autopilot self-healing controller.
+	reportHook ReportHook
 }
+
+// ReportHook is called after a new RCA report has been stored. It lets external
+// components (e.g. the autopilot controller) react to fresh diagnoses without
+// the observability package depending on them.
+type ReportHook func(ctx context.Context, report *ai.RCAReport)
 
 // WatcherConfig holds configuration for the ClusterWatcher.
 type WatcherConfig struct {
-	Interval      time.Duration
-	Rules         []AnomalyRule
-	DedupeWindow  time.Duration
-	Persistence   *Persistence
-	Notifier      AnomalyNotifier
+	Interval     time.Duration
+	Rules        []AnomalyRule
+	DedupeWindow time.Duration
+	Persistence  *Persistence
+	Notifier     AnomalyNotifier
+	ReportHook   ReportHook
 }
 
 // NewClusterWatcher creates a watcher that polls the cluster at the given interval.
@@ -72,6 +82,7 @@ func NewClusterWatcher(k8sClient *k8s.Client, rcaEngine *ai.RCAEngine, store *RC
 		seenAnomalies: make(map[string]time.Time),
 		dedupeWindow:  dedupeWindow,
 		rcaSem:        make(chan struct{}, 2), // max 2 concurrent RCA analyses
+		reportHook:    cfg.ReportHook,
 	}
 }
 
@@ -193,6 +204,13 @@ func (w *ClusterWatcher) triggerRCA(ctx context.Context, anomaly *Anomaly) {
 		zap.String("root_cause", report.RootCause.Category),
 		zap.Float64("confidence", report.Confidence),
 	)
+
+	// Hand the fresh report to the autopilot controller (if configured) so it can
+	// decide whether to self-heal. Runs inline within this RCA goroutine, which is
+	// already concurrency-limited by rcaSem.
+	if w.reportHook != nil {
+		w.reportHook(ctx, report)
+	}
 }
 
 // dedupeKey generates a unique key for an anomaly to prevent duplicate RCA triggers.

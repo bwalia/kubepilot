@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/pkg/ai"
+	"github.com/kubepilot/kubepilot/pkg/autopilot"
 	"github.com/kubepilot/kubepilot/pkg/jobs"
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/observability"
@@ -37,6 +39,7 @@ type Config struct {
 	K8sClient                         *k8s.Client
 	RCAStore                          *observability.RCAStore
 	RunbookEngine                     *runbooks.Engine
+	Autopilot                         *autopilot.Controller
 	KubeconfigPath                    string
 	Auth                              AuthConfig
 	EnableKubeconfigMutationEndpoints bool
@@ -184,6 +187,7 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/rca/{id}", s.handleGetRCAReport).Methods(http.MethodGet)
 	api.HandleFunc("/anomalies", s.handleListAnomalies).Methods(http.MethodGet)
 	api.HandleFunc("/topology/{namespace}", s.handleTopology).Methods(http.MethodGet)
+	api.HandleFunc("/autopilot", s.handleAutopilotStatus).Methods(http.MethodGet)
 	if s.cfg.EnableActionMutationEndpoints {
 		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
 	} else {
@@ -315,6 +319,35 @@ func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAIHealth(w http.ResponseWriter, r *http.Request) {
 	status := s.cfg.AIEngine.CheckHealth(r.Context())
 	writeJSON(w, status)
+}
+
+// handleAutopilotStatus returns the autopilot policy, recent self-healing
+// decisions, and aggregate counts so the UI can show what KubePilot has been
+// doing (or would do, in dry-run mode) automatically.
+func (s *Server) handleAutopilotStatus(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Autopilot == nil {
+		writeJSON(w, map[string]any{
+			"enabled":   false,
+			"decisions": []any{},
+			"stats":     map[string]int{},
+		})
+		return
+	}
+
+	limit := 50
+	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+
+	policy := s.cfg.Autopilot.Policy()
+	writeJSON(w, map[string]any{
+		"enabled":   policy.Mode != autopilot.ModeOff,
+		"policy":    policy,
+		"decisions": s.cfg.Autopilot.Decisions(limit),
+		"stats":     s.cfg.Autopilot.Stats(),
+	})
 }
 
 // ─────────────────────────────────────────

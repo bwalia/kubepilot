@@ -57,6 +57,29 @@ enable_action_mutations: false
 # Leave default for local UI, set explicitly for remote deployments.
 cors_allowed_origins: "http://localhost:8383,http://127.0.0.1:8383"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Autopilot — closed-loop, AI-driven self-healing.
+#
+# The cluster watcher already detects pod anomalies and runs AI root-cause
+# analysis. Autopilot is the final link: it consumes each finished RCA report
+# and — under the strict policy below — resolves safe issues automatically.
+#
+# Rollout recommendation: start in "dry-run" to observe what it WOULD do
+# (visible at GET /api/v1/autopilot and in logs), then promote to "active".
+#
+# Safety boundary: steps that require a change-control (CR) code are NEVER
+# auto-executed — they are escalated to a human. Autopilot never bypasses
+# change control and never touches blocked namespaces.
+# ─────────────────────────────────────────────────────────────────────────────
+autopilot_mode: "off"                      # off | dry-run | active
+autopilot_min_confidence: 0.80             # only act on RCA confidence >= this (0.0-1.0)
+autopilot_allowed_actions: "delete_pod,restart"  # actions autopilot may auto-apply
+autopilot_max_risk: "safe"                 # ceiling: safe | moderate | high
+autopilot_allowed_namespaces: ""           # empty = all except blocked; or "prod,staging"
+autopilot_blocked_namespaces: "kube-system,kube-public,kube-node-lease,kubepilot-system"
+autopilot_cooldown: "10m"                  # min time between actions on the same resource
+autopilot_max_actions_per_hour: 10         # blast-radius cap across the whole cluster
+
 # Operator settings.
 operator:
   metrics_addr: ":8081"
