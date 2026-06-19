@@ -25,6 +25,7 @@ import {
   type AutopilotVerdict,
   type AutopilotStatus,
 } from "@/lib/api";
+import { AutopilotLiveStatus } from "@/components/AutopilotLiveStatus";
 
 const VERDICT_META: Record<
   AutopilotVerdict,
@@ -73,7 +74,7 @@ export function AutopilotPanel() {
   const qc = useQueryClient();
   const [pendingResume, setPendingResume] = useState(false);
 
-  const { data, isLoading } = useQuery<AutopilotStatus>({
+  const { data, isLoading, isFetching } = useQuery<AutopilotStatus>({
     queryKey: ["autopilot-status"],
     queryFn: () => getAutopilotStatus(50),
     refetchInterval: 10_000,
@@ -137,6 +138,9 @@ export function AutopilotPanel() {
           )}
         </div>
       </div>
+
+      {/* Live "is it working?" banner: spinning ball, status bar, message, thermometer */}
+      <AutopilotLiveStatus status={data} isFetching={isFetching} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
