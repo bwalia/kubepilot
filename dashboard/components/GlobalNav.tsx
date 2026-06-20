@@ -5,7 +5,8 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Layers } from "lucide-react";
+import { Layers, Lock } from "lucide-react";
+import { useNamespaceLock } from "@/lib/useNamespaceLock";
 
 const NAV_LINKS = [
   { href: "/", label: "Kubernetes CoPilot" },
@@ -14,6 +15,7 @@ const NAV_LINKS = [
 
 export function GlobalNav() {
   const { pathname } = useRouter();
+  const { locked, namespace } = useNamespaceLock();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -43,6 +45,16 @@ export function GlobalNav() {
             </Link>
           ))}
         </nav>
+        {locked && (
+          <span
+            className="ml-auto inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-md px-2.5 py-1 text-xs font-medium"
+            title="The dashboard is locked to this namespace via the URL. Remove the ?namespace= parameter to browse all namespaces."
+          >
+            <Lock className="w-3 h-3" />
+            <span className="hidden sm:inline">Namespace:</span>
+            <span className="font-mono">{namespace}</span>
+          </span>
+        )}
       </div>
     </div>
   );

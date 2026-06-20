@@ -3,8 +3,9 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileSearch, ArrowLeft, Filter } from "lucide-react";
+import { FileSearch, ArrowLeft, Filter, Lock } from "lucide-react";
 import { listRCAReports, getRCAReport, type RCAReport, type Severity } from "@/lib/api";
+import { useNamespaceLock } from "@/lib/useNamespaceLock";
 import { RCADetail } from "@/components/RCADetail";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
 
@@ -17,9 +18,11 @@ const SEVERITY_BADGE: Record<Severity, string> = {
 };
 
 export default function RCAPage() {
+  const { locked, namespace: lockedNamespace } = useNamespaceLock();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [severityFilter, setSeverityFilter] = useState("");
-  const [namespaceFilter, setNamespaceFilter] = useState("");
+  const [namespaceInput, setNamespaceInput] = useState("");
+  const namespaceFilter = locked ? lockedNamespace! : namespaceInput;
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["rca-reports", severityFilter, namespaceFilter],
@@ -72,13 +75,23 @@ export default function RCAPage() {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
-          <input
-            type="text"
-            value={namespaceFilter}
-            onChange={(e) => setNamespaceFilter(e.target.value)}
-            placeholder="Namespace"
-            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-pilot-muted w-36 focus:outline-none focus:border-pilot-accent"
-          />
+          {locked ? (
+            <span
+              className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-2 text-sm font-medium w-36"
+              title="Locked to this namespace via URL parameter"
+            >
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{namespaceFilter}</span>
+            </span>
+          ) : (
+            <input
+              type="text"
+              value={namespaceInput}
+              onChange={(e) => setNamespaceInput(e.target.value)}
+              placeholder="Namespace"
+              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-pilot-muted w-36 focus:outline-none focus:border-pilot-accent"
+            />
+          )}
         </div>
       </div>
 

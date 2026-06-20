@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Clock,
   HelpCircle,
+  Lock,
 } from "lucide-react";
 import {
   getServiceGraph,
@@ -30,6 +31,7 @@ import {
   type SGEdge,
   type ServiceGraph,
 } from "@/lib/api";
+import { useNamespaceLock } from "@/lib/useNamespaceLock";
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 const NW = 192;       // node card width  (px)
@@ -439,9 +441,13 @@ function ColHeader({ label, count, color }: { label: string; count: number; colo
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export function ServiceTopologyCanvas() {
-  const [namespace, setNamespace] = useState("default");
+  const { locked, namespace: lockedNamespace } = useNamespaceLock();
+  const [selectedNamespace, setSelectedNamespace] = useState("default");
   const [nsInput, setNsInput] = useState("default");
   const [selected, setSelected] = useState<SGNode | null>(null);
+  // A URL-locked namespace overrides the in-canvas namespace controls.
+  const namespace = locked ? lockedNamespace! : selectedNamespace;
+  const setNamespace = setSelectedNamespace;
 
   const normalizeNamespace = (value: string): string => {
     const ns = value.trim();
@@ -500,35 +506,47 @@ export function ServiceTopologyCanvas() {
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/10 shrink-0">
         <Layers className="w-4 h-4 text-sky-400" />
         <span className="text-sm font-bold text-white tracking-wide">Service Topology</span>
-        <button
-          type="button"
-          onClick={() => {
-            setNamespace("");
-            setNsInput("all");
-            setSelected(null);
-          }}
-          className={`text-xs px-2.5 py-1 rounded border ${
-            namespace === ""
-              ? "bg-sky-600 text-white border-sky-500"
-              : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
-          }`}
-        >
-          All Namespaces
-        </button>
-        <form onSubmit={handleNsSubmit} className="flex items-center gap-2 ml-2">
-          <input
-            value={nsInput}
-            onChange={(e) => setNsInput(e.target.value)}
-            placeholder="Namespace (or all)"
-            className="bg-white/5 border border-white/10 rounded px-3 py-1 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-sky-500 w-36"
-          />
-          <button
-            type="submit"
-            className="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded font-semibold"
+        {locked ? (
+          <span
+            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border bg-sky-600/20 text-sky-300 border-sky-500/40 ml-2"
+            title="Locked to this namespace via URL parameter"
           >
-            Go
-          </button>
-        </form>
+            <Lock className="w-3 h-3" />
+            {namespace}
+          </span>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setNamespace("");
+                setNsInput("all");
+                setSelected(null);
+              }}
+              className={`text-xs px-2.5 py-1 rounded border ${
+                namespace === ""
+                  ? "bg-sky-600 text-white border-sky-500"
+                  : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              All Namespaces
+            </button>
+            <form onSubmit={handleNsSubmit} className="flex items-center gap-2 ml-2">
+              <input
+                value={nsInput}
+                onChange={(e) => setNsInput(e.target.value)}
+                placeholder="Namespace (or all)"
+                className="bg-white/5 border border-white/10 rounded px-3 py-1 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-sky-500 w-36"
+              />
+              <button
+                type="submit"
+                className="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded font-semibold"
+              >
+                Go
+              </button>
+            </form>
+          </>
+        )}
         <button
           onClick={() => refetch()}
           className="ml-auto p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white"
