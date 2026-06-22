@@ -83,6 +83,38 @@ func TestActiveModeExecutesSafeStep(t *testing.T) {
 	}
 }
 
+// A small local model often marks the deployment-restart fix requires_cr=true
+// (and gives an unresolvable free-text command). For a transient crash on an
+// allow-listed namespace this must still recycle the offending pod via the
+// safe delete_pod fallback rather than escalate — the namespace allow-list is
+// the production boundary, not the model's per-step CR guess.
+func TestRequiresCRRestartFallsBackToPodRecycle(t *testing.T) {
+	fe := &fakeExecutor{}
+	p := DefaultPolicy()
+	p.Mode = ModeActive // delete_pod is in the default allow-list
+	c := newController(t, p, fe)
+
+	report := crashLoopReport("apps", "web-1", 0.95)
+	report.Remediation = []ai.RemediationStep{
+		{Order: 1, Action: "restart", Description: "rollout restart", Risk: "safe",
+			AutoApply: false, RequiresCR: true, Command: "kubectl rollout restart deployment web"},
+	}
+	c.HandleReport(context.Background(), report)
+
+	if fe.count() != 1 {
+		t.Fatalf("expected 1 execution (pod recycle), got %d", fe.count())
+	}
+	if got := fe.calls[0].Action; got != "delete_pod" {
+		t.Fatalf("expected delete_pod fallback, got %q", got)
+	}
+	if got := fe.calls[0].Command; got != "apps/web-1" {
+		t.Fatalf("expected recycle target apps/web-1, got %q", got)
+	}
+	if v := c.Decisions(1)[0].Verdict; v != VerdictExecuted {
+		t.Fatalf("expected executed, got %s", v)
+	}
+}
+
 func TestDryRunModeNeverExecutes(t *testing.T) {
 	fe := &fakeExecutor{}
 	p := DefaultPolicy()

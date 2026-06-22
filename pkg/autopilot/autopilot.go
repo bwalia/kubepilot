@@ -355,29 +355,36 @@ func (c *Controller) selectStep(report *ai.RCAReport) (*ai.RemediationStep, skip
 	wantedSafeRecycle := false
 	for i := range steps {
 		step := steps[i]
-		// Human-gated actions (change control, manual, rollback) never auto-apply.
-		if step.RequiresCR || step.Action == "manual" || step.Action == "rollback" {
+		// Manual / rollback always need a human.
+		if step.Action == "manual" || step.Action == "rollback" {
+			sawHumanGated = true
+			continue
+		}
+		// A safe, allow-listed restart/recycle recommendation means recycling the
+		// offending pod is appropriate. Remember it for the pod-recycle fallback
+		// even when the model flagged requires_cr: small local models set both
+		// auto_apply and requires_cr unreliably, and for a single-pod delete it is
+		// autopilot's namespace allow/block lists — not a per-step boolean — that
+		// form the real production boundary. The risk ceiling + confidence floor +
+		// per-resource cooldown + hourly rate limit further bound the blast radius.
+		isRecycle := step.Action == "restart" || step.Action == "delete_pod"
+		if isRecycle && c.actionAllowed(step.Action) && c.riskWithinCeiling(step.Risk) {
+			wantedSafeRecycle = true
+		}
+		// requires_cr still hard-gates *direct* execution of the model's own
+		// action (e.g. a deployment-wide restart or scale) — those escalate.
+		if step.RequiresCR {
 			sawHumanGated = true
 			continue
 		}
 		if !c.actionAllowed(step.Action) {
 			continue
 		}
-		// Trust the policy's risk ceiling rather than the model's auto_apply
-		// flag: small local models set auto_apply unreliably, while the
-		// allow-list + risk ceiling + confidence floor + per-resource cooldown
-		// + hourly rate limit already bound the blast radius far more tightly.
 		if !c.riskWithinCeiling(step.Risk) {
 			continue
 		}
 		if resolved, ok := c.resolveTarget(report.TargetResource, step); ok {
 			return &resolved, ""
-		}
-		// A safe restart/delete was recommended but the workload target parsed
-		// from free-text is untrustworthy. Remember it so we can fall back to
-		// recycling the offending pod, which is always a precise, safe target.
-		if step.Action == "restart" || step.Action == "delete_pod" {
-			wantedSafeRecycle = true
 		}
 	}
 
