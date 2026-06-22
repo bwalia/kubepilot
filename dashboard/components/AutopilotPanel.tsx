@@ -18,6 +18,9 @@ import {
   Eye,
   UserCog,
   ChevronRight,
+  Wrench,
+  ArrowRight,
+  Clock,
 } from "lucide-react";
 import {
   getAutopilotStatus,
@@ -100,6 +103,7 @@ export function AutopilotPanel() {
   const mode = policy?.mode ?? "off";
   const stats = data?.stats ?? {};
   const decisions = data?.decisions ?? [];
+  const executed = decisions.filter((d) => d.verdict === "executed");
 
   return (
     <div className="space-y-6">
@@ -210,10 +214,36 @@ export function AutopilotPanel() {
         </div>
       )}
 
+      {/* Auto-remediated pods — dedicated "what did Autopilot actually fix?" section */}
+      <div>
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          Auto-remediated pods
+          <span className="text-xs font-bold px-2 py-0.5 rounded-md border border-emerald-700/50 bg-emerald-900/20 text-emerald-400">
+            {executed.length} executed
+          </span>
+          {executed.length > 0 ? (
+            <span className="text-xs font-normal text-pilot-muted">— click for live logs &amp; what was fixed</span>
+          ) : null}
+        </h2>
+        {executed.length === 0 ? (
+          <div className="text-pilot-muted text-sm py-8 text-center bg-pilot-surface border border-pilot-border rounded-xl">
+            No pods auto-remediated yet. When Autopilot executes a fix (e.g. recycling a
+            crash-looping pod), it appears here with full details.
+          </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {executed.map((d, i) => (
+              <ExecutedCard key={`exec-${d.report_id}-${i}`} d={d} onClick={() => setSelected(d)} />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Decision ledger */}
       <div>
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          Recent decisions
+          All recent decisions
           {decisions.length > 0 ? (
             <span className="text-xs font-normal text-pilot-muted">— click any row for live logs &amp; full details</span>
           ) : null}
@@ -253,6 +283,75 @@ function Field({ label, value }: { label: string; value: string }) {
       <div className="text-xs text-pilot-muted">{label}</div>
       <div className="font-medium truncate">{value}</div>
     </div>
+  );
+}
+
+// describeFix turns an autopilot action into a plain-English "what was fixed".
+function describeFix(action?: string): string {
+  switch (action) {
+    case "delete_pod":
+      return "Recycled the pod — deleted the failing pod; its controller recreated a fresh one";
+    case "restart":
+      return "Rolling-restarted the workload to clear the failure";
+    case "scale":
+      return "Scaled the workload to recover capacity";
+    default:
+      return action ? `Applied action: ${action}` : "Applied remediation";
+  }
+}
+
+// ExecutedCard is the rich, green-themed card shown in the "Auto-remediated pods"
+// section: what was wrong → what Autopilot did → the result, click for full detail.
+function ExecutedCard({ d, onClick }: { d: AutopilotDecision; onClick: () => void }) {
+  const confidence = Math.round((d.confidence ?? 0) * 100);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-4 cursor-pointer transition-colors hover:border-emerald-500/60 hover:bg-emerald-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase px-2 py-0.5 rounded-md border border-emerald-700/50 bg-emerald-900/30 text-emerald-400 shrink-0">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Executed
+        </span>
+        <span className="flex items-center gap-0.5 text-xs text-emerald-400 font-medium shrink-0">
+          Full detail <ChevronRight className="w-4 h-4" />
+        </span>
+      </div>
+
+      <div className="mt-2 font-mono text-sm text-white font-semibold truncate">
+        {d.resource.namespace}/{d.resource.name}
+      </div>
+
+      {/* what was wrong → what was done */}
+      <div className="flex items-center gap-2 mt-2 text-xs flex-wrap">
+        <span className="px-1.5 py-0.5 rounded bg-pilot-bg border border-pilot-border text-pilot-muted">
+          Problem: <span className="text-white font-semibold">{d.root_cause || "—"}</span>
+        </span>
+        <ArrowRight className="w-3.5 h-3.5 text-pilot-muted" />
+        <span className="px-1.5 py-0.5 rounded bg-pilot-bg border border-emerald-800/40 font-mono text-emerald-300">
+          {d.action || "remediated"}
+        </span>
+      </div>
+
+      <p className="flex items-start gap-1.5 text-sm text-pilot-muted mt-2">
+        <Wrench className="w-3.5 h-3.5 mt-0.5 text-emerald-400 shrink-0" />
+        {describeFix(d.action)}
+      </p>
+
+      {d.output ? (
+        <pre className="text-xs text-emerald-300/80 mt-2 whitespace-pre-wrap break-all font-mono bg-pilot-bg rounded-md p-2 border border-pilot-border">
+          {d.output}
+        </pre>
+      ) : null}
+
+      <div className="flex items-center gap-3 mt-2 text-xs text-pilot-muted">
+        <span className="font-medium">{confidence}% confidence</span>
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" /> {new Date(d.time).toLocaleString()}
+        </span>
+      </div>
+    </button>
   );
 }
 

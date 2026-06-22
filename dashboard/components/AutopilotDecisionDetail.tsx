@@ -47,6 +47,20 @@ const RISK_BADGE: Record<string, string> = {
 
 const LOG_REFRESH_MS = 5000;
 
+// describeFix turns an autopilot action into a plain-English "what was fixed".
+function describeFix(action?: string): string {
+  switch (action) {
+    case "delete_pod":
+      return "Recycled the pod — deleted the failing pod; its controller recreated a fresh one.";
+    case "restart":
+      return "Rolling-restarted the workload to clear the failure.";
+    case "scale":
+      return "Scaled the workload to recover capacity.";
+    default:
+      return action ? `Applied action: ${action}.` : "Applied remediation.";
+  }
+}
+
 export function AutopilotDecisionDetail({
   decision,
   onClose,
@@ -116,6 +130,22 @@ export function AutopilotDecisionDetail({
 
             {/* ── Scrollable body ───────────────────────────────────── */}
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+              {/* Fix-applied banner — front and centre for executed remediations */}
+              {decision.verdict === "executed" ? (
+                <div className="flex items-start gap-3 bg-emerald-950/30 border border-emerald-700/50 rounded-lg p-4">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-emerald-300">Fix applied by Autopilot</div>
+                    <p className="text-sm text-pilot-muted mt-0.5">{describeFix(decision.action)}</p>
+                    <div className="text-xs text-pilot-muted mt-1.5">
+                      Problem <span className="text-white font-semibold">{decision.root_cause || "—"}</span>
+                      {" → "}
+                      <span className="font-mono text-emerald-300">{decision.action || "remediated"}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {/* What Autopilot did */}
               <section>
                 <h3 className="flex items-center gap-1.5 text-sm font-bold text-white mb-3">
