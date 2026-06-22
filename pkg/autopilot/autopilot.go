@@ -352,34 +352,70 @@ func (c *Controller) selectStep(report *ai.RCAReport) (*ai.RemediationStep, skip
 	sort.SliceStable(steps, func(i, j int) bool { return steps[i].Order < steps[j].Order })
 
 	sawHumanGated := false
+	wantedSafeRecycle := false
 	for i := range steps {
 		step := steps[i]
+		// Human-gated actions (change control, manual, rollback) never auto-apply.
 		if step.RequiresCR || step.Action == "manual" || step.Action == "rollback" {
 			sawHumanGated = true
-			continue
-		}
-		if !step.AutoApply {
 			continue
 		}
 		if !c.actionAllowed(step.Action) {
 			continue
 		}
+		// Trust the policy's risk ceiling rather than the model's auto_apply
+		// flag: small local models set auto_apply unreliably, while the
+		// allow-list + risk ceiling + confidence floor + per-resource cooldown
+		// + hourly rate limit already bound the blast radius far more tightly.
 		if !c.riskWithinCeiling(step.Risk) {
 			continue
 		}
-		resolved, ok := c.resolveTarget(report.TargetResource, step)
-		if !ok {
-			// We can't safely determine the target — treat as needing a human.
-			sawHumanGated = true
-			continue
+		if resolved, ok := c.resolveTarget(report.TargetResource, step); ok {
+			return &resolved, ""
 		}
-		return &resolved, ""
+		// A safe restart/delete was recommended but the workload target parsed
+		// from free-text is untrustworthy. Remember it so we can fall back to
+		// recycling the offending pod, which is always a precise, safe target.
+		if step.Action == "restart" || step.Action == "delete_pod" {
+			wantedSafeRecycle = true
+		}
 	}
 
-	if sawHumanGated {
+	// Safe fallback: the model wanted a safe restart/recycle but gave an
+	// unresolvable workload target. For a pod-scoped *transient* failure
+	// (CrashLoop/OOM) we recycle that exact pod when the policy allows
+	// delete_pod — its controller recreates it. We deliberately do NOT recycle
+	// for ImagePull/Config/Scheduling/Permission, where a restart cannot help.
+	if wantedSafeRecycle && c.actionAllowed("delete_pod") && isTransientCrash(report.RootCause.Category) &&
+		strings.EqualFold(report.TargetResource.Kind, "Pod") &&
+		report.TargetResource.Namespace != "" && report.TargetResource.Name != "" {
+		return &ai.RemediationStep{
+			Order:       0,
+			Action:      "delete_pod",
+			Description: "recycle crash-looping pod (controller recreates it)",
+			Risk:        "safe",
+			Command:     report.TargetResource.Namespace + "/" + report.TargetResource.Name,
+		}, ""
+	}
+
+	// A safe action was recommended but we couldn't target it and the pod-recycle
+	// fallback didn't apply — surface it to a human rather than silently skip.
+	if sawHumanGated || wantedSafeRecycle {
 		return nil, reasonNeedsHuman
 	}
 	return nil, "no auto-applicable remediation step"
+}
+
+// isTransientCrash reports whether a root-cause category describes a runtime
+// crash that recycling the pod can plausibly clear (as opposed to image/config
+// problems that need a human fix).
+func isTransientCrash(category string) bool {
+	switch category {
+	case "CrashLoop", "CrashLoopBackOff", "OOM", "OOMKilled":
+		return true
+	default:
+		return false
+	}
 }
 
 // resolveTarget fills in step.Command with a concrete "namespace/name" target
@@ -395,8 +431,10 @@ func (c *Controller) resolveTarget(target ai.ResourceRef, step ai.RemediationSte
 		return step, true
 	case "restart", "scale":
 		// These act on a workload (Deployment), not the pod. Only proceed when the
-		// RCA supplied an explicit "namespace/name" target we can trust.
-		if ns, name, ok := parseNamespacedName(step.Command); ok {
+		// RCA supplied an explicit "namespace/name" target we can trust — and the
+		// namespace must match the report's, so free-text like
+		// "kubectl rollout restart deployment/foo" can't resolve to a bogus target.
+		if ns, name, ok := parseNamespacedName(step.Command); ok && strings.EqualFold(ns, target.Namespace) {
 			step.Command = ns + "/" + name
 			return step, true
 		}

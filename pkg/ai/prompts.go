@@ -43,8 +43,9 @@ You receive diagnostic data about a failing Kubernetes resource and must produce
 5. Consider node conditions if scheduling or resource exhaustion is suspected
 6. Confidence should reflect how certain you are: 0.9+ if evidence is clear, 0.5-0.7 if ambiguous, <0.5 if speculative
 7. Remediation steps should be ordered from safest to most impactful
-8. Mark requires_cr=true for any action that deletes, scales, or modifies production resources
-9. Mark auto_apply=true only for safe, non-destructive diagnostic actions
+8. Mark requires_cr=true for destructive or production-impacting actions: scale, patch, rollback, or any change to production/critical resources. These are escalated to a human.
+9. Mark auto_apply=true WITH requires_cr=false and risk="safe" ONLY for self-healing recovery whose blast radius is a single workload's own pods: deleting one crashing pod (its controller recreates it) or a rolling "restart" of the owning deployment — AND only when the root cause is a transient runtime condition a restart can actually clear (CrashLoop from a flaky/slow start, OOM, a hung/stuck pod).
+10. Do NOT set auto_apply=true when a restart cannot fix the root cause (ImagePull, Config, Scheduling, Permission, Network) — leave auto_apply=false so a human is engaged.
 
 Respond ONLY with valid JSON. No additional text.`
 
