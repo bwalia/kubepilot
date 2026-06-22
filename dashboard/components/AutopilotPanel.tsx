@@ -17,6 +17,7 @@ import {
   SkipForward,
   Eye,
   UserCog,
+  ChevronRight,
 } from "lucide-react";
 import {
   getAutopilotStatus,
@@ -26,6 +27,8 @@ import {
   type AutopilotStatus,
 } from "@/lib/api";
 import { AutopilotLiveStatus } from "@/components/AutopilotLiveStatus";
+import { AutopilotDecisionDetail } from "@/components/AutopilotDecisionDetail";
+import type { AutopilotDecision } from "@/lib/api";
 
 const VERDICT_META: Record<
   AutopilotVerdict,
@@ -73,6 +76,7 @@ function formatCooldown(ns?: number): string {
 export function AutopilotPanel() {
   const qc = useQueryClient();
   const [pendingResume, setPendingResume] = useState(false);
+  const [selected, setSelected] = useState<AutopilotDecision | null>(null);
 
   const { data, isLoading, isFetching } = useQuery<AutopilotStatus>({
     queryKey: ["autopilot-status"],
@@ -208,7 +212,12 @@ export function AutopilotPanel() {
 
       {/* Decision ledger */}
       <div>
-        <h2 className="text-sm font-semibold mb-3">Recent decisions</h2>
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          Recent decisions
+          {decisions.length > 0 ? (
+            <span className="text-xs font-normal text-pilot-muted">— click any row for live logs &amp; full details</span>
+          ) : null}
+        </h2>
         {isLoading ? (
           <div className="text-pilot-muted text-sm py-10 text-center">
             Loading autopilot activity...
@@ -226,11 +235,14 @@ export function AutopilotPanel() {
         ) : (
           <div className="space-y-2">
             {decisions.map((d, i) => (
-              <DecisionRow key={`${d.report_id}-${i}`} d={d} />
+              <DecisionRow key={`${d.report_id}-${i}`} d={d} onClick={() => setSelected(d)} />
             ))}
           </div>
         )}
       </div>
+
+      {/* Click-through detail drawer: live logs + action + RCA */}
+      <AutopilotDecisionDetail decision={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
@@ -244,13 +256,17 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DecisionRow({ d }: { d: import("@/lib/api").AutopilotDecision }) {
+function DecisionRow({ d, onClick }: { d: AutopilotDecision; onClick: () => void }) {
   const meta = VERDICT_META[d.verdict] ?? VERDICT_META.skipped;
   const ts = new Date(d.time);
   const confidence = Math.round((d.confidence ?? 0) * 100);
 
   return (
-    <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left bg-pilot-surface border border-pilot-border rounded-xl p-4 cursor-pointer transition-colors hover:border-pilot-accent/60 hover:bg-pilot-surface/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pilot-accent/50"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <span
@@ -269,7 +285,10 @@ function DecisionRow({ d }: { d: import("@/lib/api").AutopilotDecision }) {
         </div>
         <div className="flex items-center gap-3 text-sm text-pilot-muted shrink-0">
           <span className="font-medium">{confidence}%</span>
-          <span>{ts.toLocaleString()}</span>
+          <span className="hidden sm:inline">{ts.toLocaleString()}</span>
+          <span className="flex items-center gap-0.5 text-pilot-accent font-medium">
+            Details <ChevronRight className="w-4 h-4" />
+          </span>
         </div>
       </div>
       <div className="flex items-center gap-2 mt-2 text-sm text-pilot-muted">
@@ -283,6 +302,6 @@ function DecisionRow({ d }: { d: import("@/lib/api").AutopilotDecision }) {
           {d.output}
         </pre>
       ) : null}
-    </div>
+    </button>
   );
 }

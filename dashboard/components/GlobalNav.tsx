@@ -10,7 +10,7 @@ import { Layers } from "lucide-react";
 const NAV_LINKS = [
   { href: "/", label: "Kubernetes CoPilot" },
   { href: "/dashboard", label: "Kubernetes Dashboard" },
-  { href: "/autopilot", label: "Autopilot" },
+  { href: "/autopilot", label: "Kubernetes AutoPilot" },
 ];
 
 export function GlobalNav() {
