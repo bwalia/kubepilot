@@ -192,6 +192,8 @@ func (s *Server) Start(ctx context.Context) error {
 	// safe operation. Resuming re-enables only the startup-configured mode.
 	api.HandleFunc("/autopilot/pause", s.handleAutopilotPause).Methods(http.MethodPost)
 	api.HandleFunc("/autopilot/resume", s.handleAutopilotResume).Methods(http.MethodPost)
+	// Live mode switch (off | dry-run | active) — applied in-memory, no restart.
+	api.HandleFunc("/autopilot/mode", s.handleAutopilotSetMode).Methods(http.MethodPost)
 	if s.cfg.EnableActionMutationEndpoints {
 		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
 	} else {
@@ -366,6 +368,34 @@ func (s *Server) handleAutopilotResume(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	policy := s.cfg.Autopilot.Resume()
+	s.writeAutopilotStatus(w, policy, 50)
+}
+
+// handleAutopilotSetMode switches the operating mode at runtime (off | dry-run |
+// active) without an env change or restart. The change is applied in-memory; the
+// autopilot policy (allowed namespaces, confidence floor, cooldown, rate limit)
+// remains the real safety boundary for what active mode may touch.
+func (s *Server) handleAutopilotSetMode(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Autopilot == nil {
+		httpError(w, fmt.Errorf("autopilot is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	var body struct {
+		Mode string `json:"mode"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+	mode := autopilot.Mode(strings.ToLower(strings.TrimSpace(body.Mode)))
+	switch mode {
+	case autopilot.ModeOff, autopilot.ModeDryRun, autopilot.ModeActive:
+		// valid
+	default:
+		httpError(w, fmt.Errorf("invalid mode %q (expected off | dry-run | active)", body.Mode), http.StatusBadRequest)
+		return
+	}
+	policy := s.cfg.Autopilot.SetMode(mode)
 	s.writeAutopilotStatus(w, policy, 50)
 }
 

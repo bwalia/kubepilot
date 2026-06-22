@@ -673,6 +673,10 @@ export const pauseAutopilot = (): Promise<AutopilotStatus> =>
 export const resumeAutopilot = (): Promise<AutopilotStatus> =>
   http.post("/autopilot/resume").then((r) => r.data);
 
+// setAutopilotMode switches the operating mode at runtime (no restart/rebuild).
+export const setAutopilotMode = (mode: AutopilotMode): Promise<AutopilotStatus> =>
+  http.post("/autopilot/mode", { mode }).then((r) => r.data);
+
   export const getServiceGraph = (namespace: string): Promise<ServiceGraph> =>
     http
       .get("/clusters/service-graph", { params: { namespace } })

@@ -9,13 +9,13 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
-  Pause,
-  Play,
+  Power,
+  Eye,
+  Zap,
   ShieldCheck,
   CheckCircle2,
   XCircle,
   SkipForward,
-  Eye,
   UserCog,
   ChevronRight,
   Wrench,
@@ -24,10 +24,10 @@ import {
 } from "lucide-react";
 import {
   getAutopilotStatus,
-  pauseAutopilot,
-  resumeAutopilot,
+  setAutopilotMode,
   type AutopilotVerdict,
   type AutopilotStatus,
+  type AutopilotMode,
 } from "@/lib/api";
 import { AutopilotLiveStatus } from "@/components/AutopilotLiveStatus";
 import { AutopilotDecisionDetail } from "@/components/AutopilotDecisionDetail";
@@ -78,7 +78,7 @@ function formatCooldown(ns?: number): string {
 
 export function AutopilotPanel() {
   const qc = useQueryClient();
-  const [pendingResume, setPendingResume] = useState(false);
+  const [pendingActive, setPendingActive] = useState(false);
   const [selected, setSelected] = useState<AutopilotDecision | null>(null);
 
   const { data, isLoading, isFetching } = useQuery<AutopilotStatus>({
@@ -90,17 +90,18 @@ export function AutopilotPanel() {
     refetchInterval: 10_000,
   });
 
-  const pause = useMutation({
-    mutationFn: pauseAutopilot,
-    onSuccess: (s) => qc.setQueryData(["autopilot-status"], s),
-  });
-  const resume = useMutation({
-    mutationFn: resumeAutopilot,
+  // Live mode switch — applied in-memory by the server, no restart/rebuild.
+  const setMode = useMutation({
+    mutationFn: setAutopilotMode,
     onSuccess: (s) => {
       qc.setQueryData(["autopilot-status"], s);
-      setPendingResume(false);
+      setPendingActive(false);
     },
   });
+  const changeMode = (m: AutopilotMode) => {
+    setPendingActive(false);
+    setMode.mutate(m);
+  };
 
   const policy = data?.policy;
   const mode = policy?.mode ?? "off";
@@ -127,26 +128,41 @@ export function AutopilotPanel() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {mode === "off" ? (
-            <button
-              onClick={() => (pendingResume ? resume.mutate() : setPendingResume(true))}
-              disabled={resume.isPending}
-              className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border border-emerald-700/50 bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40 transition-colors disabled:opacity-50"
-            >
-              <Play className="w-4 h-4" />
-              {pendingResume ? "Confirm resume" : "Resume"}
-            </button>
-          ) : (
-            <button
-              onClick={() => pause.mutate()}
-              disabled={pause.isPending}
-              className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg border border-red-700/50 bg-red-900/20 text-red-300 hover:bg-red-900/40 transition-colors disabled:opacity-50"
-            >
-              <Pause className="w-4 h-4" />
-              Pause (kill switch)
-            </button>
-          )}
+        {/* Live mode switch — changes take effect instantly, no restart/rebuild. */}
+        <div className="flex flex-col items-end gap-1">
+          <div className="inline-flex rounded-lg border border-pilot-border bg-pilot-surface p-0.5">
+            <ModeButton
+              label="Off"
+              Icon={Power}
+              active={mode === "off"}
+              tone="muted"
+              disabled={setMode.isPending}
+              onClick={() => changeMode("off")}
+            />
+            <ModeButton
+              label="Dry-run"
+              Icon={Eye}
+              active={mode === "dry-run"}
+              tone="sky"
+              disabled={setMode.isPending}
+              onClick={() => changeMode("dry-run")}
+            />
+            <ModeButton
+              label={pendingActive && mode !== "active" ? "Confirm active" : "Active"}
+              Icon={Zap}
+              active={mode === "active"}
+              tone={pendingActive && mode !== "active" ? "danger" : "emerald"}
+              disabled={setMode.isPending}
+              onClick={() => {
+                if (mode === "active") return;
+                if (pendingActive) changeMode("active");
+                else setPendingActive(true);
+              }}
+            />
+          </div>
+          <span className="text-[10px] text-pilot-muted">
+            {setMode.isPending ? "applying…" : "switches instantly — no restart"}
+          </span>
         </div>
       </div>
 
@@ -288,6 +304,46 @@ function Field({ label, value }: { label: string; value: string }) {
       <div className="text-xs text-pilot-muted">{label}</div>
       <div className="font-medium truncate">{value}</div>
     </div>
+  );
+}
+
+// ModeButton is one segment of the live off/dry-run/active mode switch.
+function ModeButton({
+  label,
+  Icon,
+  active,
+  tone,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  Icon: typeof Power;
+  active: boolean;
+  tone: "muted" | "sky" | "emerald" | "danger";
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const activeTone: Record<string, string> = {
+    muted: "bg-gray-700/40 text-gray-200 border-gray-600/50",
+    sky: "bg-sky-900/40 text-sky-300 border-sky-700/50",
+    emerald: "bg-emerald-900/40 text-emerald-300 border-emerald-700/50",
+    danger: "bg-red-900/40 text-red-300 border-red-600/60 animate-pulse",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={`flex items-center gap-1.5 text-xs font-bold uppercase px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50 ${
+        active || tone === "danger"
+          ? activeTone[tone]
+          : "border-transparent text-pilot-muted hover:text-white hover:bg-pilot-bg/60"
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      {label}
+    </button>
   );
 }
 
