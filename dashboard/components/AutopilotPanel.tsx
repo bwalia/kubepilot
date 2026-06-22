@@ -83,7 +83,10 @@ export function AutopilotPanel() {
 
   const { data, isLoading, isFetching } = useQuery<AutopilotStatus>({
     queryKey: ["autopilot-status"],
-    queryFn: () => getAutopilotStatus(50),
+    // Fetch the full ledger (matches the server's maxLedger) so the verdict
+    // stats and the Executed section never disagree — a single executed
+    // decision can otherwise sit older than the latest N on a noisy cluster.
+    queryFn: () => getAutopilotStatus(200),
     refetchInterval: 10_000,
   });
 
@@ -245,7 +248,9 @@ export function AutopilotPanel() {
         <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
           All recent decisions
           {decisions.length > 0 ? (
-            <span className="text-xs font-normal text-pilot-muted">— click any row for live logs &amp; full details</span>
+            <span className="text-xs font-normal text-pilot-muted">
+              — showing latest {Math.min(decisions.length, 50)} of {decisions.length}; click any row for live logs &amp; full details
+            </span>
           ) : null}
         </h2>
         {isLoading ? (
@@ -264,7 +269,7 @@ export function AutopilotPanel() {
           </div>
         ) : (
           <div className="space-y-2">
-            {decisions.map((d, i) => (
+            {decisions.slice(0, 50).map((d, i) => (
               <DecisionRow key={`${d.report_id}-${i}`} d={d} onClick={() => setSelected(d)} />
             ))}
           </div>
