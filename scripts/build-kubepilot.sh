@@ -6,6 +6,9 @@ BIN_NAME="${1:-kubepilot}"
 OUT_PATH="${2:-$ROOT_DIR/dist/$BIN_NAME}"
 CMD_PKG="${3:-./cmd/kubepilot}"
 VERSION="${VERSION:-$(git -C "$ROOT_DIR" describe --tags --always --dirty 2>/dev/null || echo dev)}"
+# Build number derived from the build timestamp (UTC), plus the source commit.
+BUILD_TIME="${BUILD_TIME:-$(date -u +%Y-%m-%d.%H%M%SZ)}"
+COMMIT="${COMMIT:-$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -59,7 +62,8 @@ mkdir -p "$(dirname "$OUT_PATH")"
 
 export GOTOOLCHAIN=auto
 
-LDFLAGS="-s -w -X github.com/kubepilot/kubepilot/internal/version.Version=$VERSION"
+VPKG="github.com/kubepilot/kubepilot/internal/version"
+LDFLAGS="-s -w -X ${VPKG}.Version=$VERSION -X ${VPKG}.BuildTime=$BUILD_TIME -X ${VPKG}.Commit=$COMMIT"
 if [[ "$(uname -s)" == "Darwin" ]]; then
   # External linking ensures LC_UUID is present for dyld on modern macOS.
   LDFLAGS="$LDFLAGS -linkmode=external"

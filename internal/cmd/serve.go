@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/internal/dashboard"
+	"github.com/kubepilot/kubepilot/internal/version"
 	"github.com/kubepilot/kubepilot/pkg/ai"
 	"github.com/kubepilot/kubepilot/pkg/autopilot"
 	"github.com/kubepilot/kubepilot/pkg/jobs"
@@ -103,10 +104,23 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	log.Info("Starting KubePilot")
+	log.Info("Starting KubePilot",
+		zap.String("version", version.Version),
+		zap.String("build", version.BuildTime),
+		zap.String("commit", version.Commit),
+	)
+
+	// Resolve kubeconfig from this command's own flag. We can't use
+	// viper.GetString("kubeconfig") here: the serve/agent/operator subcommands
+	// all BindPFlag the same global "kubeconfig" key, so the last binding wins
+	// and shadows serve's flag. Fall back to the standard KUBECONFIG env var.
+	kubeconfigPath, _ := cmd.Flags().GetString("kubeconfig")
+	if kubeconfigPath == "" {
+		kubeconfigPath = os.Getenv("KUBECONFIG")
+	}
 
 	// Build Kubernetes client.
-	k8sClient, err := k8s.NewClient(viper.GetString("kubeconfig"))
+	k8sClient, err := k8s.NewClient(kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("building kubernetes client: %w", err)
 	}
@@ -233,7 +247,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		RCAStore:       rcaStore,
 		RunbookEngine:  runbookEngine,
 		Autopilot:      autopilotCtl,
-		KubeconfigPath: viper.GetString("kubeconfig"),
+		KubeconfigPath: kubeconfigPath,
 		Auth: dashboard.AuthConfig{
 			Enabled:  authEnabled,
 			Token:    authToken,

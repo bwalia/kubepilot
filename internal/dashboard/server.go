@@ -22,6 +22,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 
+	"github.com/kubepilot/kubepilot/internal/version"
 	"github.com/kubepilot/kubepilot/pkg/ai"
 	"github.com/kubepilot/kubepilot/pkg/autopilot"
 	"github.com/kubepilot/kubepilot/pkg/jobs"
@@ -156,6 +157,7 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/clusters/pods/{namespace}/{pod}/logs", s.handleGetPodLogs).Methods(http.MethodGet)
 	api.HandleFunc("/resource/{kind}/{namespace}/{name}/yaml", s.handleGetResourceYAML).Methods(http.MethodGet)
 	api.HandleFunc("/config", s.handleGetServerConfig).Methods(http.MethodGet)
+	api.HandleFunc("/version", s.handleVersion).Methods(http.MethodGet)
 
 	// Port forwarding. Listing sessions is always read-only; starting/stopping a
 	// forward opens a tunnel into the cluster and is gated like other mutations.
@@ -325,6 +327,12 @@ func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAIHealth(w http.ResponseWriter, r *http.Request) {
 	status := s.cfg.AIEngine.CheckHealth(r.Context())
 	writeJSON(w, status)
+}
+
+// handleVersion reports the binary's build provenance (version, build number,
+// commit) so the UI and operators can confirm exactly what is deployed.
+func (s *Server) handleVersion(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, version.Get())
 }
 
 // handleAutopilotStatus returns the autopilot policy, recent self-healing

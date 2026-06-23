@@ -81,7 +81,7 @@ func NewClusterWatcher(k8sClient *k8s.Client, rcaEngine *ai.RCAEngine, store *RC
 		log:           log,
 		seenAnomalies: make(map[string]time.Time),
 		dedupeWindow:  dedupeWindow,
-		rcaSem:        make(chan struct{}, 2), // max 2 concurrent RCA analyses
+		rcaSem:        make(chan struct{}, 8), // max concurrent RCA analyses (raised to reduce starvation on busy clusters)
 		reportHook:    cfg.ReportHook,
 	}
 }
