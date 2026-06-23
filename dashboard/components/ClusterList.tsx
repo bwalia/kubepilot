@@ -6,6 +6,32 @@ interface Props {
   loading: boolean;
 }
 
+// Convert a Kubernetes memory quantity (e.g. "16012345Ki", "16Gi", "2048Mi",
+// or a plain byte count) to a human-readable GB string. Kubernetes reports
+// memory in binary units, so we use GiB (1024^3 bytes) and label it "GB" to
+// match common dashboard convention.
+function formatMemoryGB(raw: string): string {
+  if (!raw) return "—";
+  const match = raw.trim().match(/^(\d+(?:\.\d+)?)\s*([A-Za-z]*)$/);
+  if (!match) return raw;
+  const value = parseFloat(match[1]);
+  const binaryUnit: Record<string, number> = {
+    "": 1,
+    Ki: 1024,
+    Mi: 1024 ** 2,
+    Gi: 1024 ** 3,
+    Ti: 1024 ** 4,
+    // decimal SI units, just in case
+    k: 1e3,
+    M: 1e6,
+    G: 1e9,
+    T: 1e12,
+  };
+  const factor = binaryUnit[match[2]] ?? 1;
+  const gb = (value * factor) / 1024 ** 3;
+  return `${gb.toFixed(1)} GB`;
+}
+
 export function ClusterList({ nodes, loading }: Props) {
   if (loading) return <Skeleton />;
 
@@ -24,6 +50,7 @@ export function ClusterList({ nodes, loading }: Props) {
             <thead>
               <tr className="bg-pilot-surface-2 text-pilot-muted text-xs uppercase tracking-wider">
                 <th className="text-left px-5 py-3.5 font-semibold">Node</th>
+                <th className="text-left px-5 py-3.5 font-semibold">IP Address</th>
                 <th className="text-left px-5 py-3.5 font-semibold">Status</th>
                 <th className="text-left px-5 py-3.5 font-semibold">CPU</th>
                 <th className="text-left px-5 py-3.5 font-semibold">Memory</th>
@@ -38,6 +65,7 @@ export function ClusterList({ nodes, loading }: Props) {
                   className="hover:bg-pilot-surface-2/50"
                 >
                   <td className="px-5 py-3.5 font-mono text-sm text-white">{node.Name}</td>
+                  <td className="px-5 py-3.5 font-mono text-sm text-pilot-text-secondary">{node.InternalIP || "—"}</td>
                   <td className="px-5 py-3.5">
                     {node.Ready ? (
                       <span className="inline-flex items-center gap-1.5 text-pilot-success text-sm font-medium">
@@ -50,7 +78,7 @@ export function ClusterList({ nodes, loading }: Props) {
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{node.CPUCapacity}</td>
-                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{node.MemoryCapacity}</td>
+                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{formatMemoryGB(node.MemoryCapacity)}</td>
                   <td className="px-5 py-3.5 text-sm text-pilot-text-secondary font-mono">{node.KubeletVersion}</td>
                   <td className="px-5 py-3.5">
                     <PressureBadges node={node} />

@@ -10,7 +10,12 @@ import { Layers } from "lucide-react";
 const NAV_LINKS = [
   { href: "/", label: "Kubernetes CoPilot" },
   { href: "/dashboard", label: "Kubernetes Dashboard" },
+  { href: "/autopilot", label: "Kubernetes AutoPilot" },
 ];
+
+// Stamped at build time by `make dashboard` (NEXT_PUBLIC_BUILD_VERSION).
+// Falls back to "dev" for local `next dev` runs that don't set it.
+const BUILD_VERSION = process.env.NEXT_PUBLIC_BUILD_VERSION || "dev";
 
 export function GlobalNav() {
   const { pathname } = useRouter();
@@ -43,6 +48,12 @@ export function GlobalNav() {
             </Link>
           ))}
         </nav>
+        <span
+          className="ml-auto font-mono text-[11px] text-pilot-muted/80 select-text"
+          title="Dashboard build version"
+        >
+          {BUILD_VERSION}
+        </span>
       </div>
     </div>
   );

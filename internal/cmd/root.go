@@ -3,11 +3,14 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/internal/utils"
+	"github.com/kubepilot/kubepilot/internal/version"
 )
 
 var (
@@ -31,8 +34,23 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
+// newVersionCmd prints the build provenance (version, build number, commit).
+func newVersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print version, build number, and commit",
+		Run: func(cmd *cobra.Command, _ []string) {
+			fmt.Fprintln(cmd.OutOrStdout(), version.String())
+		},
+	}
+}
+
 func init() {
 	cobra.OnInitialize(initConfig)
+
+	// Enables `kubepilot --version`. Cobra prefixes "kubepilot version ", so keep
+	// this concise rather than reusing version.String() (which repeats the name).
+	rootCmd.Version = fmt.Sprintf("%s (build %s, commit %s)", version.Version, version.BuildTime, version.Commit)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: $HOME/.kubepilot.yaml)")
 	rootCmd.PersistentFlags().String("log-level", "info", "log level: debug | info | warn | error")
@@ -45,6 +63,7 @@ func init() {
 	rootCmd.AddCommand(newTroubleshootCmd())
 	rootCmd.AddCommand(newRCACmd())
 	rootCmd.AddCommand(newWatchCmd())
+	rootCmd.AddCommand(newVersionCmd())
 }
 
 func initConfig() {

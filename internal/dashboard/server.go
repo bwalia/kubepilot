@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,7 +22,9 @@ import (
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 
+	"github.com/kubepilot/kubepilot/internal/version"
 	"github.com/kubepilot/kubepilot/pkg/ai"
+	"github.com/kubepilot/kubepilot/pkg/autopilot"
 	"github.com/kubepilot/kubepilot/pkg/jobs"
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/observability"
@@ -37,6 +40,7 @@ type Config struct {
 	K8sClient                         *k8s.Client
 	RCAStore                          *observability.RCAStore
 	RunbookEngine                     *runbooks.Engine
+	Autopilot                         *autopilot.Controller
 	KubeconfigPath                    string
 	Auth                              AuthConfig
 	EnableKubeconfigMutationEndpoints bool
@@ -153,6 +157,7 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/clusters/pods/{namespace}/{pod}/logs", s.handleGetPodLogs).Methods(http.MethodGet)
 	api.HandleFunc("/resource/{kind}/{namespace}/{name}/yaml", s.handleGetResourceYAML).Methods(http.MethodGet)
 	api.HandleFunc("/config", s.handleGetServerConfig).Methods(http.MethodGet)
+	api.HandleFunc("/version", s.handleVersion).Methods(http.MethodGet)
 
 	// Port forwarding. Listing sessions is always read-only; starting/stopping a
 	// forward opens a tunnel into the cluster and is gated like other mutations.
@@ -184,6 +189,13 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/rca/{id}", s.handleGetRCAReport).Methods(http.MethodGet)
 	api.HandleFunc("/anomalies", s.handleListAnomalies).Methods(http.MethodGet)
 	api.HandleFunc("/topology/{namespace}", s.handleTopology).Methods(http.MethodGet)
+	api.HandleFunc("/autopilot", s.handleAutopilotStatus).Methods(http.MethodGet)
+	// The kill switch (pause) is always available — stopping automation is a
+	// safe operation. Resuming re-enables only the startup-configured mode.
+	api.HandleFunc("/autopilot/pause", s.handleAutopilotPause).Methods(http.MethodPost)
+	api.HandleFunc("/autopilot/resume", s.handleAutopilotResume).Methods(http.MethodPost)
+	// Live mode switch (off | dry-run | active) — applied in-memory, no restart.
+	api.HandleFunc("/autopilot/mode", s.handleAutopilotSetMode).Methods(http.MethodPost)
 	if s.cfg.EnableActionMutationEndpoints {
 		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
 	} else {
@@ -315,6 +327,94 @@ func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAIHealth(w http.ResponseWriter, r *http.Request) {
 	status := s.cfg.AIEngine.CheckHealth(r.Context())
 	writeJSON(w, status)
+}
+
+// handleVersion reports the binary's build provenance (version, build number,
+// commit) so the UI and operators can confirm exactly what is deployed.
+func (s *Server) handleVersion(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, version.Get())
+}
+
+// handleAutopilotStatus returns the autopilot policy, recent self-healing
+// decisions, and aggregate counts so the UI can show what KubePilot has been
+// doing (or would do, in dry-run mode) automatically.
+func (s *Server) handleAutopilotStatus(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Autopilot == nil {
+		writeJSON(w, map[string]any{
+			"enabled":   false,
+			"decisions": []any{},
+			"stats":     map[string]int{},
+		})
+		return
+	}
+
+	limit := 50
+	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+
+	s.writeAutopilotStatus(w, s.cfg.Autopilot.Policy(), limit)
+}
+
+// handleAutopilotPause engages the global kill switch, immediately halting all
+// self-healing. Always available regardless of mutation-endpoint settings.
+func (s *Server) handleAutopilotPause(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Autopilot == nil {
+		httpError(w, fmt.Errorf("autopilot is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	policy := s.cfg.Autopilot.Pause()
+	s.writeAutopilotStatus(w, policy, 50)
+}
+
+// handleAutopilotResume restores the mode that was active before the last pause.
+func (s *Server) handleAutopilotResume(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Autopilot == nil {
+		httpError(w, fmt.Errorf("autopilot is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	policy := s.cfg.Autopilot.Resume()
+	s.writeAutopilotStatus(w, policy, 50)
+}
+
+// handleAutopilotSetMode switches the operating mode at runtime (off | dry-run |
+// active) without an env change or restart. The change is applied in-memory; the
+// autopilot policy (allowed namespaces, confidence floor, cooldown, rate limit)
+// remains the real safety boundary for what active mode may touch.
+func (s *Server) handleAutopilotSetMode(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Autopilot == nil {
+		httpError(w, fmt.Errorf("autopilot is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	var body struct {
+		Mode string `json:"mode"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+	mode := autopilot.Mode(strings.ToLower(strings.TrimSpace(body.Mode)))
+	switch mode {
+	case autopilot.ModeOff, autopilot.ModeDryRun, autopilot.ModeActive:
+		// valid
+	default:
+		httpError(w, fmt.Errorf("invalid mode %q (expected off | dry-run | active)", body.Mode), http.StatusBadRequest)
+		return
+	}
+	policy := s.cfg.Autopilot.SetMode(mode)
+	s.writeAutopilotStatus(w, policy, 50)
+}
+
+// writeAutopilotStatus renders the standard autopilot status payload.
+func (s *Server) writeAutopilotStatus(w http.ResponseWriter, policy autopilot.Policy, limit int) {
+	writeJSON(w, map[string]any{
+		"enabled":   policy.Mode != autopilot.ModeOff,
+		"policy":    policy,
+		"decisions": s.cfg.Autopilot.Decisions(limit),
+		"stats":     s.cfg.Autopilot.Stats(),
+	})
 }
 
 // ─────────────────────────────────────────

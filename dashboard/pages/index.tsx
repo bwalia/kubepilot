@@ -4,18 +4,15 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, Brain, BookOpen } from "lucide-react";
+import { Activity, Cpu, AlertTriangle, Terminal, Layers, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen } from "lucide-react";
 import {
   listCrashingPods,
   listNodes,
   listDeployments,
   listAnomalies,
-  listKubeconfigs,
   interpretCommand,
-  getAIHealth,
   getServerConfig,
   type SuggestedAction,
-  type AIHealthStatus,
 } from "@/lib/api";
 import { ClusterList } from "@/components/ClusterList";
 import { PodTable } from "@/components/PodTable";
@@ -26,7 +23,7 @@ import { JobScheduler } from "@/components/JobScheduler";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
 import { RunbooksPanel } from "@/components/RunbooksPanel";
 import { ResourceMeters } from "@/components/dashboard/ResourceMeters";
-import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
+import { ClusterStatusBar } from "@/components/ClusterStatusBar";
 import { ClusterEventsTroubleshooting } from "@/components/ClusterEventsTroubleshooting";
 import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel";
 import RCAPage from "@/pages/rca";
@@ -73,18 +70,6 @@ export default function DashboardHome() {
     refetchInterval: 15_000,
   });
 
-  const { data: kubeconfigs } = useQuery({
-    queryKey: ["kubeconfigs"],
-    queryFn: listKubeconfigs,
-    refetchInterval: 15_000,
-  });
-
-  const { data: aiHealth } = useQuery({
-    queryKey: ["ai-health"],
-    queryFn: getAIHealth,
-    refetchInterval: 30_000,
-  });
-
   const { data: serverConfig } = useQuery({
     queryKey: ["server-config"],
     queryFn: getServerConfig,
@@ -119,10 +104,6 @@ export default function DashboardHome() {
   const pressureNodes = nodes.filter(
     (n) => n.MemoryPressure || n.DiskPressure || n.PIDPressure
   ).length;
-  const activeKubeconfig = kubeconfigs?.active_path || "";
-  const activeKubeconfigBasename = activeKubeconfig
-    ? activeKubeconfig.split(/[\\/]/).pop() || activeKubeconfig
-    : "in-cluster";
 
   return (
     <div className="min-h-screen bg-pilot-bg text-white">
@@ -140,44 +121,12 @@ export default function DashboardHome() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <KubeconfigSwitcher
-              onSwitched={() => {
-                setAiActions(null);
-                setActiveTab("overview");
-              }}
-            />
-            <span
-              className="hidden sm:inline text-xs bg-pilot-surface border border-pilot-border text-pilot-muted px-2.5 py-1 rounded-md font-mono max-w-56 truncate"
-              title={activeKubeconfig || "in-cluster"}
-            >
-              {activeKubeconfigBasename}
-            </span>
-            <div
-              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
-                aiHealth?.healthy
-                  ? "text-pilot-success bg-emerald-500/10"
-                  : "text-pilot-danger bg-red-500/10"
-              }`}
-              title={
-                aiHealth
-                  ? aiHealth.healthy
-                    ? `AI Model: ${aiHealth.model} (${aiHealth.latency_ms}ms)`
-                    : `AI Error: ${aiHealth.error || "unreachable"}`
-                  : "Checking AI..."
-              }
-            >
-              <Brain className="w-3.5 h-3.5" />
-              {aiHealth ? (aiHealth.healthy ? `AI: ${aiHealth.model}` : "AI: Offline") : "AI: ..."}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-pilot-success bg-emerald-500/10 px-2.5 py-1 rounded-full">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pilot-success opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-pilot-success" />
-              </span>
-              Live
-            </div>
-          </div>
+          <ClusterStatusBar
+            onSwitched={() => {
+              setAiActions(null);
+              setActiveTab("overview");
+            }}
+          />
         </div>
       </header>
 

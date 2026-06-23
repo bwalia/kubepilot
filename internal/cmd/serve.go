@@ -14,7 +14,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/internal/dashboard"
+	"github.com/kubepilot/kubepilot/internal/version"
 	"github.com/kubepilot/kubepilot/pkg/ai"
+	"github.com/kubepilot/kubepilot/pkg/autopilot"
 	"github.com/kubepilot/kubepilot/pkg/jobs"
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/mcp/server"
@@ -56,6 +58,16 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("slack-min-severity", "high", "Minimum severity to notify on (critical|high|medium|low|info)")
 	cmd.Flags().String("notifier-dashboard-url", "", "Public dashboard URL included in Slack messages (e.g. https://kubepilot.example.com)")
 
+	// Autopilot — closed-loop AI self-healing.
+	cmd.Flags().String("autopilot-mode", "off", "Autopilot self-healing mode: off | dry-run | active (active mutates the cluster)")
+	cmd.Flags().Float64("autopilot-min-confidence", 0.80, "Minimum RCA confidence (0.0-1.0) before autopilot may act")
+	cmd.Flags().String("autopilot-allowed-actions", "delete_pod,restart", "Comma-separated remediation actions autopilot may auto-apply")
+	cmd.Flags().String("autopilot-max-risk", "safe", "Highest remediation risk autopilot may auto-apply: safe | moderate | high")
+	cmd.Flags().String("autopilot-allowed-namespaces", "", "Comma-separated namespaces autopilot may act in (empty = all except blocked)")
+	cmd.Flags().String("autopilot-blocked-namespaces", "kube-system,kube-public,kube-node-lease,kubepilot-system", "Comma-separated namespaces autopilot must never touch")
+	cmd.Flags().Duration("autopilot-cooldown", 10*time.Minute, "Minimum time between autopilot actions on the same resource")
+	cmd.Flags().Int("autopilot-max-actions-per-hour", 10, "Maximum autopilot actions in any rolling hour (blast-radius cap)")
+
 	_ = viper.BindPFlag("mcp_port", cmd.Flags().Lookup("mcp-port"))
 	_ = viper.BindPFlag("dashboard_port", cmd.Flags().Lookup("dashboard-port"))
 	_ = viper.BindPFlag("kubeconfig", cmd.Flags().Lookup("kubeconfig"))
@@ -76,6 +88,14 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("slack_webhook_url", cmd.Flags().Lookup("slack-webhook-url"))
 	_ = viper.BindPFlag("slack_min_severity", cmd.Flags().Lookup("slack-min-severity"))
 	_ = viper.BindPFlag("notifier_dashboard_url", cmd.Flags().Lookup("notifier-dashboard-url"))
+	_ = viper.BindPFlag("autopilot_mode", cmd.Flags().Lookup("autopilot-mode"))
+	_ = viper.BindPFlag("autopilot_min_confidence", cmd.Flags().Lookup("autopilot-min-confidence"))
+	_ = viper.BindPFlag("autopilot_allowed_actions", cmd.Flags().Lookup("autopilot-allowed-actions"))
+	_ = viper.BindPFlag("autopilot_max_risk", cmd.Flags().Lookup("autopilot-max-risk"))
+	_ = viper.BindPFlag("autopilot_allowed_namespaces", cmd.Flags().Lookup("autopilot-allowed-namespaces"))
+	_ = viper.BindPFlag("autopilot_blocked_namespaces", cmd.Flags().Lookup("autopilot-blocked-namespaces"))
+	_ = viper.BindPFlag("autopilot_cooldown", cmd.Flags().Lookup("autopilot-cooldown"))
+	_ = viper.BindPFlag("autopilot_max_actions_per_hour", cmd.Flags().Lookup("autopilot-max-actions-per-hour"))
 
 	return cmd
 }
@@ -84,10 +104,23 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	log.Info("Starting KubePilot")
+	log.Info("Starting KubePilot",
+		zap.String("version", version.Version),
+		zap.String("build", version.BuildTime),
+		zap.String("commit", version.Commit),
+	)
+
+	// Resolve kubeconfig from this command's own flag. We can't use
+	// viper.GetString("kubeconfig") here: the serve/agent/operator subcommands
+	// all BindPFlag the same global "kubeconfig" key, so the last binding wins
+	// and shadows serve's flag. Fall back to the standard KUBECONFIG env var.
+	kubeconfigPath, _ := cmd.Flags().GetString("kubeconfig")
+	if kubeconfigPath == "" {
+		kubeconfigPath = os.Getenv("KUBECONFIG")
+	}
 
 	// Build Kubernetes client.
-	k8sClient, err := k8s.NewClient(viper.GetString("kubeconfig"))
+	k8sClient, err := k8s.NewClient(kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("building kubernetes client: %w", err)
 	}
@@ -130,9 +163,43 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		log.Info("Slack notifier enabled", zap.String("min_severity", viper.GetString("slack_min_severity")))
 	}
 
+	// Build the autopilot self-healing controller. It is the closed loop that
+	// turns AI diagnoses into safe, policy-gated remediation. Off unless the
+	// operator opts in via --autopilot-mode. The executor runs with DryRun=false;
+	// the controller's own Mode decides whether a step is actually applied. The
+	// nil guard is safe because autopilot only ever runs steps that do NOT require
+	// a CR code (CR-gated steps are escalated to a human instead).
+	autopilotPolicy := autopilot.Policy{
+		Mode:              autopilot.Mode(strings.TrimSpace(viper.GetString("autopilot_mode"))),
+		MinConfidence:     viper.GetFloat64("autopilot_min_confidence"),
+		AllowedActions:    parseCSV(viper.GetString("autopilot_allowed_actions")),
+		MaxRisk:           strings.TrimSpace(viper.GetString("autopilot_max_risk")),
+		AllowedNamespaces: parseCSV(viper.GetString("autopilot_allowed_namespaces")),
+		BlockedNamespaces: parseCSV(viper.GetString("autopilot_blocked_namespaces")),
+		Cooldown:          viper.GetDuration("autopilot_cooldown"),
+		MaxActionsPerHour: viper.GetInt("autopilot_max_actions_per_hour"),
+	}
+	if autopilotPolicy.Mode == "" {
+		autopilotPolicy.Mode = autopilot.ModeOff
+	}
+	autopilotCtl := autopilot.New(autopilot.Config{
+		Policy: autopilotPolicy,
+		Executor: ai.NewRemediationExecutor(k8sClient, nil, ai.RemediationConfig{
+			DryRun: false,
+		}, log),
+	}, log)
+	if autopilotPolicy.Mode != autopilot.ModeOff {
+		log.Info("Autopilot self-healing enabled",
+			zap.String("mode", string(autopilotPolicy.Mode)),
+			zap.Float64("min_confidence", autopilotPolicy.MinConfidence),
+			zap.Strings("allowed_actions", autopilotPolicy.AllowedActions),
+		)
+	}
+
 	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{
 		Persistence: persistence,
 		Notifier:    notifier,
+		ReportHook:  autopilotCtl.HandleReport,
 	}, log)
 	go watcher.Start(ctx)
 
@@ -179,7 +246,8 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		K8sClient:      k8sClient,
 		RCAStore:       rcaStore,
 		RunbookEngine:  runbookEngine,
-		KubeconfigPath: viper.GetString("kubeconfig"),
+		Autopilot:      autopilotCtl,
+		KubeconfigPath: kubeconfigPath,
 		Auth: dashboard.AuthConfig{
 			Enabled:  authEnabled,
 			Token:    authToken,

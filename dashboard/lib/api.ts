@@ -41,6 +41,7 @@ export interface NodeSummary {
   CPUCapacity: string;
   MemoryCapacity: string;
   KubeletVersion: string;
+  InternalIP: string;
   Unschedulable: boolean;
 }
 
@@ -620,6 +621,62 @@ export const listAnomalies = (params?: {
 
 export const getTopology = (namespace: string): Promise<ServiceTopology> =>
   http.get(`/topology/${namespace}`).then((r) => r.data);
+
+// ─────────────────────────────────────────
+// Autopilot (closed-loop self-healing) API
+// ─────────────────────────────────────────
+
+export type AutopilotMode = "off" | "dry-run" | "active";
+export type AutopilotVerdict =
+  | "executed"
+  | "dry-run"
+  | "skipped"
+  | "escalated"
+  | "failed";
+
+export interface AutopilotPolicy {
+  mode: AutopilotMode;
+  min_confidence: number;
+  allowed_actions: string[];
+  max_risk: string;
+  allowed_namespaces?: string[];
+  blocked_namespaces: string[];
+  cooldown: number; // nanoseconds (Go time.Duration)
+  max_actions_per_hour: number;
+}
+
+export interface AutopilotDecision {
+  time: string;
+  report_id: string;
+  resource: { kind: string; name: string; namespace: string };
+  severity: string;
+  confidence: number;
+  root_cause: string;
+  action?: string;
+  verdict: AutopilotVerdict;
+  reason: string;
+  output?: string;
+}
+
+export interface AutopilotStatus {
+  enabled: boolean;
+  policy?: AutopilotPolicy;
+  decisions: AutopilotDecision[];
+  stats: Record<string, number>;
+}
+
+export const getAutopilotStatus = (limit = 50): Promise<AutopilotStatus> =>
+  http.get("/autopilot", { params: { limit } }).then((r) => r.data);
+
+export const pauseAutopilot = (): Promise<AutopilotStatus> =>
+  http.post("/autopilot/pause").then((r) => r.data);
+
+export const resumeAutopilot = (): Promise<AutopilotStatus> =>
+  http.post("/autopilot/resume").then((r) => r.data);
+
+// setAutopilotMode switches the operating mode at runtime (no restart/rebuild).
+export const setAutopilotMode = (mode: AutopilotMode): Promise<AutopilotStatus> =>
+  http.post("/autopilot/mode", { mode }).then((r) => r.data);
 
   export const getServiceGraph = (namespace: string): Promise<ServiceGraph> =>
     http

@@ -5,7 +5,10 @@
 BINARY        := kubepilot
 IMAGE         := ghcr.io/kubepilot/kubepilot
 VERSION       ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-LDFLAGS       := -ldflags="-s -w -X github.com/kubepilot/kubepilot/internal/version.Version=$(VERSION)"
+BUILD_TIME    ?= $(shell date -u +%Y-%m-%d.%H%M%SZ)
+COMMIT        ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo nogit)
+VPKG          := github.com/kubepilot/kubepilot/internal/version
+LDFLAGS       := -ldflags="-s -w -X $(VPKG).Version=$(VERSION) -X $(VPKG).BuildTime=$(BUILD_TIME) -X $(VPKG).Commit=$(COMMIT)"
 
 GO            := go
 GOOS          ?= $(shell go env GOOS)
@@ -64,7 +67,9 @@ dashboard-install:
 
 dashboard:
 	@echo "▸ Building Next.js dashboard (static export)"
-	@cd $(DASHBOARD_DIR) && npm run build
+	@cd $(DASHBOARD_DIR) && \
+		NEXT_PUBLIC_BUILD_VERSION="$$(date -u +%Y-%m-%d.%H%M%SZ)-$$(git rev-parse --short HEAD 2>/dev/null || echo nogit)" \
+		npm run build
 
 dashboard-dev:
 	@echo "▸ Starting Next.js dev server on :3000"

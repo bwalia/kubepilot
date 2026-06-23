@@ -24,6 +24,7 @@ The repo is prepared to show screenshots directly on GitHub.
 
 ![KubePilot Dashboard Overview](docs/screenshots/dashboard-overview.svg)
 ![Cluster Events and AI Troubleshooting](docs/screenshots/cluster-events-ai.svg)
+![Autopilot Self-Healing Workflow](docs/screenshots/autopilot-workflow.svg)
 
 You can replace these SVG assets with PNG/JPG captures at any time.
 
@@ -316,6 +317,50 @@ KUBEPILOT_CORS_ALLOWED_ORIGINS='https://kubepilot.example.com' \
 ```
 
 You can also use Bearer token auth via `KUBEPILOT_DASHBOARD_AUTH_TOKEN`.
+
+### Slack Notifications
+
+Slack alerting is **built in but OFF by default**. The integration lives in
+`pkg/observability/notifier.go`; with no webhook URL configured,
+`NewSlackNotifier` returns `nil` and nothing is sent (the startup log will not
+contain a `Slack notifier enabled` line).
+
+**Enable it** by setting the following (env vars, or the equivalent
+`--slack-webhook-url` / `--slack-min-severity` / `--notifier-dashboard-url`
+flags):
+
+```bash
+KUBEPILOT_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+KUBEPILOT_SLACK_MIN_SEVERITY=high                        # critical|high|medium|low|info (default: high)
+KUBEPILOT_NOTIFIER_DASHBOARD_URL=http://your-host:8383   # optional — adds a dashboard link to each message
+```
+
+**What it sends.** Messages fire on two events, and only for severity ≥ the
+configured minimum (`high` by default, so `medium`/`low`/`info` are skipped):
+
+1. **Anomaly detected** (before RCA runs):
+
+   ```
+   *Anomaly detected* — `crashloop-detector` in `dev/opsapi-...`
+   *Severity:* HIGH
+   *Detail:* Back-off restarting failed container
+   ```
+
+2. **RCA report finalized** (richer card):
+
+   ```
+   🚨 *RCA: CrashLoop* — `dev/opsapi-...` (HIGH)
+   *Summary:* Container exits non-zero on startup...
+   *Confidence:* 95%
+   *Dashboard:* http://your-host:8383/
+   ```
+
+> **⚠️ Known gap — Autopilot executions are not sent to Slack.**
+> The notifier currently exposes only `NotifyAnomaly` and `NotifyReport`, both
+> wired into the cluster watcher. The Autopilot controller has **no notifier
+> hook**, so Slack will tell you *"a pod is crash-looping"* and *"here is the
+> root cause"*, but **not** *"Autopilot just recycled/deleted pod X"*. Posting a
+> card on Autopilot `executed`/`escalated` decisions is a planned follow-up.
 
 ## Dashboard Guide
 

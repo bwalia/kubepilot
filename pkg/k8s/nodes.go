@@ -19,6 +19,7 @@ type NodeSummary struct {
 	MemoryCapacity           string
 	EphemeralStorageCapacity string
 	KubeletVersion           string
+	InternalIP               string
 	Unschedulable            bool
 }
 
@@ -68,6 +69,13 @@ func toNodeSummary(node corev1.Node) NodeSummary {
 	}
 	if eph, ok := node.Status.Capacity[corev1.ResourceEphemeralStorage]; ok {
 		s.EphemeralStorageCapacity = eph.String()
+	}
+
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == corev1.NodeInternalIP {
+			s.InternalIP = addr.Address
+			break
+		}
 	}
 
 	for _, cond := range node.Status.Conditions {
