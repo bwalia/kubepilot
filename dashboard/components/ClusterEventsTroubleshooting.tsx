@@ -14,6 +14,7 @@ import {
   FileWarning,
   Activity,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import {
   getClusterTroubleshootingSummary,
@@ -24,6 +25,7 @@ import {
   type KubeEvent,
 } from "@/lib/api";
 import { LogViewer } from "@/components/LogViewer";
+import { useNamespaceLock } from "@/lib/useNamespaceLock";
 
 const IMPORTANT_REASONS = new Set([
   "FailedScheduling",
@@ -42,8 +44,11 @@ const IMPORTANT_REASONS = new Set([
 const PAGE_SIZE = 25;
 
 export function ClusterEventsTroubleshooting() {
+  const { locked, namespace: lockedNamespace } = useNamespaceLock();
   const [namespaceInput, setNamespaceInput] = useState("all");
-  const [namespace, setNamespace] = useState("");
+  const [selectedNamespace, setSelectedNamespace] = useState("");
+  // A URL-locked namespace overrides the in-panel namespace controls.
+  const namespace = locked ? lockedNamespace! : selectedNamespace;
   const [kind, setKind] = useState("");
   const [severity, setSeverity] = useState("");
   const [search, setSearch] = useState("");
@@ -87,7 +92,7 @@ export function ClusterEventsTroubleshooting() {
   const submitNamespace = (value: string) => {
     const normalized = value.trim().toLowerCase();
     const next = normalized === "" || normalized === "all" || normalized === "*" ? "" : value.trim();
-    setNamespace(next);
+    setSelectedNamespace(next);
     setNamespaceInput(next === "" ? "all" : next);
     setPage(1);
   };
@@ -113,33 +118,45 @@ export function ClusterEventsTroubleshooting() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => submitNamespace("all")}
-              className={`px-3.5 py-2 text-sm rounded-lg border font-medium ${
-                namespace === ""
-                  ? "bg-pilot-accent text-white border-pilot-accent"
-                  : "bg-pilot-bg text-pilot-muted border-pilot-border hover:text-white hover:border-pilot-border-hover"
-              }`}
-            >
-              All Namespaces
-            </button>
-            <div className="flex items-center gap-2">
-              <input
-                value={namespaceInput}
-                onChange={(e) => setNamespaceInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submitNamespace(namespaceInput);
-                }}
-                placeholder="Namespace or all"
-                className="bg-pilot-bg border border-pilot-border rounded-lg px-3.5 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent focus:ring-1 focus:ring-pilot-accent/30 w-44"
-              />
-              <button
-                onClick={() => submitNamespace(namespaceInput)}
-                className="px-3.5 py-2 text-sm rounded-lg bg-pilot-accent text-white hover:bg-blue-500 font-medium"
+            {locked ? (
+              <span
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm rounded-lg border font-medium bg-pilot-accent/15 text-pilot-accent-light border-pilot-accent/40"
+                title="Locked to this namespace via URL parameter"
               >
-                Apply
-              </button>
-            </div>
+                <Lock className="w-3.5 h-3.5" />
+                {namespace}
+              </span>
+            ) : (
+              <>
+                <button
+                  onClick={() => submitNamespace("all")}
+                  className={`px-3.5 py-2 text-sm rounded-lg border font-medium ${
+                    namespace === ""
+                      ? "bg-pilot-accent text-white border-pilot-accent"
+                      : "bg-pilot-bg text-pilot-muted border-pilot-border hover:text-white hover:border-pilot-border-hover"
+                  }`}
+                >
+                  All Namespaces
+                </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={namespaceInput}
+                    onChange={(e) => setNamespaceInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") submitNamespace(namespaceInput);
+                    }}
+                    placeholder="Namespace or all"
+                    className="bg-pilot-bg border border-pilot-border rounded-lg px-3.5 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent focus:ring-1 focus:ring-pilot-accent/30 w-44"
+                  />
+                  <button
+                    onClick={() => submitNamespace(namespaceInput)}
+                    className="px-3.5 py-2 text-sm rounded-lg bg-pilot-accent text-white hover:bg-blue-500 font-medium"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </>
+            )}
             <button
               onClick={handleRefresh}
               className="p-2 rounded-lg border border-pilot-border text-pilot-muted hover:text-white hover:bg-pilot-surface-2"

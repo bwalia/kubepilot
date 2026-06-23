@@ -13,6 +13,7 @@ import {
   executeSuggestedAction,
   type SuggestedAction,
 } from "@/lib/api";
+import { useNamespaceLock } from "@/lib/useNamespaceLock";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { LogViewer } from "@/components/LogViewer";
 import { CRCodeApproval } from "@/components/CRCodeApproval";
@@ -26,7 +27,7 @@ import { TopologySection } from "@/components/dashboard/TopologySection";
 import { PodDetailDrawer } from "@/components/dashboard/PodDetailDrawer";
 import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
-import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X } from "lucide-react";
+import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Lock } from "lucide-react";
 
 type Section = "overview" | "workloads" | "network" | "config" | "topology" | "health" | "events";
 
@@ -47,7 +48,10 @@ interface YAMLTarget {
 }
 
 export default function KubernetesDashboard() {
-  const [namespace, setNamespace] = useState("");
+  const { locked, namespace: lockedNamespace } = useNamespaceLock();
+  const [selectedNamespace, setSelectedNamespace] = useState("");
+  // When the URL locks a namespace, it overrides the dropdown selection.
+  const namespace = locked ? lockedNamespace! : selectedNamespace;
   const [section, setSection] = useState<Section>("overview");
   const [selectedPod, setSelectedPod] = useState<{ namespace: string; name: string } | null>(null);
   const [yamlTarget, setYamlTarget] = useState<YAMLTarget | null>(null);
@@ -93,18 +97,28 @@ export default function KubernetesDashboard() {
       <div className="px-4 sm:px-6 lg:px-8 py-3 border-b border-pilot-border flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs uppercase tracking-wider text-pilot-muted">Namespace</span>
-          <select
-            value={namespace}
-            onChange={(e) => setNamespace(e.target.value)}
-            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-white min-w-44"
-          >
-            <option value="">All Namespaces</option>
-            {namespaces.map((ns) => (
-              <option key={ns.Name} value={ns.Name}>
-                {ns.Name}
-              </option>
-            ))}
-          </select>
+          {locked ? (
+            <span
+              className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-1.5 text-sm font-medium min-w-44"
+              title="Locked to this namespace via URL parameter"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              {namespace}
+            </span>
+          ) : (
+            <select
+              value={selectedNamespace}
+              onChange={(e) => setSelectedNamespace(e.target.value)}
+              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-white min-w-44"
+            >
+              <option value="">All Namespaces</option>
+              {namespaces.map((ns) => (
+                <option key={ns.Name} value={ns.Name}>
+                  {ns.Name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <nav className="flex gap-1 overflow-x-auto" role="tablist">

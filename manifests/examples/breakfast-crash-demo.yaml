@@ -1,0 +1,87 @@
+## Breakfast crash demo — two pods that fail for DIFFERENT reasons so KubePilot's
+## RCA can be shown distinguishing root causes side by side.
+##
+##   toast   → CrashLoopBackOff from an application error (exits 1 with an error log)
+##   butter  → OOMKilled (writes past a tight memory limit into a memory-backed volume)
+##
+## They live in their own "breakfast" namespace so this also demos the
+## URL namespace lock:  /dashboard?namespace=breakfast
+##
+## Apply:   kubectl apply -f manifests/examples/breakfast-crash-demo.yaml
+## Remove:  kubectl delete -f manifests/examples/breakfast-crash-demo.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: breakfast
+  labels:
+    purpose: kubepilot-rca-demo
+
+---
+## toast — application-level failure. Logs a config error, then exits non-zero
+## on every start, so the kubelet backs it off into CrashLoopBackOff.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: toast
+  namespace: breakfast
+  labels:
+    app: toast
+    demo: crash
+spec:
+  restartPolicy: Always
+  containers:
+    - name: toast
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo "[toast] starting breakfast service at $(date -u +%Y-%m-%dT%H:%M:%SZ)";
+          echo "[toast] ERROR: failed to load config: TOASTER_SETTING is required but not set";
+          echo "[toast] FATAL: cannot start without valid configuration, exiting";
+          sleep 3;
+          exit 1;
+      resources:
+        requests:
+          cpu: 25m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 32Mi
+
+---
+## butter — memory-limit failure. Allocates anonymous process memory well past
+## its 128Mi limit, so the cgroup OOM killer terminates it (reason: OOMKilled),
+## and restartPolicy: Always loops it. Memory is held in-process (a shell var)
+## rather than a tmpfs file, so nothing persists across restarts and every
+## restart cleanly OOMs at runtime instead of failing container init.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: butter
+  namespace: breakfast
+  labels:
+    app: butter
+    demo: crash
+spec:
+  restartPolicy: Always
+  containers:
+    - name: butter
+      image: busybox:1.36
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo "[butter] starting butter melter at $(date -u +%Y-%m-%dT%H:%M:%SZ)";
+          echo "[butter] heating up — allocating ~300MB in memory past the 128Mi limit";
+          BUFFER="$(yes spreadthebutter | head -c 300000000)";
+          echo "[butter] this line should never print — we get OOMKilled first (held ${#BUFFER} bytes)";
+          sleep 30;
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
