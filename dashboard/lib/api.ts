@@ -41,6 +41,7 @@ export interface NodeSummary {
   CPUCapacity: string;
   MemoryCapacity: string;
   KubeletVersion: string;
+  InternalIP: string;
   Unschedulable: boolean;
 }
 
