@@ -1,0 +1,162 @@
+name: Deploy
+
+# Autodeploys KubePilot to the home-lab k3s clusters via Helm.
+#
+#   int env  → 192.168.1.193   (self-hosted runner labelled "int")
+#   test env → 192.168.1.140   (self-hosted runner labelled "test")
+#
+# Promotion is gated: the test deploy runs ONLY if the int deploy succeeded
+# (`needs: deploy-int`). A failed int rollout fails the int job, which skips
+# the test job, so a bad build never reaches test.
+#
+# Triggers:
+#   - Automatically after "Publish Docker Image" finishes successfully on
+#     master (so the image is guaranteed to exist before we deploy it).
+#   - Manually via workflow_dispatch, with an optional image tag override.
+#
+# Each self-hosted runner deploys to its own local k3s cluster using the
+# on-box kubeconfig (defaults to the standard k3s path). Override KUBECONFIG
+# in the runner environment if your cluster lives elsewhere.
+
+on:
+  workflow_run:
+    workflows: ["Publish Docker Image"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (defaults to the latest master image)"
+        required: false
+        default: ""
+
+# Never run two deploys to the same clusters at once; cancel the older one.
+concurrency:
+  group: deploy-homelab
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_NAME: kubepilot
+  NAMESPACE: kubepilot
+  CHART_PATH: charts/kubepilot
+  IMAGE_REPO: ghcr.io/bwalia/kubepilot
+  HELM_TIMEOUT: 5m
+
+jobs:
+  # ── int env (192.168.1.193) ────────────────────────────────────────────────
+  deploy-int:
+    name: Deploy → int (192.168.1.193)
+    # Only proceed on a manual run, or when the image publish actually succeeded.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, int]
+    environment: int
+    env:
+      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # For workflow_run events, deploy the exact commit that was built.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Resolve image tag
+        id: tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          INPUT_TAG="${{ github.event.inputs.image_tag }}"
+          if [[ -n "$INPUT_TAG" ]]; then
+            TAG="$INPUT_TAG"
+          else
+            # Matches docker-publish.yml's `type=sha,prefix=master-` tag.
+            SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+            TAG="master-${SHA:0:7}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Deploying ${IMAGE_REPO}:${TAG} to int"
+
+      - name: Deploy with Helm
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
+            --namespace "$NAMESPACE" --create-namespace \
+            --set image.repository="$IMAGE_REPO" \
+            --set image.tag="${{ steps.tag.outputs.tag }}" \
+            --wait --timeout "$HELM_TIMEOUT" --atomic
+
+      - name: Verify rollout (health gate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Readiness probe hits /healthz; a Ready rollout means the env is healthy.
+          kubectl rollout status "deployment/$RELEASE_NAME" \
+            --namespace "$NAMESPACE" --timeout=300s
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          kubectl get pods -n "$NAMESPACE" -o wide || true
+          kubectl describe deployment "$RELEASE_NAME" -n "$NAMESPACE" || true
+          kubectl logs -n "$NAMESPACE" "deployment/$RELEASE_NAME" --tail=100 || true
+
+  # ── test env (192.168.1.140) ───────────────────────────────────────────────
+  # Runs ONLY if deploy-int succeeded.
+  deploy-test:
+    name: Deploy → test (192.168.1.140)
+    needs: deploy-int
+    runs-on: [self-hosted, test]
+    environment: test
+    env:
+      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Resolve image tag
+        id: tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          INPUT_TAG="${{ github.event.inputs.image_tag }}"
+          if [[ -n "$INPUT_TAG" ]]; then
+            TAG="$INPUT_TAG"
+          else
+            SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+            TAG="master-${SHA:0:7}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Deploying ${IMAGE_REPO}:${TAG} to test"
+
+      - name: Deploy with Helm
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
+            --namespace "$NAMESPACE" --create-namespace \
+            --set image.repository="$IMAGE_REPO" \
+            --set image.tag="${{ steps.tag.outputs.tag }}" \
+            --wait --timeout "$HELM_TIMEOUT" --atomic
+
+      - name: Verify rollout (health gate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubectl rollout status "deployment/$RELEASE_NAME" \
+            --namespace "$NAMESPACE" --timeout=300s
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          kubectl get pods -n "$NAMESPACE" -o wide || true
+          kubectl describe deployment "$RELEASE_NAME" -n "$NAMESPACE" || true
+          kubectl logs -n "$NAMESPACE" "deployment/$RELEASE_NAME" --tail=100 || true
