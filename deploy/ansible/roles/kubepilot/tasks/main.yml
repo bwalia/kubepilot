@@ -87,9 +87,9 @@
     mode: "0600"
   notify: Restart kubepilot
 
-- name: Provision kubeconfig from provided content
+- name: Provision kubeconfig from provided content (base64)
   ansible.builtin.copy:
-    content: "{{ kubepilot_kubeconfig_content }}"
+    content: "{{ kubepilot_kubeconfig_content | b64decode }}"
     dest: "{{ kubepilot_kubeconfig_path }}"
     owner: "{{ kubepilot_user }}"
     group: "{{ kubepilot_user }}"

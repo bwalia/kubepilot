@@ -29,7 +29,8 @@ kubepilot_cors_allowed_origins: "{{ lookup('env', 'KUBEPILOT_CORS_ALLOWED_ORIGIN
 # role provisions one at this path.
 kubepilot_kubeconfig_path: "{{ kubepilot_config_dir }}/kubeconfig.yaml"
 # Where to source it from:
-#  - If KUBECONFIG_CONTENT is set (e.g. a CI secret), that content is written.
+#  - If KUBECONFIG_CONTENT is set (a base64-encoded kubeconfig, e.g. a CI
+#    secret), it is decoded and written.
 #  - Otherwise the on-host kubeconfig at kubepilot_source_kubeconfig is copied
 #    (defaults to the k3s admin config).
 kubepilot_kubeconfig_content: "{{ lookup('env', 'KUBECONFIG_CONTENT') | default('', true) }}"
