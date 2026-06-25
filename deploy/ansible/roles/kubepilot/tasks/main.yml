@@ -109,11 +109,39 @@
 - name: Apply pending restarts
   ansible.builtin.meta: flush_handlers
 
-- name: Health gate — wait for /healthz
-  ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ kubepilot_dashboard_port }}/healthz"
-    status_code: 200
-  register: kp_health
-  retries: 10
-  delay: 3
-  until: kp_health.status is defined and kp_health.status == 200
+- name: Health gate (with diagnostics on failure)
+  block:
+    - name: Wait for /healthz
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ kubepilot_dashboard_port }}/healthz"
+        status_code: 200
+      register: kp_health
+      retries: 10
+      delay: 3
+      until: kp_health.status is defined and kp_health.status == 200
+  rescue:
+    - name: Collect service status
+      ansible.builtin.command: systemctl status kubepilot --no-pager --full
+      register: kp_status
+      changed_when: false
+      failed_when: false
+
+    - name: Collect recent journal
+      ansible.builtin.command: journalctl -u kubepilot --no-pager -n 80
+      register: kp_journal
+      changed_when: false
+      failed_when: false
+
+    - name: Show diagnostics
+      ansible.builtin.debug:
+        msg: |
+          ===== systemctl status kubepilot =====
+          {{ kp_status.stdout | default('') }}
+          {{ kp_status.stderr | default('') }}
+          ===== journalctl -u kubepilot (last 80) =====
+          {{ kp_journal.stdout | default('') }}
+          {{ kp_journal.stderr | default('') }}
+
+    - name: Fail after diagnostics
+      ansible.builtin.fail:
+        msg: "kubepilot did not pass the health check on {{ inventory_hostname }} — see diagnostics above."
