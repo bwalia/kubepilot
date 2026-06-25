@@ -1,0 +1,43 @@
+## ─────────────────────────────────────────────────────────────────────────────
+## KubePilot — systemd unit (reproducible deployment)
+##
+## Install:   sudo scripts/install-kubepilot-systemd.sh
+## Manual:    cp deploy/systemd/kubepilot.service /etc/systemd/system/ && \
+##            sudo systemctl daemon-reload && sudo systemctl enable --now kubepilot
+##
+## This unit carries NO secrets and NO tunable config — everything that varies
+## per host (kubeconfig, dashboard auth credentials, Ollama URL, CORS) lives in
+## the EnvironmentFile below, so the unit stays identical across environments.
+## ─────────────────────────────────────────────────────────────────────────────
+[Unit]
+Description=KubePilot AI-powered Kubernetes Management Platform
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Customize the user and install path for your host.
+User=kubepilot
+WorkingDirectory=/opt/kubepilot
+
+# All tunable + secret configuration is read from this file. Every key is a
+# viper setting with the KUBEPILOT_ prefix (see config.example.yaml). The
+# leading '-' makes startup tolerant of a missing file (built-in defaults apply).
+EnvironmentFile=-/etc/kubepilot/kubepilot.env
+
+# Structural flags only — anything secret or environment-specific belongs in the
+# EnvironmentFile above, never on the command line (it would leak via `ps`).
+ExecStart=/opt/kubepilot/kubepilot serve \
+  --dashboard-port=8383 \
+  --runbooks-dir=/etc/kubepilot/runbooks \
+  --state-dir=/var/lib/kubepilot \
+  --state-retention=720h
+
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kubepilot
+
+[Install]
+WantedBy=multi-user.target

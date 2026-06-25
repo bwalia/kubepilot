@@ -255,6 +255,28 @@ kubectl apply -f manifests/crds/
 helm template kubepilot charts/kubepilot -n kubepilot | kubectl apply -n kubepilot -f -
 ```
 
+### Option E: systemd (bare-metal / VM, no Kubernetes)
+
+Run KubePilot as a long-lived host service — how the reference deployment behind
+a domain is run. Templates live in `deploy/systemd/`.
+
+```bash
+# Build the binary, then install the unit + env file and start the service:
+make build
+sudo cp dist/kubepilot /opt/kubepilot/kubepilot      # or your install path
+sudo scripts/install-kubepilot-systemd.sh
+```
+
+The installer refreshes the unit from `deploy/systemd/kubepilot.service` and, the
+first time only, seeds `/etc/kubepilot/kubepilot.env` (mode `0600`) from the
+example so it never clobbers existing credentials. **Dashboard auth is enabled by
+default** in that env file — edit `KUBEPILOT_DASHBOARD_AUTH_PASSWORD`, then
+`sudo systemctl restart kubepilot`. With auth on, the browser shows its native
+sign-in dialog and loads the dashboard once the credentials match.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full walkthrough, including
+how to verify auth is enforced.
+
 ### Helm Chart Reference
 
 | Parameter | Description | Default |
