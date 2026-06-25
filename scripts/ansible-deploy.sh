@@ -48,12 +48,15 @@ printf '%s\n' "$DEPLOY_SSH_KEY" > "$SSH_KEY_FILE"
 chmod 600 "$SSH_KEY_FILE"
 export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY_FILE"
 
-# ── Ensure ansible-playbook is available ─────────────────────────────────────
-if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo "ansible-playbook not found — installing ansible-core via pip"
-  python3 -m pip install --user --quiet ansible-core
-  export PATH="$HOME/.local/bin:$PATH"
-fi
+# ── Ensure a target-compatible ansible-core ──────────────────────────────────
+# The home-lab hosts ship an older system Python (< 3.7). ansible-core 2.17+
+# drops support for those targets (its modules use `from __future__ import
+# annotations`, which errors on old interpreters). Pin to the 2.16 line, which
+# still supports Python 2.7/3.6 targets and runs on the controller's 3.11.
+ANSIBLE_CORE_SPEC="ansible-core>=2.16,<2.17"
+python3 -m pip install --user --quiet "$ANSIBLE_CORE_SPEC"
+export PATH="$HOME/.local/bin:$PATH"
+hash -r 2>/dev/null || true
 ansible-playbook --version | head -1
 
 # ── Run the play, limited to the requested environment ───────────────────────
