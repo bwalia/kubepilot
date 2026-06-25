@@ -52,9 +52,24 @@ export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY_FILE"
 # The home-lab hosts ship an older system Python (< 3.7). ansible-core 2.17+
 # drops support for those targets (its modules use `from __future__ import
 # annotations`, which errors on old interpreters). Pin to the 2.16 line, which
-# still supports Python 2.7/3.6 targets and runs on the controller's 3.11.
+# still supports Python 2.7/3.6 targets.
+#
+# 2.16 itself needs a controller Python >= 3.10, and this runner's default
+# `python3` is older (pip there only offers ansible-core <= 2.11). So pick the
+# newest Python >= 3.10 on the box to install + run ansible with.
 ANSIBLE_CORE_SPEC="ansible-core>=2.16,<2.17"
-python3 -m pip install --user --quiet "$ANSIBLE_CORE_SPEC"
+PYBIN=""
+for c in python3.13 python3.12 python3.11 python3.10 python3; do
+  command -v "$c" >/dev/null 2>&1 || continue
+  v="$("$c" -c 'import sys; print("%d%02d" % sys.version_info[:2])' 2>/dev/null || echo 0)"
+  if [ "${v:-0}" -ge 310 ]; then PYBIN="$c"; break; fi
+done
+if [ -z "$PYBIN" ]; then
+  echo "::error::No Python >= 3.10 found on the runner to install ansible-core ${ANSIBLE_CORE_SPEC}." >&2
+  exit 1
+fi
+echo "Using controller Python: $("$PYBIN" --version 2>&1) ($PYBIN)"
+"$PYBIN" -m pip install --user --quiet "$ANSIBLE_CORE_SPEC"
 export PATH="$HOME/.local/bin:$PATH"
 hash -r 2>/dev/null || true
 ansible-playbook --version | head -1
