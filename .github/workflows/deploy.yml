@@ -82,12 +82,23 @@ jobs:
 
       - name: Deploy with Helm
         shell: bash
+        env:
+          # Dashboard auth credentials, sourced from this environment's secrets.
+          # Username falls back to "admin" if no secret is configured.
+          DASHBOARD_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
+          DASHBOARD_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
         run: |
           set -euo pipefail
+          if [[ -z "${DASHBOARD_AUTH_PASSWORD:-}" ]]; then
+            echo "::error::DASHBOARD_AUTH_PASSWORD secret is not set. Add it to this environment's secrets — dashboard auth is enabled by default and the install will fail without a credential." >&2
+            exit 1
+          fi
           helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
             --namespace "$NAMESPACE" --create-namespace \
             --set image.repository="$IMAGE_REPO" \
             --set image.tag="${{ steps.tag.outputs.tag }}" \
+            --set kubepilot.auth.username="$DASHBOARD_AUTH_USERNAME" \
+            --set-string kubepilot.auth.password="$DASHBOARD_AUTH_PASSWORD" \
             --wait --timeout "$HELM_TIMEOUT" --atomic
 
       - name: Verify rollout (health gate)
@@ -138,12 +149,23 @@ jobs:
 
       - name: Deploy with Helm
         shell: bash
+        env:
+          # Dashboard auth credentials, sourced from this environment's secrets.
+          # Username falls back to "admin" if no secret is configured.
+          DASHBOARD_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
+          DASHBOARD_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
         run: |
           set -euo pipefail
+          if [[ -z "${DASHBOARD_AUTH_PASSWORD:-}" ]]; then
+            echo "::error::DASHBOARD_AUTH_PASSWORD secret is not set. Add it to this environment's secrets — dashboard auth is enabled by default and the install will fail without a credential." >&2
+            exit 1
+          fi
           helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
             --namespace "$NAMESPACE" --create-namespace \
             --set image.repository="$IMAGE_REPO" \
             --set image.tag="${{ steps.tag.outputs.tag }}" \
+            --set kubepilot.auth.username="$DASHBOARD_AUTH_USERNAME" \
+            --set-string kubepilot.auth.password="$DASHBOARD_AUTH_PASSWORD" \
             --wait --timeout "$HELM_TIMEOUT" --atomic
 
       - name: Verify rollout (health gate)

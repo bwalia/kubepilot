@@ -71,6 +71,28 @@ kubepilot:
   # Log level: debug | info | warn | error
   logLevel: "info"
 
+  # ── Dashboard / API authentication ──────────────────────────────────────────
+  # When enabled, every dashboard + API route (except /healthz, used by probes)
+  # requires either HTTP Basic auth (username + password) or a Bearer token.
+  # Credentials are injected from a Kubernetes Secret — they are never passed as
+  # CLI args, so they don't leak in `ps` output or the rendered pod spec.
+  auth:
+    enabled: true
+
+    # Reference an existing Secret that holds the credentials. Recognised keys:
+    #   username, password, token  (any subset — supply Basic and/or Bearer).
+    # Leave empty to have the chart create a Secret from the inline values below.
+    existingSecret: ""
+
+    # Inline credentials — only used when existingSecret is empty. NEVER commit a
+    # real password here; pass it at deploy time, e.g.:
+    #   --set kubepilot.auth.password=$KUBEPILOT_DASHBOARD_PASSWORD
+    # At least one of password (with username) or token must be set when auth is
+    # enabled and existingSecret is empty, or the chart install will fail.
+    username: "admin"
+    password: ""
+    token: ""
+
   # Enable action mutation endpoints (execute-action / remediate / port-forward
   # start+stop). Required for the dashboard's port-forwarding feature.
   enableActionMutations: false
