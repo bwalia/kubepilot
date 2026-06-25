@@ -87,6 +87,45 @@
     mode: "0600"
   notify: Restart kubepilot
 
+- name: Provision kubeconfig from provided content
+  ansible.builtin.copy:
+    content: "{{ kubepilot_kubeconfig_content }}"
+    dest: "{{ kubepilot_kubeconfig_path }}"
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "0640"
+  when: kubepilot_kubeconfig_content | length > 0
+  notify: Restart kubepilot
+
+- name: Look for an on-host kubeconfig
+  ansible.builtin.stat:
+    path: "{{ kubepilot_source_kubeconfig }}"
+  register: kp_src_kubeconfig
+  when: kubepilot_kubeconfig_content | length == 0
+
+- name: Provision kubeconfig from the on-host file
+  ansible.builtin.copy:
+    src: "{{ kubepilot_source_kubeconfig }}"
+    dest: "{{ kubepilot_kubeconfig_path }}"
+    remote_src: true
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "0640"
+  when:
+    - kubepilot_kubeconfig_content | length == 0
+    - kp_src_kubeconfig.stat.exists | default(false)
+  notify: Restart kubepilot
+
+- name: Require a kubeconfig to be available
+  ansible.builtin.fail:
+    msg: >-
+      kubepilot needs a kubeconfig to start but none was found. Set the
+      KUBECONFIG_CONTENT secret, or point kubepilot_source_kubeconfig at a file
+      that exists on the host (looked for {{ kubepilot_source_kubeconfig }}).
+  when:
+    - kubepilot_kubeconfig_content | length == 0
+    - not (kp_src_kubeconfig.stat.exists | default(false))
+
 - name: Install systemd unit
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../systemd/kubepilot.service"

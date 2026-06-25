@@ -118,6 +118,9 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KUBEPILOT_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
           KUBEPILOT_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
+          # Optional: kubeconfig content for the app to reach its cluster.
+          # If unset, the role copies the on-host kubeconfig (k3s by default).
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
         run: ./scripts/ansible-deploy.sh int
 
   # ── test env (bwalia@192.168.1.140) — only if int succeeded ─────────────────
@@ -144,4 +147,7 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KUBEPILOT_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
           KUBEPILOT_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
+          # Optional: kubeconfig content for the app to reach its cluster.
+          # If unset, the role copies the on-host kubeconfig (k3s by default).
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
         run: ./scripts/ansible-deploy.sh test
