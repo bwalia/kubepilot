@@ -1,0 +1,119 @@
+---
+- name: Require a dashboard auth password
+  ansible.builtin.assert:
+    that: kubepilot_auth_password | length > 0
+    fail_msg: >-
+      kubepilot_auth_password is empty. Dashboard auth is enabled by default and
+      the service refuses to start without a credential — set the
+      DASHBOARD_AUTH_PASSWORD secret (exported as KUBEPILOT_AUTH_PASSWORD).
+    quiet: true
+
+- name: Check the built binary exists on the controller
+  ansible.builtin.stat:
+    path: "{{ kubepilot_binary_src }}"
+  delegate_to: localhost
+  become: false
+  register: kp_binary
+
+- name: Fail if the binary artifact is missing
+  ansible.builtin.fail:
+    msg: "No binary at {{ kubepilot_binary_src }} — the build job must run first."
+  when: not kp_binary.stat.exists
+
+- name: Create kubepilot system group
+  ansible.builtin.group:
+    name: "{{ kubepilot_user }}"
+    system: true
+
+- name: Create kubepilot system user
+  ansible.builtin.user:
+    name: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ kubepilot_install_dir }}"
+    create_home: false
+
+- name: Create service directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ kubepilot_install_dir }}", mode: "0755" }
+    - { path: "{{ kubepilot_config_dir }}", mode: "0750" }
+    - { path: "{{ kubepilot_runbooks_dir }}", mode: "0750" }
+    - { path: "{{ kubepilot_state_dir }}", mode: "0750" }
+
+- name: Install kubepilot binary
+  ansible.builtin.copy:
+    src: "{{ kubepilot_binary_src }}"
+    dest: "{{ kubepilot_install_dir }}/kubepilot"
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "0755"
+  notify: Restart kubepilot
+
+# Clear the previous export so files removed between builds don't linger.
+- name: Reset dashboard assets directory
+  ansible.builtin.file:
+    path: "{{ kubepilot_install_dir }}/dashboard/out"
+    state: "{{ item }}"
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "0755"
+  loop:
+    - absent
+    - directory
+
+- name: Deploy dashboard static assets
+  ansible.builtin.copy:
+    src: "{{ kubepilot_dashboard_src }}"
+    dest: "{{ kubepilot_install_dir }}/dashboard/out/"
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "0644"
+    directory_mode: "0755"
+  notify: Restart kubepilot
+
+- name: Render environment file (secrets, mode 0600)
+  ansible.builtin.template:
+    src: kubepilot.env.j2
+    dest: "{{ kubepilot_config_dir }}/kubepilot.env"
+    owner: "{{ kubepilot_user }}"
+    group: "{{ kubepilot_user }}"
+    mode: "0600"
+  notify: Restart kubepilot
+
+- name: Install systemd unit
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../systemd/kubepilot.service"
+    dest: /etc/systemd/system/kubepilot.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart kubepilot
+
+- name: Enable and start kubepilot
+  ansible.builtin.systemd:
+    name: kubepilot
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# Apply any pending restart before we health-check the new build.
+- name: Apply pending restarts
+  ansible.builtin.meta: flush_handlers
+
+- name: Health gate — wait for /healthz
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ kubepilot_dashboard_port }}/healthz"
+    status_code: 200
+  register: kp_health
+  retries: 10
+  delay: 3
+  until: kp_health.status is defined and kp_health.status == 200

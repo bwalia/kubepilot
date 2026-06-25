@@ -1,0 +1,16 @@
+---
+# Deploy KubePilot as a systemd service to a home-lab host.
+#
+# Limit to one environment at a time, e.g.:
+#   ansible-playbook site.yml --limit int
+#   ansible-playbook site.yml --limit test
+#
+# Secrets and the built artifact location come from the environment / extra-vars
+# (see roles/kubepilot/defaults/main.yml). The dashboard auth password is
+# required — the play fails fast if it is empty.
+- name: Deploy KubePilot (systemd)
+  hosts: kubepilot
+  become: true
+  gather_facts: true
+  roles:
+    - kubepilot

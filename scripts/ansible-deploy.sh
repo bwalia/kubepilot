@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy KubePilot to a home-lab host as a systemd service via Ansible.
+#
+#   scripts/ansible-deploy.sh <env>      # env = int | test
+#
+# Run from the GitHub Actions deploy jobs (see .github/workflows/deploy.yml), but
+# also runnable by hand from a machine on the LAN. Expects the built artifact in
+# ./artifact (kubepilot + dashboard-out) and these environment variables:
+#
+#   DEPLOY_SSH_KEY            private key for the inventory's ansible_user (required)
+#   KUBEPILOT_AUTH_PASSWORD   dashboard password — auth is on by default (required)
+#   KUBEPILOT_AUTH_USERNAME   optional, defaults to "admin"
+#
+# The host `bwalia` must have passwordless sudo (the playbook uses become).
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+ENVIRONMENT="${1:-}"
+case "$ENVIRONMENT" in
+  int|test) ;;
+  *) echo "usage: $0 <int|test>" >&2; exit 2 ;;
+esac
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ANSIBLE_DIR="$ROOT_DIR/deploy/ansible"
+
+if [[ -z "${KUBEPILOT_AUTH_PASSWORD:-}" ]]; then
+  echo "::error::DASHBOARD_AUTH_PASSWORD secret is not set — dashboard auth is enabled by default and the service will not start without a credential." >&2
+  exit 1
+fi
+
+if [[ -z "${DEPLOY_SSH_KEY:-}" ]]; then
+  echo "::error::DEPLOY_SSH_KEY secret is not set — needed to SSH into the ${ENVIRONMENT} host." >&2
+  exit 1
+fi
+
+if [[ ! -x "$ROOT_DIR/artifact/kubepilot" ]] && [[ ! -f "$ROOT_DIR/artifact/kubepilot" ]]; then
+  echo "::error::Missing build artifact at $ROOT_DIR/artifact/kubepilot — the build job must run first." >&2
+  exit 1
+fi
+
+# ── Install the SSH key (cleaned up on exit) ─────────────────────────────────
+SSH_KEY_FILE="$(mktemp)"
+cleanup() { rm -f "$SSH_KEY_FILE"; }
+trap cleanup EXIT
+printf '%s\n' "$DEPLOY_SSH_KEY" > "$SSH_KEY_FILE"
+chmod 600 "$SSH_KEY_FILE"
+export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY_FILE"
+
+# ── Ensure ansible-playbook is available ─────────────────────────────────────
+if ! command -v ansible-playbook >/dev/null 2>&1; then
+  echo "ansible-playbook not found — installing ansible-core via pip"
+  python3 -m pip install --user --quiet ansible-core
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+ansible-playbook --version | head -1
+
+# ── Run the play, limited to the requested environment ───────────────────────
+cd "$ANSIBLE_DIR"
+exec ansible-playbook site.yml --limit "$ENVIRONMENT"

@@ -74,6 +74,34 @@ sudo systemctl restart kubepilot
 seeds `/etc/kubepilot/kubepilot.env` (mode `0600`) **only if it does not already
 exist**, so re-running never overwrites credentials.
 
+## Automated deploy (GitHub Actions → Ansible)
+
+`.github/workflows/deploy.yml` deploys to the home-lab hosts as a systemd
+service — no Kubernetes/Helm involved. After **Publish Docker Image** succeeds on
+`master` (or via manual dispatch) it:
+
+1. **build** (hosted runner) — compiles the Go binary and Next.js dashboard once
+   and uploads them as the `kubepilot-dist` artifact.
+2. **deploy-int** (LAN runner, label `int`) — downloads the artifact and runs the
+   Ansible role (`deploy/ansible/`) over SSH against `bwalia@192.168.1.193`.
+3. **deploy-test** (LAN runner, label `test`) — same for `bwalia@192.168.1.140`,
+   but only if `int` succeeded, so a bad build never reaches test.
+
+The Ansible role installs the binary to `/opt/kubepilot`, syncs `dashboard/out`,
+renders `/etc/kubepilot/kubepilot.env` (mode `0600`) from secrets, installs the
+systemd unit, restarts the service, and health-gates on `GET /healthz`.
+
+Required GitHub secrets (per environment):
+
+| Secret | Purpose |
+|---|---|
+| `DEPLOY_SSH_KEY` | Private key for `bwalia` on the target host. |
+| `DASHBOARD_AUTH_PASSWORD` | Dashboard password (auth is on by default). |
+| `DASHBOARD_AUTH_USERNAME` | Optional; defaults to `admin`. |
+
+Host prerequisite: `bwalia` has **passwordless sudo**. To run a deploy by hand
+from a LAN machine: `DEPLOY_SSH_KEY=… KUBEPILOT_AUTH_PASSWORD=… scripts/ansible-deploy.sh int`.
+
 ### Why the env file, not CLI flags
 
 Secrets passed as `--dashboard-auth-password=…` show up in `ps` output and the

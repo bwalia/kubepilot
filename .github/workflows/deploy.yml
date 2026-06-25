@@ -1,22 +1,30 @@
 name: Deploy
 
-# Autodeploys KubePilot to the home-lab k3s clusters via Helm.
+# Autodeploys KubePilot to the home-lab hosts as a systemd service via Ansible.
 #
-#   int env  → 192.168.1.193   (self-hosted runner labelled "int")
-#   test env → 192.168.1.140   (self-hosted runner labelled "test")
+#   int env  → bwalia@192.168.1.193   (self-hosted runner labelled "int")
+#   test env → bwalia@192.168.1.140   (self-hosted runner labelled "test")
 #
-# Promotion is gated: the test deploy runs ONLY if the int deploy succeeded
-# (`needs: deploy-int`). A failed int rollout fails the int job, which skips
-# the test job, so a bad build never reaches test.
+# Flow:
+#   build       → compile the Go binary + Next.js dashboard once (hosted runner),
+#                 upload as an artifact.
+#   deploy-int  → on a LAN runner, download the artifact and run Ansible over SSH
+#                 to install/refresh the systemd service on the int host.
+#   deploy-test → same for test, but ONLY if int succeeded (`needs: deploy-int`),
+#                 so a bad build never reaches test.
+#
+# This deploys to plain hosts with systemd — no Kubernetes/Helm involved. The
+# app's own cluster access (if any) is configured separately via its kubeconfig.
 #
 # Triggers:
-#   - Automatically after "Publish Docker Image" finishes successfully on
-#     master (so the image is guaranteed to exist before we deploy it).
-#   - Manually via workflow_dispatch, with an optional image tag override.
+#   - Automatically after "Publish Docker Image" finishes successfully on master.
+#   - Manually via workflow_dispatch.
 #
-# Each self-hosted runner deploys to its own local k3s cluster using the
-# on-box kubeconfig (defaults to the standard k3s path). Override KUBECONFIG
-# in the runner environment if your cluster lives elsewhere.
+# Required secrets (per environment unless noted):
+#   DEPLOY_SSH_KEY            private key for `bwalia` on the target host (repo or env)
+#   DASHBOARD_AUTH_PASSWORD   dashboard password (auth is on by default)
+#   DASHBOARD_AUTH_USERNAME   optional, defaults to "admin"
+# Prerequisite on each host: `bwalia` has passwordless sudo.
 
 on:
   workflow_run:
@@ -24,13 +32,8 @@ on:
     types: [completed]
     branches: [master]
   workflow_dispatch:
-    inputs:
-      image_tag:
-        description: "Image tag to deploy (defaults to the latest master image)"
-        required: false
-        default: ""
 
-# Never run two deploys to the same clusters at once; cancel the older one.
+# Never run two home-lab deploys at once.
 concurrency:
   group: deploy-homelab
   cancel-in-progress: false
@@ -38,147 +41,107 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  RELEASE_NAME: kubepilot
-  NAMESPACE: kubepilot
-  CHART_PATH: charts/kubepilot
-  IMAGE_REPO: ghcr.io/bwalia/kubepilot
-  HELM_TIMEOUT: 5m
-
 jobs:
-  # ── int env (192.168.1.193) ────────────────────────────────────────────────
-  deploy-int:
-    name: Deploy → int (192.168.1.193)
+  # ── Build the binary + dashboard once, ship as an artifact ──────────────────
+  build:
+    name: Build binary + dashboard
     # Only proceed on a manual run, or when the image publish actually succeeded.
     if: >-
       ${{ github.event_name == 'workflow_dispatch' ||
           github.event.workflow_run.conclusion == 'success' }}
-    runs-on: [self-hosted, int]
-    environment: int
-    env:
-      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           # For workflow_run events, deploy the exact commit that was built.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
 
-      - name: Resolve image tag
-        id: tag
-        shell: bash
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Build dashboard (static export)
+        working-directory: dashboard
+        run: |
+          npm ci --prefer-offline
+          npm run build
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Build kubepilot binary
         run: |
           set -euo pipefail
-          INPUT_TAG="${{ github.event.inputs.image_tag }}"
-          if [[ -n "$INPUT_TAG" ]]; then
-            TAG="$INPUT_TAG"
-          else
-            # Matches docker-publish.yml's `type=sha,prefix=master-` tag.
-            SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
-            TAG="master-${SHA:0:7}"
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Deploying ${IMAGE_REPO}:${TAG} to int"
+          mkdir -p artifact/dashboard-out
+          VERSION="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags="-s -w -X github.com/kubepilot/kubepilot/internal/version.Version=${VERSION}" \
+            -o artifact/kubepilot ./cmd/kubepilot
+          # The binary serves ./dashboard/out relative to its working dir.
+          cp -r dashboard/out/. artifact/dashboard-out/
 
-      - name: Deploy with Helm
-        shell: bash
-        env:
-          # Dashboard auth credentials, sourced from this environment's secrets.
-          # Username falls back to "admin" if no secret is configured.
-          DASHBOARD_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
-          DASHBOARD_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${DASHBOARD_AUTH_PASSWORD:-}" ]]; then
-            echo "::error::DASHBOARD_AUTH_PASSWORD secret is not set. Add it to this environment's secrets — dashboard auth is enabled by default and the install will fail without a credential." >&2
-            exit 1
-          fi
-          helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
-            --namespace "$NAMESPACE" --create-namespace \
-            --set image.repository="$IMAGE_REPO" \
-            --set image.tag="${{ steps.tag.outputs.tag }}" \
-            --set kubepilot.auth.username="$DASHBOARD_AUTH_USERNAME" \
-            --set-string kubepilot.auth.password="$DASHBOARD_AUTH_PASSWORD" \
-            --wait --timeout "$HELM_TIMEOUT" --atomic
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubepilot-dist
+          path: artifact/
+          retention-days: 3
 
-      - name: Verify rollout (health gate)
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Readiness probe hits /healthz; a Ready rollout means the env is healthy.
-          kubectl rollout status "deployment/$RELEASE_NAME" \
-            --namespace "$NAMESPACE" --timeout=300s
-
-      - name: Dump diagnostics on failure
-        if: failure()
-        shell: bash
-        run: |
-          kubectl get pods -n "$NAMESPACE" -o wide || true
-          kubectl describe deployment "$RELEASE_NAME" -n "$NAMESPACE" || true
-          kubectl logs -n "$NAMESPACE" "deployment/$RELEASE_NAME" --tail=100 || true
-
-  # ── test env (192.168.1.140) ───────────────────────────────────────────────
-  # Runs ONLY if deploy-int succeeded.
-  deploy-test:
-    name: Deploy → test (192.168.1.140)
-    needs: deploy-int
-    runs-on: [self-hosted, test]
-    environment: test
-    env:
-      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  # ── int env (bwalia@192.168.1.193) ──────────────────────────────────────────
+  deploy-int:
+    name: Deploy → int (192.168.1.193)
+    needs: build
+    runs-on: [self-hosted, int]
+    environment: int
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Resolve image tag
-        id: tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          INPUT_TAG="${{ github.event.inputs.image_tag }}"
-          if [[ -n "$INPUT_TAG" ]]; then
-            TAG="$INPUT_TAG"
-          else
-            SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
-            TAG="master-${SHA:0:7}"
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Deploying ${IMAGE_REPO}:${TAG} to test"
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kubepilot-dist
+          path: artifact
 
-      - name: Deploy with Helm
-        shell: bash
+      - name: Deploy with Ansible (systemd)
         env:
-          # Dashboard auth credentials, sourced from this environment's secrets.
-          # Username falls back to "admin" if no secret is configured.
-          DASHBOARD_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
-          DASHBOARD_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${DASHBOARD_AUTH_PASSWORD:-}" ]]; then
-            echo "::error::DASHBOARD_AUTH_PASSWORD secret is not set. Add it to this environment's secrets — dashboard auth is enabled by default and the install will fail without a credential." >&2
-            exit 1
-          fi
-          helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
-            --namespace "$NAMESPACE" --create-namespace \
-            --set image.repository="$IMAGE_REPO" \
-            --set image.tag="${{ steps.tag.outputs.tag }}" \
-            --set kubepilot.auth.username="$DASHBOARD_AUTH_USERNAME" \
-            --set-string kubepilot.auth.password="$DASHBOARD_AUTH_PASSWORD" \
-            --wait --timeout "$HELM_TIMEOUT" --atomic
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KUBEPILOT_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
+          KUBEPILOT_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
+        run: ./scripts/ansible-deploy.sh int
 
-      - name: Verify rollout (health gate)
-        shell: bash
-        run: |
-          set -euo pipefail
-          kubectl rollout status "deployment/$RELEASE_NAME" \
-            --namespace "$NAMESPACE" --timeout=300s
+  # ── test env (bwalia@192.168.1.140) — only if int succeeded ─────────────────
+  deploy-test:
+    name: Deploy → test (192.168.1.140)
+    needs: deploy-int
+    runs-on: [self-hosted, test]
+    environment: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Dump diagnostics on failure
-        if: failure()
-        shell: bash
-        run: |
-          kubectl get pods -n "$NAMESPACE" -o wide || true
-          kubectl describe deployment "$RELEASE_NAME" -n "$NAMESPACE" || true
-          kubectl logs -n "$NAMESPACE" "deployment/$RELEASE_NAME" --tail=100 || true
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kubepilot-dist
+          path: artifact
+
+      - name: Deploy with Ansible (systemd)
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KUBEPILOT_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
+          KUBEPILOT_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
+        run: ./scripts/ansible-deploy.sh test
