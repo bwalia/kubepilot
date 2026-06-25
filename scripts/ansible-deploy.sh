@@ -69,7 +69,10 @@ if [ -z "$PYBIN" ]; then
   exit 1
 fi
 echo "Using controller Python: $("$PYBIN" --version 2>&1) ($PYBIN)"
-"$PYBIN" -m pip install --user --quiet "$ANSIBLE_CORE_SPEC"
+# Some runners ship a PEP-668 "externally managed" Python (e.g. Debian's
+# python3.13) that refuses `pip install --user`. Retry with the override.
+"$PYBIN" -m pip install --user --quiet "$ANSIBLE_CORE_SPEC" \
+  || "$PYBIN" -m pip install --user --quiet --break-system-packages "$ANSIBLE_CORE_SPEC"
 export PATH="$HOME/.local/bin:$PATH"
 hash -r 2>/dev/null || true
 ansible-playbook --version | head -1
