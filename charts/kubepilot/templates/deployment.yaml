@@ -39,6 +39,9 @@ spec:
             {{- if .Values.kubepilot.enableActionMutations }}
             - --enable-action-mutations
             {{- end }}
+            {{- if .Values.kubepilot.auth.enabled }}
+            - --dashboard-auth-enabled
+            {{- end }}
           env:
             {{- if .Values.kubepilot.ollamaAPIKeySecret.name }}
             - name: KUBEPILOT_OLLAMA_API_KEY
@@ -46,6 +49,27 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kubepilot.ollamaAPIKeySecret.name }}
                   key: {{ .Values.kubepilot.ollamaAPIKeySecret.key }}
+            {{- end }}
+            {{- if .Values.kubepilot.auth.enabled }}
+            {{- $authSecret := .Values.kubepilot.auth.existingSecret | default (printf "%s-auth" (include "kubepilot.fullname" .)) }}
+            - name: KUBEPILOT_DASHBOARD_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $authSecret }}
+                  key: username
+                  optional: true
+            - name: KUBEPILOT_DASHBOARD_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $authSecret }}
+                  key: password
+                  optional: true
+            - name: KUBEPILOT_DASHBOARD_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $authSecret }}
+                  key: token
+                  optional: true
             {{- end }}
           ports:
             - name: dashboard
