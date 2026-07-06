@@ -21,6 +21,7 @@ export interface PodSummary {
   NodeName: string;
   Restarts: number;
   Ready: boolean;
+  Uptime: string;
 }
 
 export interface DeploymentSummary {

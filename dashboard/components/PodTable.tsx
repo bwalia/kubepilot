@@ -61,6 +61,7 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
                   <th className="text-left px-5 py-3.5 font-semibold">Phase</th>
                   <th className="text-left px-5 py-3.5 font-semibold">Reason</th>
                   <th className="text-left px-5 py-3.5 font-semibold">Restarts</th>
+                  <th className="text-left px-5 py-3.5 font-semibold">Uptime</th>
                   <th className="text-left px-5 py-3.5 font-semibold">Node</th>
                   <th className="text-left px-5 py-3.5 font-semibold">Actions</th>
                 </tr>
@@ -91,6 +92,7 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
                         {pod.Restarts}
                       </span>
                     </td>
+                    <td className="px-5 py-3.5 text-sm text-pilot-text-secondary font-mono">{pod.Uptime || "\u2014"}</td>
                     <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.NodeName || "\u2014"}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
@@ -115,7 +117,7 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-center text-pilot-muted text-sm">
+                    <td colSpan={8} className="px-5 py-10 text-center text-pilot-muted text-sm">
                       No pods match filter.
                     </td>
                   </tr>

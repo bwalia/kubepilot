@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +19,8 @@ type PodSummary struct {
 	NodeName  string
 	Restarts  int32
 	Ready     bool
+	// Uptime is a human-readable duration since pod creation (e.g., "5m", "2h", "3d").
+	Uptime string
 }
 
 // ListPods returns all pods across all namespaces (or a specific namespace).
@@ -105,6 +108,7 @@ func toPodSummary(pod corev1.Pod) PodSummary {
 		Namespace: pod.Namespace,
 		Phase:     pod.Status.Phase,
 		NodeName:  pod.Spec.NodeName,
+		Uptime:    formatUptime(pod.CreationTimestamp.Time),
 	}
 
 	// Extract the waiting reason from the first container status if present.
@@ -122,4 +126,33 @@ func toPodSummary(pod corev1.Pod) PodSummary {
 	}
 
 	return summary
+}
+
+// formatUptime returns a human-readable duration string since the given time.
+// Examples: "5m", "2h", "3d", "1d2h", etc.
+func formatUptime(start time.Time) string {
+	if start.IsZero() {
+		return "unknown"
+	}
+	d := time.Since(start).Round(time.Second)
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	}
+	if d < 24*time.Hour {
+		hours := int(d.Hours())
+		minutes := int(d.Minutes()) % 60
+		if minutes == 0 {
+			return fmt.Sprintf("%dh", hours)
+		}
+		return fmt.Sprintf("%dh%dm", hours, minutes)
+	}
+	days := int(d.Hours() / 24)
+	hours := int(d.Hours()) % 24
+	if hours == 0 {
+		return fmt.Sprintf("%dd", days)
+	}
+	return fmt.Sprintf("%dd%dh", days, hours)
 }
