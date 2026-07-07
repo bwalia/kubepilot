@@ -1,0 +1,78 @@
+name: Deploy Landing Page
+
+# Publishes docs/landing to:
+#   1. S3 (kubepilot.org via wslproxy → kubepilot-docs bucket)
+#   2. GitHub Pages (https://bwalia.github.io/kubepilot/)
+#
+# S3 requires repository secrets:
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_REGION (optional, defaults to eu-west-2)
+#   LANDING_S3_BUCKET (optional, defaults to kubepilot-docs)
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/landing/**"
+      - "docs/screenshots/**"
+      - ".github/workflows/landing-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: landing-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy-s3:
+    name: Deploy to S3
+    runs-on: ubuntu-latest
+    if: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'eu-west-2' }}
+
+      - name: Sync landing page to S3
+        env:
+          BUCKET: ${{ vars.LANDING_S3_BUCKET || 'kubepilot-docs' }}
+        run: |
+          aws s3 cp docs/landing/index.html "s3://${BUCKET}/landing/index.html" \
+            --content-type "text/html; charset=utf-8" \
+            --cache-control "public, max-age=300"
+          aws s3 sync docs/screenshots/ "s3://${BUCKET}/screenshots/" \
+            --exclude ".DS_Store" \
+            --cache-control "public, max-age=3600"
+
+  deploy-github-pages:
+    name: Deploy GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          mkdir -p _site/screenshots
+          sed 's|\.\./screenshots/|screenshots/|g' docs/landing/index.html > _site/index.html
+          cp docs/screenshots/*.svg _site/screenshots/ 2>/dev/null || true
+          cp docs/screenshots/README.md _site/screenshots/ 2>/dev/null || true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
