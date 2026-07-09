@@ -123,6 +123,25 @@
         max-width: 720px; margin: 0 auto 40px; line-height: 1.7;
       }
       .hero-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+      .hero-video {
+        margin: 44px auto 0;
+        max-width: 920px;
+        text-align: center;
+      }
+      .hero-video-header { margin-bottom: 18px; }
+      .hero-video-header h2 {
+        font-size: clamp(1.35rem, 3vw, 1.75rem);
+        font-weight: 800;
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+      }
+      .hero-video-header p {
+        color: var(--muted);
+        font-size: 1rem;
+        max-width: 640px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
 
       /* ── Trust bar ── */
       .trust-bar {
@@ -367,6 +386,34 @@
             <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Get Started Free</a>
             <a class="btn btn-lg" href="#install">Quick Install</a>
           </div>
+          <div id="video" class="hero-video">
+            <div class="hero-video-header">
+              <h2>How to Use KubePilot</h2>
+              <p>Watch a quick walkthrough of installing a Kubernetes dashboard, connecting to a cluster, and navigating workloads from the UI.</p>
+            </div>
+            <div class="video-card">
+              <div class="video-frame">
+                <iframe
+                  src="https://www.youtube.com/embed/8J2lN2EJ_Jo?rel=0"
+                  title="Kubernetes Dashboard setup placeholder video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                  loading="eager"
+                  referrerpolicy="strict-origin-when-cross-origin"
+                ></iframe>
+              </div>
+              <div class="video-caption">
+                <p>
+                  Placeholder demo video: <strong>Kubernetes Dashboard installation and access</strong>.
+                  Replace this embed with your own KubePilot walkthrough when ready.
+                </p>
+                <p class="placeholder-note">
+                  To swap the video later, edit <code>docs/landing/index.html</code> and change the YouTube ID in the iframe
+                  <code>src</code> (currently <code>8J2lN2EJ_Jo</code>).
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -538,39 +585,6 @@
             <div class="step">
               <h4>Act Safely</h4>
               <p>Validate impact through topology and health views, then use runbooks, gated actions, or Autopilot dry-run/active modes when policy allows.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- How to Use (video placeholder — replace YOUTUBE_VIDEO_ID when your walkthrough is ready) -->
-      <section id="video" class="section">
-        <div class="wrap">
-          <div class="section-header">
-            <div class="section-divider"></div>
-            <h2>How to Use KubePilot</h2>
-            <p>Watch a quick walkthrough of installing a Kubernetes dashboard, connecting to a cluster, and navigating workloads from the UI.</p>
-          </div>
-          <div class="video-card">
-            <div class="video-frame">
-              <iframe
-                src="https://www.youtube.com/embed/8J2lN2EJ_Jo?rel=0"
-                title="Kubernetes Dashboard setup placeholder video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-                loading="lazy"
-                referrerpolicy="strict-origin-when-cross-origin"
-              ></iframe>
-            </div>
-            <div class="video-caption">
-              <p>
-                Placeholder demo video: <strong>Kubernetes Dashboard installation and access</strong>.
-                Replace this embed with your own KubePilot walkthrough when ready.
-              </p>
-              <p class="placeholder-note">
-                To swap the video later, edit <code>docs/landing/index.html</code> and change the YouTube ID in the iframe
-                <code>src</code> (currently <code>8J2lN2EJ_Jo</code>).
-              </p>
             </div>
           </div>
         </div>

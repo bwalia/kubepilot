@@ -1,0 +1,13 @@
+DerivedData/
+.DerivedData/
+build/
+.DS_Store
+*.xcuserstate
+**/xcuserdata/
+*.ipa
+*.dSYM.zip
+.ios-secrets/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/

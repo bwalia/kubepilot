@@ -1,0 +1,3 @@
+app_identifier("io.kubepilot.app")
+
+# Team id is supplied at build time via APPLE_TEAM_ID from Vault.

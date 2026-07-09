@@ -43,6 +43,10 @@ export interface NodeSummary {
   MemoryCapacity: string;
   KubeletVersion: string;
   InternalIP: string;
+  IPs?: string[];
+  LANIPs?: string[];
+  WANIPs?: string[];
+  TunnelIPs?: string[];
   Unschedulable: boolean;
 }
 
@@ -90,6 +94,10 @@ export interface NodeHealthRow {
   pid_pressure: boolean;
   unschedulable: boolean;
   kubelet_version: string;
+  ips?: string[];
+  lan_ips?: string[];
+  wan_ips?: string[];
+  tunnel_ips?: string[];
 }
 
 export interface StorageClassSummary {

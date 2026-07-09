@@ -1,4 +1,5 @@
 import type { NodeSummary } from "@/lib/api";
+import { NodeIPDisplay } from "@/components/NodeIPDisplay";
 import { Server, AlertTriangle, CheckCircle } from "lucide-react";
 
 interface Props {
@@ -65,7 +66,9 @@ export function ClusterList({ nodes, loading }: Props) {
                   className="hover:bg-pilot-surface-2/50"
                 >
                   <td className="px-5 py-3.5 font-mono text-sm text-white">{node.Name}</td>
-                  <td className="px-5 py-3.5 font-mono text-sm text-pilot-text-secondary">{node.InternalIP || "—"}</td>
+                  <td className="px-5 py-3.5">
+                    <NodeIPDisplay node={node} />
+                  </td>
                   <td className="px-5 py-3.5">
                     {node.Ready ? (
                       <span className="inline-flex items-center gap-1.5 text-pilot-success text-sm font-medium">

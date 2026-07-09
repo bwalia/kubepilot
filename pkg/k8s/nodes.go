@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +20,16 @@ type NodeSummary struct {
 	MemoryCapacity           string
 	EphemeralStorageCapacity string
 	KubeletVersion           string
+	// InternalIP is kept for backward compatibility; human-readable LAN/WAN/Tunnel summary.
 	InternalIP               string
+	// IPs lists every unique address (flat union).
+	IPs                      []string
+	// LANIPs are private / on-prem / VPC internal addresses.
+	LANIPs                   []string
+	// WANIPs are public / external addresses.
+	WANIPs                   []string
+	// TunnelIPs are WireGuard, flannel, or other overlay endpoint addresses.
+	TunnelIPs                []string
 	Unschedulable            bool
 }
 
@@ -71,11 +81,15 @@ func toNodeSummary(node corev1.Node) NodeSummary {
 		s.EphemeralStorageCapacity = eph.String()
 	}
 
-	for _, addr := range node.Status.Addresses {
-		if addr.Type == corev1.NodeInternalIP {
-			s.InternalIP = addr.Address
-			break
-		}
+	buckets := classifyNodeIPs(node)
+	s.LANIPs = buckets.lan
+	s.WANIPs = buckets.wan
+	s.TunnelIPs = buckets.tunnel
+	s.IPs = mergeNodeIPBuckets(buckets)
+	if summary := formatNodeIPSummary(buckets); summary != "" {
+		s.InternalIP = summary
+	} else if len(s.IPs) > 0 {
+		s.InternalIP = strings.Join(s.IPs, ", ")
 	}
 
 	for _, cond := range node.Status.Conditions {

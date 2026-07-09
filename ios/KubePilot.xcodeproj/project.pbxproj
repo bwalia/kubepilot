@@ -1,0 +1,793 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0377A7FDA686FF39010318B9 /* KubePilotLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223945BA22626F8E81B1B55F /* KubePilotLogo.swift */; };
+		0412E91B59FDDCADDE8639CB /* AIAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D13380DC94C7DDF267EA79 /* AIAssistantView.swift */; };
+		1604EE597651D74AB5C1799F /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52A7423C3B4CAD5EFDA9628 /* AppState.swift */; };
+		1E97915AFCE77315B3ED07BA /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F197C1ACB53EA59AEC7621D /* AuthManager.swift */; };
+		219951A2469EB84E4F1996AF /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ABD096080CD5CD496FE6032 /* PersistenceController.swift */; };
+		265BC537F3D67156D68B1679 /* PodDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05440CA63ED7D2CC7DB39FEE /* PodDetailView.swift */; };
+		2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */; };
+		45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D27256635353D8F6669103 /* BiometricUnlockView.swift */; };
+		5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13FCFADC0A993DA318164 /* DashboardView.swift */; };
+		5852A6DA686B8892EE9EF2D5 /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EABD28677396C8067E479DA /* LogViewerView.swift */; };
+		6DACA3AA58C5DD2E70344D77 /* KubePilotWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7438E7ECE52314E47C11619A /* NodeIPLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */; };
+		7FF4F96E751FE5D3FECCFF79 /* KubePilotWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4C93CEF8D9C15DA0EB705B /* KubePilotWidgets.swift */; };
+		839226AF8853D3043900C5D5 /* KubePilotIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */; };
+		88020238C6ED24363BF02C9C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0582156D4FA56746452B5D6 /* RootView.swift */; };
+		91286E84F26B2F5ECD3E446E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */; };
+		932B03C9135B29347A230757 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD56197EAE085B464CF39AC5 /* APIModels.swift */; };
+		995EE005A8AF4F04320EBDCD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0F4143F1164780374F42C994 /* Assets.xcassets */; };
+		B35CFE92D5FA30F48A6C55D6 /* KubePilotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */; };
+		B748CEBB3BB8D078ABE8E5C8 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */; };
+		B92B994F8E9BE45991C4CF69 /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */; };
+		C73FA654C79B74A8B031D092 /* NodesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */; };
+		CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F232B0102FDC4B276D6DE6B8 /* AlertsView.swift */; };
+		F4A7DEDF8C007794EF27F717 /* APIModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */; };
+		F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B316A2C59A6C1836CA04DB /* KeychainStore.swift */; };
+		FCF0A5D578E9639FE0EAC677 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C034A8644F934030296CD024 /* Theme.swift */; };
+		FDB7A6FE80E32AF8337CD86F /* KubePilotAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC25EE581B2006F6D7F5C03F /* KubePilotAPI.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		35CD0C1E0277EC3ABA447078 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5A00652767851FAD1ECB1F0F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1CB9552FBDA8038B79662F78;
+			remoteInfo = KubePilotWidgets;
+		};
+		5025292AF6B346309776725F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5A00652767851FAD1ECB1F0F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3001FAC7570EFC75761A35C8;
+			remoteInfo = KubePilot;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A0F6AF7A298211C622DE49A8 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6DACA3AA58C5DD2E70344D77 /* KubePilotWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		05440CA63ED7D2CC7DB39FEE /* PodDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodDetailView.swift; sourceTree = "<group>"; };
+		0ABD096080CD5CD496FE6032 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		0AD13FCFADC0A993DA318164 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		0F4143F1164780374F42C994 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodesListView.swift; sourceTree = "<group>"; };
+		223945BA22626F8E81B1B55F /* KubePilotLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotLogo.swift; sourceTree = "<group>"; };
+		3459A1ED312F009A72B9941A /* KubePilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KubePilot.entitlements; sourceTree = "<group>"; };
+		35D13380DC94C7DDF267EA79 /* AIAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAssistantView.swift; sourceTree = "<group>"; };
+		3F197C1ACB53EA59AEC7621D /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		4082921476E7A5048CD00194 /* KubePilotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KubePilotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		61D27256635353D8F6669103 /* BiometricUnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricUnlockView.swift; sourceTree = "<group>"; };
+		6EABD28677396C8067E479DA /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerView.swift; sourceTree = "<group>"; };
+		7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KubePilotWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListView.swift; sourceTree = "<group>"; };
+		A52A7423C3B4CAD5EFDA9628 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotIntents.swift; sourceTree = "<group>"; };
+		B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotApp.swift; sourceTree = "<group>"; };
+		BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		BC25EE581B2006F6D7F5C03F /* KubePilotAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotAPI.swift; sourceTree = "<group>"; };
+		C034A8644F934030296CD024 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		D5B316A2C59A6C1836CA04DB /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModelsTests.swift; sourceTree = "<group>"; };
+		D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeIPLabels.swift; sourceTree = "<group>"; };
+		E0582156D4FA56746452B5D6 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		EA4C93CEF8D9C15DA0EB705B /* KubePilotWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotWidgets.swift; sourceTree = "<group>"; };
+		EBB104E61FEB506C6D631032 /* KubePilot.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KubePilot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE0ADD9653B7A452DF443B32 /* KubePilotWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KubePilotWidgets.entitlements; sourceTree = "<group>"; };
+		F232B0102FDC4B276D6DE6B8 /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
+		FD56197EAE085B464CF39AC5 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0A7AF1E06F7EAF8CB312FE82 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */,
+				BC25EE581B2006F6D7F5C03F /* KubePilotAPI.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		15C6E83FD18EFE4FDD1CB873 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				223945BA22626F8E81B1B55F /* KubePilotLogo.swift */,
+				C034A8644F934030296CD024 /* Theme.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		164B5387752B427081BEFA2E /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				7EC346CBD8CAFC759D96F911 /* Auth */,
+				15C6E83FD18EFE4FDD1CB873 /* Design */,
+				6F8BB69886F48BC48EEA7D45 /* Models */,
+				0A7AF1E06F7EAF8CB312FE82 /* Networking */,
+				2B5349B28067756626C80F69 /* Persistence */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		1912628079B65D1FA8070B23 /* Alerts */ = {
+			isa = PBXGroup;
+			children = (
+				F232B0102FDC4B276D6DE6B8 /* AlertsView.swift */,
+			);
+			path = Alerts;
+			sourceTree = "<group>";
+		};
+		2A746D6214360B5F12E1A61D /* Logs */ = {
+			isa = PBXGroup;
+			children = (
+				6EABD28677396C8067E479DA /* LogViewerView.swift */,
+			);
+			path = Logs;
+			sourceTree = "<group>";
+		};
+		2B5349B28067756626C80F69 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				0ABD096080CD5CD496FE6032 /* PersistenceController.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		2EE25AA05EFA55EDC5021C6D = {
+			isa = PBXGroup;
+			children = (
+				AC70CCF611844603B4CEDD37 /* KubePilot */,
+				8C5813C266C29484A10CFC64 /* KubePilotTests */,
+				A74C19F8FE1E727446D0E7BF /* KubePilotWidgets */,
+				DFCCE70783480E63972AE5B4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4A8C1DA25C81D5F2DB0197FE /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				05440CA63ED7D2CC7DB39FEE /* PodDetailView.swift */,
+				9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		4CD83A91756E0F8574F72753 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		4D034B7BA35602BF36170CE2 /* AI */ = {
+			isa = PBXGroup;
+			children = (
+				35D13380DC94C7DDF267EA79 /* AIAssistantView.swift */,
+			);
+			path = AI;
+			sourceTree = "<group>";
+		};
+		55B805A9D3EFA2EFF878C679 /* Nodes */ = {
+			isa = PBXGroup;
+			children = (
+				1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */,
+			);
+			path = Nodes;
+			sourceTree = "<group>";
+		};
+		5E71ED321BF6DADCA10928C0 /* AppIntents */ = {
+			isa = PBXGroup;
+			children = (
+				ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */,
+			);
+			path = AppIntents;
+			sourceTree = "<group>";
+		};
+		5FB963F065FD8920EFCC6AB5 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A52A7423C3B4CAD5EFDA9628 /* AppState.swift */,
+				B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */,
+				E0582156D4FA56746452B5D6 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		6F8BB69886F48BC48EEA7D45 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				FD56197EAE085B464CF39AC5 /* APIModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		7EC346CBD8CAFC759D96F911 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				3F197C1ACB53EA59AEC7621D /* AuthManager.swift */,
+				D5B316A2C59A6C1836CA04DB /* KeychainStore.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		8C5813C266C29484A10CFC64 /* KubePilotTests */ = {
+			isa = PBXGroup;
+			children = (
+				D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */,
+			);
+			path = KubePilotTests;
+			sourceTree = "<group>";
+		};
+		A74C19F8FE1E727446D0E7BF /* KubePilotWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				EE0ADD9653B7A452DF443B32 /* KubePilotWidgets.entitlements */,
+				EA4C93CEF8D9C15DA0EB705B /* KubePilotWidgets.swift */,
+			);
+			path = KubePilotWidgets;
+			sourceTree = "<group>";
+		};
+		AC70CCF611844603B4CEDD37 /* KubePilot */ = {
+			isa = PBXGroup;
+			children = (
+				5FB963F065FD8920EFCC6AB5 /* App */,
+				164B5387752B427081BEFA2E /* Core */,
+				C760F4DFF4992187572EC916 /* Features */,
+				E4B6F5339AE91A9E52CF147B /* Shared */,
+				0F4143F1164780374F42C994 /* Assets.xcassets */,
+				3459A1ED312F009A72B9941A /* KubePilot.entitlements */,
+			);
+			path = KubePilot;
+			sourceTree = "<group>";
+		};
+		B29A19C0A668DB84F56FA64B /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				61D27256635353D8F6669103 /* BiometricUnlockView.swift */,
+				5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		C760F4DFF4992187572EC916 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				4D034B7BA35602BF36170CE2 /* AI */,
+				1912628079B65D1FA8070B23 /* Alerts */,
+				FC103EDF7B994B9A55D9075F /* Dashboard */,
+				2A746D6214360B5F12E1A61D /* Logs */,
+				55B805A9D3EFA2EFF878C679 /* Nodes */,
+				B29A19C0A668DB84F56FA64B /* Onboarding */,
+				4A8C1DA25C81D5F2DB0197FE /* Pods */,
+				D67B52CDB09E73662859CB16 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		D67B52CDB09E73662859CB16 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		DFCCE70783480E63972AE5B4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EBB104E61FEB506C6D631032 /* KubePilot.app */,
+				4082921476E7A5048CD00194 /* KubePilotTests.xctest */,
+				8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E4B6F5339AE91A9E52CF147B /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5E71ED321BF6DADCA10928C0 /* AppIntents */,
+				4CD83A91756E0F8574F72753 /* Components */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		FC103EDF7B994B9A55D9075F /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				0AD13FCFADC0A993DA318164 /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1CB9552FBDA8038B79662F78 /* KubePilotWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E2B464E71742D5ED03071A31 /* Build configuration list for PBXNativeTarget "KubePilotWidgets" */;
+			buildPhases = (
+				81108C0C6056CAD587A63910 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KubePilotWidgets;
+			packageProductDependencies = (
+			);
+			productName = KubePilotWidgets;
+			productReference = 8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		3001FAC7570EFC75761A35C8 /* KubePilot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 093D76A16CA184CCF5E8017B /* Build configuration list for PBXNativeTarget "KubePilot" */;
+			buildPhases = (
+				EFB952CCB505B5E431843C90 /* Sources */,
+				26863D52C31D280191C2ACA2 /* Resources */,
+				A0F6AF7A298211C622DE49A8 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				319C0E1DDC984708970A2C63 /* PBXTargetDependency */,
+			);
+			name = KubePilot;
+			packageProductDependencies = (
+			);
+			productName = KubePilot;
+			productReference = EBB104E61FEB506C6D631032 /* KubePilot.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E958D0055E34A2388326F8DC /* KubePilotTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D10F2F5504A8EE8C95C01433 /* Build configuration list for PBXNativeTarget "KubePilotTests" */;
+			buildPhases = (
+				50EBC2BDBC4F50FF9C8A246D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F9BF13FEC1797ED45A985DCB /* PBXTargetDependency */,
+			);
+			name = KubePilotTests;
+			packageProductDependencies = (
+			);
+			productName = KubePilotTests;
+			productReference = 4082921476E7A5048CD00194 /* KubePilotTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5A00652767851FAD1ECB1F0F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					1CB9552FBDA8038B79662F78 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					3001FAC7570EFC75761A35C8 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					E958D0055E34A2388326F8DC = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 3EFF1FF92CB9E6816C842EFC /* Build configuration list for PBXProject "KubePilot" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2EE25AA05EFA55EDC5021C6D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = DFCCE70783480E63972AE5B4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3001FAC7570EFC75761A35C8 /* KubePilot */,
+				E958D0055E34A2388326F8DC /* KubePilotTests */,
+				1CB9552FBDA8038B79662F78 /* KubePilotWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		26863D52C31D280191C2ACA2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				995EE005A8AF4F04320EBDCD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		50EBC2BDBC4F50FF9C8A246D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4A7DEDF8C007794EF27F717 /* APIModelsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		81108C0C6056CAD587A63910 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7FF4F96E751FE5D3FECCFF79 /* KubePilotWidgets.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EFB952CCB505B5E431843C90 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0412E91B59FDDCADDE8639CB /* AIAssistantView.swift in Sources */,
+				2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */,
+				932B03C9135B29347A230757 /* APIModels.swift in Sources */,
+				CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */,
+				1604EE597651D74AB5C1799F /* AppState.swift in Sources */,
+				1E97915AFCE77315B3ED07BA /* AuthManager.swift in Sources */,
+				45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */,
+				5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */,
+				F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */,
+				FDB7A6FE80E32AF8337CD86F /* KubePilotAPI.swift in Sources */,
+				B35CFE92D5FA30F48A6C55D6 /* KubePilotApp.swift in Sources */,
+				839226AF8853D3043900C5D5 /* KubePilotIntents.swift in Sources */,
+				0377A7FDA686FF39010318B9 /* KubePilotLogo.swift in Sources */,
+				5852A6DA686B8892EE9EF2D5 /* LogViewerView.swift in Sources */,
+				7438E7ECE52314E47C11619A /* NodeIPLabels.swift in Sources */,
+				C73FA654C79B74A8B031D092 /* NodesListView.swift in Sources */,
+				B748CEBB3BB8D078ABE8E5C8 /* OnboardingView.swift in Sources */,
+				219951A2469EB84E4F1996AF /* PersistenceController.swift in Sources */,
+				265BC537F3D67156D68B1679 /* PodDetailView.swift in Sources */,
+				B92B994F8E9BE45991C4CF69 /* PodsListView.swift in Sources */,
+				88020238C6ED24363BF02C9C /* RootView.swift in Sources */,
+				91286E84F26B2F5ECD3E446E /* SettingsView.swift in Sources */,
+				FCF0A5D578E9639FE0EAC677 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		319C0E1DDC984708970A2C63 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1CB9552FBDA8038B79662F78 /* KubePilotWidgets */;
+			targetProxy = 35CD0C1E0277EC3ABA447078 /* PBXContainerItemProxy */;
+		};
+		F9BF13FEC1797ED45A985DCB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3001FAC7570EFC75761A35C8 /* KubePilot */;
+			targetProxy = 5025292AF6B346309776725F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		4FF9A401CD7D5EECC92B1C49 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.kubepilot.app.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KubePilot.app/KubePilot";
+			};
+			name = Release;
+		};
+		54EB175D357D839A8F5567A8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KubePilotWidgets/KubePilotWidgets.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KubePilotWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.kubepilot.app.widgets;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		63A43A277E38B17706D3A4CF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = KubePilotWidgets/KubePilotWidgets.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KubePilotWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.kubepilot.app.widgets;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		710312F62C1704652F036B04 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = KubePilot/KubePilot.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = KubePilot;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock your KubePilot credentials with Face ID";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_UIColorName = LaunchBackground;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.kubepilot.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		84EF5878E935983215A38845 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		CC917449B03CB386203C19F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		EC0D610DB57E021D33DFD85C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = KubePilot/KubePilot.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = KubePilot;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock your KubePilot credentials with Face ID";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_UIColorName = LaunchBackground;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.kubepilot.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F6214170873A56EC66E13853 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.kubepilot.app.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KubePilot.app/KubePilot";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		093D76A16CA184CCF5E8017B /* Build configuration list for PBXNativeTarget "KubePilot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				710312F62C1704652F036B04 /* Debug */,
+				EC0D610DB57E021D33DFD85C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3EFF1FF92CB9E6816C842EFC /* Build configuration list for PBXProject "KubePilot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CC917449B03CB386203C19F6 /* Debug */,
+				84EF5878E935983215A38845 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D10F2F5504A8EE8C95C01433 /* Build configuration list for PBXNativeTarget "KubePilotTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F6214170873A56EC66E13853 /* Debug */,
+				4FF9A401CD7D5EECC92B1C49 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E2B464E71742D5ED03071A31 /* Build configuration list for PBXNativeTarget "KubePilotWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				54EB175D357D839A8F5567A8 /* Debug */,
+				63A43A277E38B17706D3A4CF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5A00652767851FAD1ECB1F0F /* Project object */;
+}

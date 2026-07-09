@@ -46,8 +46,12 @@ type troubleshootingInsight struct {
 }
 
 type nodeHealthRow struct {
-	Name               string `json:"name"`
-	Ready              bool   `json:"ready"`
+	Name               string   `json:"name"`
+	Ready              bool     `json:"ready"`
+	IPs                []string `json:"ips,omitempty"`
+	LANIPs             []string `json:"lan_ips,omitempty"`
+	WANIPs             []string `json:"wan_ips,omitempty"`
+	TunnelIPs          []string `json:"tunnel_ips,omitempty"`
 	CPUCapacity        string `json:"cpu_capacity"`
 	MemoryCapacity     string `json:"memory_capacity"`
 	CPUUsage           string `json:"cpu_usage,omitempty"`
@@ -295,6 +299,10 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 		row := nodeHealthRow{
 			Name:           node.Name,
 			Ready:          node.Ready,
+			IPs:            node.IPs,
+			LANIPs:         node.LANIPs,
+			WANIPs:         node.WANIPs,
+			TunnelIPs:      node.TunnelIPs,
 			CPUCapacity:    node.CPUCapacity,
 			MemoryCapacity: node.MemoryCapacity,
 			DiskPressure:   node.DiskPressure,
