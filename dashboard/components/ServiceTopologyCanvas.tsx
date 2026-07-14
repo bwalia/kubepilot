@@ -99,9 +99,9 @@ function edgePath(fx: number, fy: number, tx: number, ty: number): string {
 function statusRing(status: string): string {
   switch (status) {
     case "healthy":  return "#22c55e"; // green-500
-    case "degraded": return "#ef4444"; // red-500
-    case "pending":  return "#f59e0b"; // amber-500
-    default:         return "#6b7280"; // gray-500
+    case "degraded": return "#f5555d"; // red-500
+    case "pending":  return "#f5a623"; // amber-500
+    default:         return "#8ba3aa"; // gray-500
   }
 }
 
@@ -165,7 +165,7 @@ function NodeCard({
         border: `1.5px solid ${border}`,
         boxShadow: selected ? `0 0 0 2px ${accent}55` : undefined,
       }}
-      className="absolute bg-[#0f1117] rounded-lg cursor-pointer hover:brightness-125 transition-all select-none overflow-hidden"
+      className="absolute bg-[#0f1e21] rounded-lg cursor-pointer hover:brightness-125 transition-all select-none overflow-hidden"
     >
       {/* top accent bar */}
       <div style={{ height: 3, background: accent }} />
@@ -186,7 +186,7 @@ function NodeCard({
         </div>
 
         {/* name */}
-        <p className="text-white text-xs font-semibold truncate leading-tight">
+        <p className="text-pilot-text-primary text-xs font-semibold truncate leading-tight">
           {node.name}
         </p>
 
@@ -231,7 +231,7 @@ function DetailPanel({
       : node.image ?? "";
 
   return (
-    <div className="w-80 shrink-0 bg-[#0f1117] border-l border-white/10 flex flex-col">
+    <div className="w-80 shrink-0 bg-[#0f1e21] border-l border-white/10 flex flex-col">
       {/* header */}
       <div
         className="flex items-center justify-between px-4 py-3 border-b"
@@ -239,11 +239,11 @@ function DetailPanel({
       >
         <div className="flex items-center gap-2">
           <KindIcon kind={node.kind} size={16} />
-          <span className="font-bold text-white text-sm truncate max-w-[180px]">{node.name}</span>
+          <span className="font-bold text-pilot-text-primary text-sm truncate max-w-[180px]">{node.name}</span>
         </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-white p-1 rounded hover:bg-white/10"
+          className="text-gray-400 hover:text-pilot-text-primary p-1 rounded hover:bg-white/10"
         >
           <X className="w-4 h-4" />
         </button>
@@ -501,11 +501,11 @@ export function ServiceTopologyCanvas() {
   const activeNamespaceLabel = namespace === "" ? "all namespaces" : namespace;
 
   return (
-    <div className="flex flex-col h-full bg-[#080a0f] rounded-lg border border-white/10 overflow-hidden">
+    <div className="flex flex-col h-full bg-[#081214] rounded-lg border border-white/10 overflow-hidden">
       {/* ── toolbar ── */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/10 shrink-0">
         <Layers className="w-4 h-4 text-sky-400" />
-        <span className="text-sm font-bold text-white tracking-wide">Service Topology</span>
+        <span className="text-sm font-bold text-pilot-text-primary tracking-wide">Service Topology</span>
         {locked ? (
           <span
             className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border bg-sky-600/20 text-sky-300 border-sky-500/40 ml-2"
@@ -525,7 +525,7 @@ export function ServiceTopologyCanvas() {
               }}
               className={`text-xs px-2.5 py-1 rounded border ${
                 namespace === ""
-                  ? "bg-sky-600 text-white border-sky-500"
+                  ? "bg-sky-600 text-pilot-text-primary border-sky-500"
                   : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
               }`}
             >
@@ -536,11 +536,11 @@ export function ServiceTopologyCanvas() {
                 value={nsInput}
                 onChange={(e) => setNsInput(e.target.value)}
                 placeholder="Namespace (or all)"
-                className="bg-white/5 border border-white/10 rounded px-3 py-1 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-sky-500 w-36"
+                className="bg-white/5 border border-white/10 rounded px-3 py-1 text-xs text-pilot-text-primary placeholder:text-gray-500 focus:outline-none focus:border-sky-500 w-36"
               />
               <button
                 type="submit"
-                className="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded font-semibold"
+                className="text-xs bg-sky-600 hover:bg-sky-500 text-pilot-text-primary px-3 py-1 rounded font-semibold"
               >
                 Go
               </button>
@@ -549,7 +549,7 @@ export function ServiceTopologyCanvas() {
         )}
         <button
           onClick={() => refetch()}
-          className="ml-auto p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white"
+          className="ml-auto p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-pilot-text-primary"
           title="Refresh"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />

@@ -78,7 +78,7 @@ function DeploymentsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<DeploymentSummary>[] = [
     { header: "Namespace", cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span> },
-    { header: "Name", cell: (d) => <span className="text-white font-mono">{d.Name}</span> },
+    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono">{d.Name}</span> },
     {
       header: "Ready",
       align: "center",
@@ -107,7 +107,7 @@ function StatefulSetsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<StatefulSetSummary>[] = [
     { header: "Namespace", cell: (s) => <span className="text-pilot-text-secondary">{s.Namespace}</span> },
-    { header: "Name", cell: (s) => <span className="text-white font-mono">{s.Name}</span> },
+    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono">{s.Name}</span> },
     { header: "Ready", align: "center", cell: (s) => <ReadyBadge ready={s.ReadyReplicas} total={s.Replicas} /> },
     { header: "Service", cell: (s) => <span className="text-pilot-text-secondary">{s.ServiceName || "—"}</span> },
     { header: "Image", cell: (s) => <span className="text-pilot-muted font-mono text-xs">{s.Image}</span> },
@@ -131,7 +131,7 @@ function DaemonSetsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<DaemonSetSummary>[] = [
     { header: "Namespace", cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span> },
-    { header: "Name", cell: (d) => <span className="text-white font-mono">{d.Name}</span> },
+    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono">{d.Name}</span> },
     { header: "Ready", align: "center", cell: (d) => <ReadyBadge ready={d.NumberReady} total={d.DesiredNumberScheduled} /> },
     { header: "Image", cell: (d) => <span className="text-pilot-muted font-mono text-xs">{d.Image}</span> },
   ];
@@ -154,7 +154,7 @@ function JobsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<K8sJobSummary>[] = [
     { header: "Namespace", cell: (j) => <span className="text-pilot-text-secondary">{j.Namespace}</span> },
-    { header: "Name", cell: (j) => <span className="text-white font-mono">{j.Name}</span> },
+    { header: "Name", cell: (j) => <span className="text-pilot-text-primary font-mono">{j.Name}</span> },
     { header: "Status", cell: (j) => <JobStatusBadge status={j.Status} /> },
     {
       header: "Completions",
@@ -185,7 +185,7 @@ function CronJobsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<CronJobSummary>[] = [
     { header: "Namespace", cell: (c) => <span className="text-pilot-text-secondary">{c.Namespace}</span> },
-    { header: "Name", cell: (c) => <span className="text-white font-mono">{c.Name}</span> },
+    { header: "Name", cell: (c) => <span className="text-pilot-text-primary font-mono">{c.Name}</span> },
     { header: "Schedule", cell: (c) => <span className="text-pilot-text-secondary font-mono text-xs">{c.Schedule}</span> },
     {
       header: "Suspended",

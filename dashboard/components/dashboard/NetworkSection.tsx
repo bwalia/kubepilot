@@ -43,7 +43,7 @@ function ServicesTab({ namespace, mutationsEnabled }: { namespace: string; mutat
   });
   const columns: Column<ServiceEndpointSummary>[] = [
     { header: "Namespace", cell: (s) => <span className="text-pilot-text-secondary">{s.namespace}</span> },
-    { header: "Name", cell: (s) => <span className="text-white font-mono">{s.name}</span> },
+    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono">{s.name}</span> },
     { header: "Type", cell: (s) => <Badge variant="muted">{s.type}</Badge> },
     { header: "Cluster IP", cell: (s) => <span className="text-pilot-text-secondary font-mono text-xs">{s.cluster_ip || "—"}</span> },
     {
@@ -87,7 +87,7 @@ function IngressesTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<IngressSummary>[] = [
     { header: "Namespace", cell: (i) => <span className="text-pilot-text-secondary">{i.Namespace}</span> },
-    { header: "Name", cell: (i) => <span className="text-white font-mono">{i.Name}</span> },
+    { header: "Name", cell: (i) => <span className="text-pilot-text-primary font-mono">{i.Name}</span> },
     { header: "Host", cell: (i) => <span className="text-pilot-text-secondary">{i.Host || "—"}</span> },
     {
       header: "URL",

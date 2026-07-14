@@ -19,7 +19,7 @@ export function TopologyGraph({ namespace }: { namespace: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-pilot-muted uppercase tracking-wider flex items-center gap-2">
+        <h3 className="eyebrow flex items-center gap-2">
           <Network className="w-4 h-4 text-pilot-accent" />
           Service Topology
         </h3>
@@ -29,11 +29,11 @@ export function TopologyGraph({ namespace }: { namespace: string }) {
             value={selectedNs}
             onChange={(e) => setSelectedNs(e.target.value)}
             placeholder="Namespace"
-            className="bg-pilot-surface border border-pilot-border rounded px-3 py-1 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent w-40"
+            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25 w-40"
           />
           <button
             onClick={() => refetch()}
-            className="p-1.5 rounded bg-pilot-surface border border-pilot-border hover:bg-pilot-border"
+            className="p-1.5 rounded-lg bg-pilot-surface border border-pilot-border hover:border-pilot-border-hover"
           >
             <RefreshCw className="w-4 h-4 text-pilot-muted" />
           </button>
@@ -62,13 +62,13 @@ export function TopologyGraph({ namespace }: { namespace: string }) {
 
       {topology && topology.edges && topology.edges.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-xs font-bold text-pilot-muted uppercase mb-2">Connections</h4>
+          <h4 className="eyebrow mb-2">Connections</h4>
           <div className="space-y-1">
             {topology.edges.map((edge, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-pilot-muted bg-pilot-surface border border-pilot-border rounded px-3 py-1.5">
-                <span className="text-white">{edge.from || "?"}</span>
+              <div key={i} className="flex items-center gap-2 text-xs text-pilot-muted bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5">
+                <span className="text-pilot-text-primary">{edge.from || "?"}</span>
                 <span className="text-pilot-accent">&#8594;</span>
-                <span className="text-white">{edge.to || "(exposed)"}</span>
+                <span className="text-pilot-text-primary">{edge.to || "(exposed)"}</span>
                 <span className="ml-auto">{edge.type}:{edge.port}</span>
               </div>
             ))}
@@ -81,20 +81,20 @@ export function TopologyGraph({ namespace }: { namespace: string }) {
 
 function ServiceCard({ service }: { service: ServiceNode }) {
   return (
-    <div className={`bg-pilot-surface border rounded p-3 ${service.healthy ? "border-pilot-border" : "border-red-700"}`}>
+    <div className={`bg-pilot-surface border rounded-xl shadow-card p-3 ${service.healthy ? "border-pilot-border" : "border-pilot-danger/50"}`}>
       <div className="flex items-center gap-2 mb-2">
         {service.healthy ? (
-          <CheckCircle className="w-4 h-4 text-green-400" />
+          <CheckCircle className="w-4 h-4 text-pilot-success" />
         ) : (
-          <XCircle className="w-4 h-4 text-red-400" />
+          <XCircle className="w-4 h-4 text-pilot-danger" />
         )}
-        <span className="text-sm font-bold text-white">{service.name}</span>
+        <span className="text-sm font-display font-bold text-pilot-text-primary">{service.name}</span>
         <span className="text-xs text-pilot-muted ml-auto">{service.pods?.length || 0} pods</span>
       </div>
       {service.anomalies && service.anomalies.length > 0 && (
         <div className="space-y-1 mt-1">
           {service.anomalies.map((a, i) => (
-            <p key={i} className="text-xs text-red-400 truncate">{a}</p>
+            <p key={i} className="text-xs text-pilot-danger truncate">{a}</p>
           ))}
         </div>
       )}

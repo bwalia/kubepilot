@@ -10,11 +10,11 @@ import { RCADetail } from "@/components/RCADetail";
 import { AnomalyTimeline } from "@/components/AnomalyTimeline";
 
 const SEVERITY_BADGE: Record<Severity, string> = {
-  critical: "bg-red-900/30 text-red-400 border-red-700/50",
-  high: "bg-orange-900/30 text-orange-400 border-orange-700/50",
-  medium: "bg-yellow-900/30 text-yellow-400 border-yellow-700/50",
-  low: "bg-blue-900/30 text-blue-400 border-blue-700/50",
-  info: "bg-gray-800/50 text-gray-400 border-gray-700/50",
+  critical: "bg-pilot-danger/12 text-pilot-danger border-pilot-danger/25",
+  high: "bg-pilot-danger/10 text-pilot-danger border-pilot-danger/20",
+  medium: "bg-pilot-warning/12 text-pilot-warning border-pilot-warning/25",
+  low: "bg-pilot-info/12 text-pilot-info border-pilot-info/25",
+  info: "bg-pilot-surface-2 text-pilot-muted border-pilot-border",
 };
 
 export default function RCAPage() {
@@ -43,10 +43,10 @@ export default function RCAPage() {
 
   if (selectedReport) {
     return (
-      <div className="min-h-screen bg-pilot-bg text-white p-6">
+      <div className="min-h-screen bg-pilot-bg text-pilot-text-primary p-6">
         <button
           onClick={() => setSelectedId(null)}
-          className="flex items-center gap-1.5 text-sm text-pilot-accent hover:text-white mb-5 font-medium"
+          className="flex items-center gap-1.5 text-sm text-pilot-accent hover:text-pilot-text-primary mb-5 font-medium"
         >
           <ArrowLeft className="w-4 h-4" /> Back to reports
         </button>
@@ -56,9 +56,9 @@ export default function RCAPage() {
   }
 
   return (
-    <div className="min-h-screen bg-pilot-bg text-white p-6 space-y-6">
+    <div className="min-h-screen bg-pilot-bg text-pilot-text-primary p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-xl font-bold flex items-center gap-2.5">
+        <h1 className="text-xl font-bold font-display text-pilot-text-primary flex items-center gap-2.5">
           <FileSearch className="w-6 h-6 text-pilot-accent" />
           RCA Reports
         </h1>
@@ -67,7 +67,7 @@ export default function RCAPage() {
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-white"
+            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
           >
             <option value="">All Severities</option>
             <option value="critical">Critical</option>
@@ -89,7 +89,7 @@ export default function RCAPage() {
               value={namespaceInput}
               onChange={(e) => setNamespaceInput(e.target.value)}
               placeholder="Namespace"
-              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-pilot-muted w-36 focus:outline-none focus:border-pilot-accent"
+              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted w-36 focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
             />
           )}
         </div>
@@ -141,7 +141,7 @@ function ReportRow({
           <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-md shrink-0 border ${badgeClass}`}>
             {report.severity}
           </span>
-          <span className="text-sm text-white font-semibold truncate">
+          <span className="text-sm text-pilot-text-primary font-semibold truncate">
             {report.root_cause.summary}
           </span>
         </div>

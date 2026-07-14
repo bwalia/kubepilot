@@ -35,8 +35,8 @@ function classifyLine(line: string): "error" | "warning" | "normal" {
 }
 
 const LINE_COLORS = {
-  error: "text-red-400 bg-red-900/20",
-  warning: "text-yellow-400 bg-yellow-900/10",
+  error: "text-pilot-danger bg-pilot-danger/10",
+  warning: "text-pilot-warning bg-pilot-warning/10",
   normal: "text-pilot-muted",
 };
 
@@ -44,10 +44,10 @@ export function LogViewer({ title, content, maxHeight = "400px" }: LogViewerProp
   const lines = content.split("\n");
 
   return (
-    <div className="bg-pilot-surface border border-pilot-border rounded overflow-hidden">
+    <div className="bg-pilot-surface border border-pilot-border rounded-lg overflow-hidden shadow-card">
       <div className="px-3 py-2 border-b border-pilot-border flex items-center justify-between">
-        <span className="text-xs font-bold text-pilot-accent uppercase">{title}</span>
-        <span className="text-xs text-pilot-muted">{lines.length} lines</span>
+        <span className="eyebrow">{title}</span>
+        <span className="text-xs text-pilot-muted tabular-nums">{lines.length} lines</span>
       </div>
       <div
         className="overflow-y-auto font-mono text-xs p-2"

@@ -15,11 +15,11 @@ interface Props {
 }
 
 const VERDICT_BAR: Record<AutopilotVerdict, { label: string; color: string }> = {
-  executed: { label: "Executed", color: "bg-emerald-500" },
-  "dry-run": { label: "Dry-run", color: "bg-sky-500" },
-  escalated: { label: "Escalated", color: "bg-amber-500" },
-  skipped: { label: "Skipped", color: "bg-gray-500" },
-  failed: { label: "Failed", color: "bg-red-500" },
+  executed: { label: "Executed", color: "bg-pilot-success" },
+  "dry-run": { label: "Dry-run", color: "bg-pilot-accent" },
+  escalated: { label: "Escalated", color: "bg-pilot-warning" },
+  skipped: { label: "Skipped", color: "bg-pilot-muted" },
+  failed: { label: "Failed", color: "bg-pilot-danger" },
 };
 
 const VERDICTS: AutopilotVerdict[] = [
@@ -60,11 +60,11 @@ export function AutopilotLiveStatus({ status, isFetching }: Props) {
   const heat =
     !active || util < 0.5
       ? active
-        ? "bg-emerald-500"
-        : "bg-gray-600"
+        ? "bg-pilot-success"
+        : "bg-pilot-muted"
       : util < 0.8
-        ? "bg-amber-500"
-        : "bg-red-500";
+        ? "bg-pilot-warning"
+        : "bg-pilot-danger";
 
   const message = !status
     ? "Connecting to autopilot…"
@@ -76,7 +76,7 @@ export function AutopilotLiveStatus({ status, isFetching }: Props) {
 
   return (
     <div
-      className={`rounded-xl border p-4 sm:p-5 ${
+      className={`rounded-xl border shadow-card p-4 sm:p-5 ${
         active
           ? "border-pilot-accent/40 bg-pilot-accent/5"
           : "border-pilot-border bg-pilot-surface"
@@ -93,7 +93,7 @@ export function AutopilotLiveStatus({ status, isFetching }: Props) {
           />
           <div
             className={`absolute inset-[10px] rounded-full ${
-              active ? "bg-pilot-accent animate-pulse shadow-glow-blue" : "bg-gray-600"
+              active ? "bg-pilot-accent animate-pulse shadow-glow-blue" : "bg-pilot-muted"
             }`}
           />
         </div>
@@ -102,17 +102,17 @@ export function AutopilotLiveStatus({ status, isFetching }: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+              className={`eyebrow px-2 py-0.5 rounded-full ${
                 active
-                  ? "bg-emerald-500/15 text-emerald-300"
-                  : "bg-gray-700/50 text-gray-400"
+                  ? "bg-pilot-success/15 text-pilot-success"
+                  : "bg-pilot-surface-2 text-pilot-muted"
               }`}
             >
               <span className="relative inline-flex items-center gap-1.5">
                 {active && (
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pilot-success opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-pilot-success" />
                   </span>
                 )}
                 {active ? "Working" : "Idle"}
@@ -135,7 +135,7 @@ export function AutopilotLiveStatus({ status, isFetching }: Props) {
               {total === 0 ? (
                 <div
                   className={`h-full w-full ${
-                    active ? "bg-pilot-accent/30 animate-pulse" : "bg-gray-700"
+                    active ? "bg-pilot-accent/30 animate-pulse" : "bg-pilot-surface-2"
                   }`}
                 />
               ) : (

@@ -55,12 +55,12 @@ import {
 import { ResourceMeters } from "./ResourceMeters";
 
 const COLORS = {
-  success: "#10b981",
-  warning: "#f59e0b",
-  danger: "#ef4444",
-  accent: "#3b82f6",
-  accentLight: "#60a5fa",
-  muted: "#7c8ba3",
+  success: "#22c55e",
+  warning: "#f5a623",
+  danger: "#f5555d",
+  accent: "#22d3ee",
+  accentLight: "#67e8f9",
+  muted: "#8ba3aa",
   purple: "#a78bfa",
 };
 
@@ -209,9 +209,9 @@ export function OverviewSection({ namespace }: { namespace: string }) {
               >
                 <div className="flex items-center justify-between mb-2">
                   <Icon className="w-5 h-5" style={{ color: item.color }} />
-                  <span className="text-2xl font-bold text-white tabular-nums">{item.value}</span>
+                  <span className="font-display text-2xl font-bold text-pilot-text-primary tabular-nums">{item.value}</span>
                 </div>
-                <span className="text-xs uppercase tracking-wider text-pilot-muted">{item.label}</span>
+                <span className="eyebrow">{item.label}</span>
               </div>
             );
           })}
@@ -251,7 +251,7 @@ export function OverviewSection({ namespace }: { namespace: string }) {
         <ChartCard title="Workload Inventory" subtitle="controllers by kind">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={workloadData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-              <XAxis dataKey="name" tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={{ stroke: "#1e2d4a" }} tickLine={false} />
+              <XAxis dataKey="name" tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={{ stroke: "#1e343a" }} tickLine={false} />
               <YAxis allowDecimals={false} tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip {...tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
               <Bar dataKey="count" fill={COLORS.accent} radius={[4, 4, 0, 0]} maxBarSize={48} />
@@ -313,24 +313,24 @@ export function OverviewSection({ namespace }: { namespace: string }) {
 
 const tooltipStyle = {
   contentStyle: {
-    background: "#131c2e",
-    border: "1px solid #1e2d4a",
+    background: "#0f1e21",
+    border: "1px solid #1e343a",
     borderRadius: 8,
     fontSize: 12,
     color: "#fff",
   },
-  itemStyle: { color: "#b0bdd0" },
+  itemStyle: { color: "#c2d4d8" },
   labelStyle: { color: "#fff" },
 } as const;
 
 const legendStyle = {
-  wrapperStyle: { fontSize: 12, color: "#b0bdd0" },
+  wrapperStyle: { fontSize: 12, color: "#c2d4d8" },
   iconType: "circle" as const,
 };
 
 function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
-    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+    <h3 className="font-display text-sm font-bold text-pilot-text-primary mb-3 flex items-center gap-2">
       {icon} {title}
     </h3>
   );
@@ -340,8 +340,8 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
   return (
     <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4 shadow-card">
       <div className="flex items-baseline justify-between mb-2">
-        <h4 className="text-sm font-bold text-white">{title}</h4>
-        {subtitle && <span className="text-2xs text-pilot-muted uppercase tracking-wider">{subtitle}</span>}
+        <h4 className="font-display text-sm font-bold text-pilot-text-primary">{title}</h4>
+        {subtitle && <span className="eyebrow !text-[10px]">{subtitle}</span>}
       </div>
       {children}
     </div>
@@ -373,10 +373,10 @@ function HeadlineStat({
       </span>
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white tabular-nums">{value}</span>
+          <span className="font-display text-2xl font-bold text-pilot-text-primary tabular-nums">{value}</span>
           <span className="text-xs text-pilot-muted">/ {total} ({pct}%)</span>
         </div>
-        <span className="text-xs uppercase tracking-wider text-pilot-muted">{label}</span>
+        <span className="eyebrow">{label}</span>
       </div>
     </div>
   );

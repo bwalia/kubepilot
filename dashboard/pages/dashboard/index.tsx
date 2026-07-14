@@ -83,12 +83,12 @@ export default function KubernetesDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-pilot-bg text-white">
+    <div className="min-h-screen bg-pilot-bg text-pilot-text-primary">
       {/* Header */}
       <header className="border-b border-pilot-border px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold tracking-tight">Kubernetes Dashboard</h1>
-          <p className="text-xs text-pilot-muted mt-0.5">Cluster resource browser</p>
+          <h1 className="font-display text-xl font-bold tracking-tight text-pilot-text-primary">Kubernetes Dashboard</h1>
+          <p className="text-[13px] text-pilot-muted mt-0.5">Read-only cluster resource browser</p>
         </div>
         <KubeconfigSwitcher onSwitched={() => setSelectedPod(null)} />
       </header>
@@ -96,7 +96,7 @@ export default function KubernetesDashboard() {
       {/* Namespace selector + section tabs */}
       <div className="px-4 sm:px-6 lg:px-8 py-3 border-b border-pilot-border flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-wider text-pilot-muted">Namespace</span>
+          <span className="eyebrow">Namespace</span>
           {locked ? (
             <span
               className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-1.5 text-sm font-medium min-w-44"
@@ -109,7 +109,7 @@ export default function KubernetesDashboard() {
             <select
               value={selectedNamespace}
               onChange={(e) => setSelectedNamespace(e.target.value)}
-              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-white min-w-44"
+              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-pilot-text-primary min-w-44"
             >
               <option value="">All Namespaces</option>
               {namespaces.map((ns) => (
@@ -131,8 +131,10 @@ export default function KubernetesDashboard() {
                 onClick={() => setSection(s.key)}
                 role="tab"
                 aria-selected={active}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
-                  active ? "bg-pilot-accent/15 text-pilot-accent-light" : "text-pilot-muted hover:text-white"
+                className={`inline-flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-lg whitespace-nowrap transition-colors ${
+                  active
+                    ? "bg-pilot-accent/12 text-pilot-accent-light border border-pilot-accent/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    : "text-pilot-muted hover:text-pilot-text-primary hover:bg-white/[0.03] border border-transparent"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -210,13 +212,13 @@ function YAMLDrawer({ target, onClose }: { target: YAMLTarget; onClose: () => vo
       <DrawerContent aria-describedby={undefined}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-pilot-border shrink-0">
           <div>
-            <h3 className="font-bold text-white text-base capitalize">{target.kind} YAML</h3>
+            <h3 className="font-bold text-pilot-text-primary text-base capitalize">{target.kind} YAML</h3>
             <p className="text-sm text-pilot-muted mt-0.5 font-mono">
               {target.namespace ? `${target.namespace}/` : ""}
               {target.name}
             </p>
           </div>
-          <button onClick={onClose} className="text-pilot-muted hover:text-white p-1.5 rounded-lg hover:bg-pilot-surface" aria-label="Close">
+          <button onClick={onClose} className="text-pilot-muted hover:text-pilot-text-primary p-1.5 rounded-lg hover:bg-pilot-surface" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -129,16 +129,16 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-2xl bg-pilot-bg border border-pilot-border rounded-2xl p-6 space-y-5 animate-fade-in shadow-card-hover">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Switch Cluster / Kubeconfig</h3>
-              <button onClick={() => setOpen(false)} className="text-pilot-muted hover:text-white p-1.5 rounded-lg hover:bg-pilot-surface">
+              <h3 className="text-lg font-display font-bold text-pilot-text-primary">Switch Cluster / Kubeconfig</h3>
+              <button onClick={() => setOpen(false)} className="text-pilot-muted hover:text-pilot-text-primary p-1.5 rounded-lg hover:bg-pilot-surface">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="text-sm text-pilot-muted">
-              Active kubeconfig: <span className="text-white font-mono">{activePath || "(in-cluster)"}</span>
+              Active kubeconfig: <span className="text-pilot-text-primary font-mono">{activePath || "(in-cluster)"}</span>
               {activeContext && (
-                <> &middot; Context: <span className="text-white font-mono">{activeContext}</span></>
+                <> &middot; Context: <span className="text-pilot-text-primary font-mono">{activeContext}</span></>
               )}
             </div>
 
@@ -153,7 +153,7 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                     }
                   }}
                   disabled={busy}
-                  className="w-full bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm"
+                  className="w-full bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
                 >
                   {contexts.map((ctx) => (
                     <option key={ctx.name} value={ctx.name}>
@@ -170,7 +170,7 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                 <select
                   value={normalizedSelectedPath}
                   onChange={(e) => setSelectedPath(e.target.value)}
-                  className="flex-1 bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm"
+                  className="flex-1 bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
                 >
                   <option value="">Select a kubeconfig path</option>
                   {paths.map((p) => (
@@ -181,7 +181,7 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                 </select>
                 <button
                   onClick={() => refetch()}
-                  className="border border-pilot-border bg-pilot-surface px-3 py-2.5 rounded-lg hover:bg-pilot-surface-2"
+                  className="border border-pilot-border bg-pilot-surface text-pilot-text-secondary px-3 py-2.5 rounded-lg hover:border-pilot-accent/50 hover:text-pilot-text-primary"
                   title="Refresh list"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -190,7 +190,7 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
               <button
                 disabled={!normalizedSelectedPath || busy}
                 onClick={() => switchMutation.mutate(normalizedSelectedPath)}
-                className="bg-pilot-accent hover:bg-blue-500 disabled:opacity-50 text-white text-sm px-4 py-2.5 rounded-lg font-semibold"
+                className="bg-pilot-accent hover:bg-pilot-accent-light disabled:opacity-50 text-pilot-bg text-sm px-4 py-2.5 rounded-lg font-semibold"
               >
                 Connect selected cluster
               </button>
@@ -204,12 +204,12 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                   value={newPath}
                   onChange={(e) => setNewPath(e.target.value)}
                   placeholder="/path/to/kubeconfig"
-                  className="flex-1 bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-pilot-accent"
+                  className="flex-1 bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
                 />
                 <button
                   disabled={!newPath.trim() || busy}
                   onClick={() => addPathMutation.mutate(newPath.trim())}
-                  className="bg-pilot-success text-black disabled:opacity-50 text-sm px-4 py-2.5 rounded-lg font-semibold"
+                  className="bg-pilot-success text-pilot-bg disabled:opacity-50 text-sm px-4 py-2.5 rounded-lg font-semibold"
                 >
                   Save + Connect
                 </button>
@@ -243,13 +243,13 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                 value={base64Name}
                 onChange={(e) => setBase64Name(e.target.value)}
                 placeholder="Optional filename (e.g. prod-us.kubeconfig)"
-                className="w-full bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-pilot-accent"
+                className="w-full bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
               />
               <textarea
                 value={base64Content}
                 onChange={(e) => setBase64Content(e.target.value)}
                 placeholder="Paste base64 kubeconfig content"
-                className="w-full min-h-28 bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-pilot-accent resize-none"
+                className="w-full min-h-28 bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-pilot-text-primary placeholder:text-pilot-muted font-mono focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25 resize-none"
               />
               <button
                 disabled={!base64Content.trim() || busy}
@@ -259,14 +259,14 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
                     name: base64Name.trim() || undefined,
                   })
                 }
-                className="bg-pilot-accent hover:bg-blue-500 disabled:opacity-50 text-white text-sm px-4 py-2.5 rounded-lg font-semibold"
+                className="bg-pilot-accent hover:bg-pilot-accent-light disabled:opacity-50 text-pilot-bg text-sm px-4 py-2.5 rounded-lg font-semibold"
               >
                 Save base64 + Connect
               </button>
             </div>
 
             {isLoading && <div className="text-sm text-pilot-muted">Loading kubeconfig profiles...</div>}
-            {error && <div className="text-sm text-pilot-danger bg-red-950/50 border border-pilot-danger/40 rounded-xl p-3">{error}</div>}
+            {error && <div className="text-sm text-pilot-danger bg-pilot-danger/10 border border-pilot-danger/40 rounded-xl p-3">{error}</div>}
           </div>
         </div>
       )}

@@ -127,7 +127,7 @@ export function CRCodeManager() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <KeyRound className="w-5 h-5 text-pilot-warning" />
-        <h2 className="text-sm font-bold text-white">CR Code Management</h2>
+        <h2 className="text-sm font-display font-bold text-pilot-text-primary">CR Code Management</h2>
         <span className="text-xs text-pilot-muted">
           Production change authorization via Kubernetes secrets
         </span>
@@ -135,10 +135,10 @@ export function CRCodeManager() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Register ──────────────────────────────────── */}
-        <div className="bg-pilot-surface border border-pilot-border rounded-lg p-5">
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Plus className="w-4 h-4 text-pilot-success" />
-            <h3 className="text-sm font-bold text-white">Register CR Code</h3>
+            <h3 className="text-sm font-display font-bold text-pilot-text-primary">Register CR Code</h3>
           </div>
           <div className="space-y-3">
             <div>
@@ -148,7 +148,7 @@ export function CRCodeManager() {
                 value={regChangeId}
                 onChange={(e) => setRegChangeId(e.target.value)}
                 placeholder="e.g. INFRA-1234"
-                className="w-full bg-pilot-bg border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+                className="w-full bg-pilot-bg border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
               />
             </div>
             <div>
@@ -158,7 +158,7 @@ export function CRCodeManager() {
                 value={regCRCode}
                 onChange={(e) => setRegCRCode(e.target.value)}
                 placeholder="Secret code"
-                className="w-full bg-pilot-bg border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+                className="w-full bg-pilot-bg border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
               />
             </div>
             <div>
@@ -169,13 +169,13 @@ export function CRCodeManager() {
                 type="datetime-local"
                 value={regExpiry}
                 onChange={(e) => setRegExpiry(e.target.value)}
-                className="w-full bg-pilot-bg border border-pilot-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-pilot-accent [color-scheme:dark]"
+                className="w-full bg-pilot-bg border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25 [color-scheme:dark]"
               />
             </div>
             <button
               onClick={handleRegister}
               disabled={regLoading}
-              className="w-full bg-pilot-success text-black text-sm py-2 rounded font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-pilot-success text-pilot-bg text-sm py-2 rounded-lg font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {regLoading ? "Registering…" : <><ShieldCheck className="w-4 h-4" /> Register</>}
             </button>
@@ -184,10 +184,10 @@ export function CRCodeManager() {
         </div>
 
         {/* ── Verify ────────────────────────────────────── */}
-        <div className="bg-pilot-surface border border-pilot-border rounded-lg p-5">
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-4 h-4 text-pilot-accent" />
-            <h3 className="text-sm font-bold text-white">Verify CR Code</h3>
+            <h3 className="text-sm font-display font-bold text-pilot-text-primary">Verify CR Code</h3>
           </div>
           <div className="space-y-3">
             <div>
@@ -197,7 +197,7 @@ export function CRCodeManager() {
                 value={verChangeId}
                 onChange={(e) => setVerChangeId(e.target.value)}
                 placeholder="e.g. INFRA-1234"
-                className="w-full bg-pilot-bg border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+                className="w-full bg-pilot-bg border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
               />
             </div>
             <div>
@@ -208,13 +208,13 @@ export function CRCodeManager() {
                 onChange={(e) => setVerCRCode(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleVerify()}
                 placeholder="Enter code to verify"
-                className="w-full bg-pilot-bg border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+                className="w-full bg-pilot-bg border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
               />
             </div>
             <button
               onClick={handleVerify}
               disabled={verLoading}
-              className="w-full bg-pilot-accent text-white text-sm py-2 rounded font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-pilot-accent text-pilot-bg text-sm py-2 rounded-lg font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {verLoading ? "Verifying…" : <><ShieldCheck className="w-4 h-4" /> Verify</>}
             </button>
@@ -223,10 +223,10 @@ export function CRCodeManager() {
         </div>
 
         {/* ── Revoke ────────────────────────────────────── */}
-        <div className="bg-pilot-surface border border-pilot-border rounded-lg p-5">
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <ShieldOff className="w-4 h-4 text-pilot-danger" />
-            <h3 className="text-sm font-bold text-white">Revoke CR Code</h3>
+            <h3 className="text-sm font-display font-bold text-pilot-text-primary">Revoke CR Code</h3>
           </div>
           <div className="space-y-3">
             <div>
@@ -237,7 +237,7 @@ export function CRCodeManager() {
                 onChange={(e) => setRevChangeId(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleRevoke()}
                 placeholder="e.g. INFRA-1234"
-                className="w-full bg-pilot-bg border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+                className="w-full bg-pilot-bg border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
               />
             </div>
             <div className="bg-pilot-bg border border-pilot-border rounded p-3">
@@ -253,7 +253,7 @@ export function CRCodeManager() {
             <button
               onClick={() => handleRevoke()}
               disabled={revLoading}
-              className="w-full bg-pilot-danger text-white text-sm py-2 rounded font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-pilot-danger text-white text-sm py-2 rounded-lg font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {revLoading ? "Revoking…" : <><Trash2 className="w-4 h-4" /> Revoke</>}
             </button>
@@ -264,24 +264,24 @@ export function CRCodeManager() {
 
       {/* ── Session History ─────────────────────────────── */}
       {entries.length > 0 && (
-        <div className="bg-pilot-surface border border-pilot-border rounded-lg overflow-hidden">
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card overflow-hidden">
           <div className="px-4 py-3 border-b border-pilot-border">
-            <h3 className="text-sm font-bold text-white">Session Activity</h3>
+            <h3 className="text-sm font-display font-bold text-pilot-text-primary">Session Activity</h3>
             <p className="text-xs text-pilot-muted">CR codes registered or modified in this session</p>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-pilot-border text-left text-xs text-pilot-muted">
-                <th className="px-4 py-2">Change ID</th>
-                <th className="px-4 py-2">Registered</th>
-                <th className="px-4 py-2">Expires</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Actions</th>
+              <tr className="border-b border-pilot-border text-left">
+                <th className="px-4 py-2 eyebrow">Change ID</th>
+                <th className="px-4 py-2 eyebrow">Registered</th>
+                <th className="px-4 py-2 eyebrow">Expires</th>
+                <th className="px-4 py-2 eyebrow">Status</th>
+                <th className="px-4 py-2 eyebrow">Actions</th>
               </tr>
             </thead>
             <tbody>
               {entries.map((entry) => (
-                <tr key={entry.changeId} className="border-b border-pilot-border last:border-0">
+                <tr key={entry.changeId} className="border-b border-pilot-border last:border-0 hover:bg-pilot-accent/[0.03]">
                   <td className="px-4 py-2 font-mono text-pilot-accent">{entry.changeId}</td>
                   <td className="px-4 py-2 text-pilot-muted text-xs">
                     {new Date(entry.registeredAt).toLocaleTimeString()}
@@ -303,7 +303,7 @@ export function CRCodeManager() {
                     {entry.status !== "revoked" && (
                       <button
                         onClick={() => handleRevoke(entry.changeId)}
-                        className="text-xs text-pilot-danger hover:text-red-400 flex items-center gap-1"
+                        className="text-xs text-pilot-danger hover:text-pilot-danger/80 flex items-center gap-1"
                       >
                         <Trash2 className="w-3 h-3" /> Revoke
                       </button>
@@ -335,8 +335,8 @@ function StatusBadge({ status }: { status: CREntry["status"] }) {
 function ResultBanner({ ok, msg }: { ok: boolean; msg: string }) {
   return (
     <div
-      className={`flex items-start gap-2 rounded p-3 ${
-        ok ? "bg-emerald-950 border border-pilot-success/30" : "bg-red-950 border border-pilot-danger/30"
+      className={`flex items-start gap-2 rounded-lg p-3 ${
+        ok ? "bg-pilot-success/10 border border-pilot-success/30" : "bg-pilot-danger/10 border border-pilot-danger/30"
       }`}
     >
       {ok ? (

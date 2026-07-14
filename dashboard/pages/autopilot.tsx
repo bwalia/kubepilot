@@ -8,7 +8,7 @@ import { ClusterStatusBar } from "@/components/ClusterStatusBar";
 
 export default function AutopilotPage() {
   return (
-    <div className="min-h-screen bg-pilot-bg text-white">
+    <div className="min-h-screen bg-pilot-bg text-pilot-text-primary">
       {/* ── Header ───────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-pilot-bg/90 backdrop-blur-md border-b border-pilot-border px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -17,7 +17,7 @@ export default function AutopilotPage() {
               <Layers className="text-pilot-accent w-5 h-5" />
             </div>
             <div>
-              <span className="text-lg font-bold tracking-tight">KubePilot</span>
+              <span className="text-lg font-display font-bold tracking-tight text-pilot-text-primary">KubePilot</span>
               <span className="hidden sm:inline text-xs text-pilot-muted ml-2 bg-pilot-surface px-2 py-0.5 rounded-md font-medium">
                 Autopilot
               </span>

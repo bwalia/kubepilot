@@ -33,7 +33,7 @@ function formatCPU(milli: number | undefined): string {
 
 // green < 60%, amber < 85%, red >= 85%
 function colorFor(p: number): string {
-  return p >= 85 ? "#ef4444" : p >= 60 ? "#f59e0b" : "#10b981";
+  return p >= 85 ? "#f5555d" : p >= 60 ? "#f5a623" : "#22c55e";
 }
 
 interface MeterShellProps {
@@ -53,9 +53,9 @@ function MeterShell({ label, icon, color, percent, primary, secondary, children 
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span style={{ color }}>{icon}</span>
-          <span className="text-xs uppercase tracking-wider text-pilot-muted font-medium">{label}</span>
+          <span className="eyebrow">{label}</span>
         </div>
-        <span className="text-2xl font-bold tracking-tight tabular-nums" style={{ color }}>
+        <span className="font-display text-2xl font-bold tracking-tight tabular-nums" style={{ color }}>
           {clamped}%
         </span>
       </div>
@@ -87,12 +87,12 @@ function CpuDie({ percent, color }: { percent: number; color: string }) {
       {/* connector pins along top and bottom edges */}
       {pinOffsets.map((off, i) => (
         <g key={`pin-${i}`}>
-          <rect x={off - 1.5} y={-pinLen} width={3} height={pinLen} fill="#2a3f66" rx={1} />
-          <rect x={off - 1.5} y={dieH} width={3} height={pinLen} fill="#2a3f66" rx={1} />
+          <rect x={off - 1.5} y={-pinLen} width={3} height={pinLen} fill="#2d4f57" rx={1} />
+          <rect x={off - 1.5} y={dieH} width={3} height={pinLen} fill="#2d4f57" rx={1} />
         </g>
       ))}
       {/* die body */}
-      <rect x={0} y={0} width={dieW} height={dieH} rx={6} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.5} />
+      <rect x={0} y={0} width={dieW} height={dieH} rx={6} fill="#0c191c" stroke="#2d4f57" strokeWidth={1.5} />
       {/* cores */}
       {Array.from({ length: total }).map((_, i) => {
         const c = i % cols;
@@ -134,7 +134,7 @@ function RamSticks({ percent, color }: { percent: number; color: string }) {
         return (
           <g key={i}>
             {/* module board */}
-            <rect x={x} y={0} width={stickW} height={stickH} rx={3} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.2} />
+            <rect x={x} y={0} width={stickW} height={stickH} rx={3} fill="#0c191c" stroke="#2d4f57" strokeWidth={1.2} />
             {/* fill level */}
             <rect x={x + 1.5} y={stickH - fillH} width={stickW - 3} height={fillH} rx={2} fill={color} opacity={0.85}>
               <animate attributeName="opacity" values="0.65;0.9;0.65" dur={`${2 + i * 0.3}s`} repeatCount="indefinite" />
@@ -174,7 +174,7 @@ function DiskCylinder({ percent, color }: { percent: number; color: string }) {
         </clipPath>
       </defs>
       {/* shell */}
-      <path d={cylPath} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.5} />
+      <path d={cylPath} fill="#0c191c" stroke="#2d4f57" strokeWidth={1.5} />
       {/* liquid fill */}
       <g clipPath="url(#disk-clip)">
         <rect x={0} y={fillTopY} width={w} height={bodyBottom - fillTopY + ry} fill={color} opacity={0.75} />
@@ -183,7 +183,7 @@ function DiskCylinder({ percent, color }: { percent: number; color: string }) {
         </ellipse>
       </g>
       {/* top rim */}
-      <ellipse cx={rx} cy={bodyTop} rx={rx} ry={ry} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.5} />
+      <ellipse cx={rx} cy={bodyTop} rx={rx} ry={ry} fill="#0c191c" stroke="#2d4f57" strokeWidth={1.5} />
       {/* platter rings on the rim */}
       <ellipse cx={rx} cy={bodyTop} rx={rx * 0.6} ry={ry * 0.55} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
       <ellipse cx={rx} cy={bodyTop} rx={rx * 0.28} ry={ry * 0.28} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
@@ -266,7 +266,7 @@ function StorageClassBreakdown({ classes }: { classes: StorageClassSummary[] }) 
     <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Database className="w-4 h-4 text-pilot-accent" />
-        <span className="text-xs uppercase tracking-wider text-pilot-muted font-medium">
+        <span className="eyebrow">
           Provisioned by StorageClass
         </span>
       </div>
@@ -274,7 +274,7 @@ function StorageClassBreakdown({ classes }: { classes: StorageClassSummary[] }) 
         {classes.map((sc) => (
           <div key={sc.name} className="bg-pilot-bg border border-pilot-border rounded-lg p-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-white truncate" title={sc.name}>
+              <span className="text-sm font-semibold text-pilot-text-primary truncate" title={sc.name}>
                 {sc.name}
               </span>
               <span className="text-2xs text-pilot-muted font-mono">
