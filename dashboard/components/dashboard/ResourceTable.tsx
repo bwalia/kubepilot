@@ -43,7 +43,7 @@ export function ResourceTable<T>({
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-pilot-danger/30 rounded-lg p-4 text-sm text-pilot-danger">
+      <div className="bg-pilot-danger/10 border border-pilot-danger/30 rounded-lg p-4 text-sm text-pilot-danger">
         Failed to load: {error instanceof Error ? error.message : String(error)}
       </div>
     );
@@ -54,11 +54,11 @@ export function ResourceTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-pilot-surface-2 text-pilot-muted text-xs uppercase tracking-wider">
+            <tr>
               {columns.map((col, i) => (
                 <th
                   key={i}
-                  className={`px-5 py-3.5 font-semibold ${
+                  className={`px-5 py-3 border-b-2 border-pilot-border ${
                     col.align === "right"
                       ? "text-right"
                       : col.align === "center"
@@ -66,7 +66,7 @@ export function ResourceTable<T>({
                       : "text-left"
                   }`}
                 >
-                  {col.header}
+                  <span className="eyebrow">{col.header}</span>
                 </th>
               ))}
             </tr>
@@ -76,7 +76,7 @@ export function ResourceTable<T>({
               <tr
                 key={rowKey(item)}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
-                className={`hover:bg-pilot-surface-2/50 ${onRowClick ? "cursor-pointer" : ""}`}
+                className={`hover:bg-pilot-surface-2 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
               >
                 {columns.map((col, i) => (
                   <td

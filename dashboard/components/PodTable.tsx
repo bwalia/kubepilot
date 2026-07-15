@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PodSummary } from "@/lib/api";
 import { troubleshootPod } from "@/lib/api";
@@ -13,9 +13,11 @@ interface Props {
   onRowClick?: (namespace: string, name: string) => void;
   // Enables the per-row Port Forward control when the server allows mutations.
   mutationsEnabled?: boolean;
+  // Optional extra filter control rendered right-aligned on the search row.
+  filterSlot?: ReactNode;
 }
 
-export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }: Props) {
+export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false, filterSlot }: Props) {
   const [search, setSearch] = useState("");
   const [troubleshootTarget, setTroubleshootTarget] = useState<{
     namespace: string;
@@ -30,18 +32,19 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
 
   return (
     <div>
-      {/* Search bar */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex items-center gap-2 bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 w-72 focus-within:border-pilot-accent focus-within:ring-1 focus-within:ring-pilot-accent/30">
+      {/* Filters row: search (left) + optional filter slot (right) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 w-72 max-w-full focus-within:border-pilot-accent/60 focus-within:ring-2 focus-within:ring-pilot-accent/25">
           <Search className="w-4 h-4 text-pilot-muted shrink-0" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter pods..."
-            className="bg-transparent text-sm text-white placeholder:text-pilot-muted focus:outline-none w-full"
+            className="bg-transparent text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none w-full"
           />
         </div>
+        {filterSlot}
       </div>
 
       {loading ? (
@@ -55,15 +58,15 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-pilot-surface-2 text-pilot-muted text-xs uppercase tracking-wider">
-                  <th className="text-left px-5 py-3.5 font-semibold">Namespace</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Pod</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Phase</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Reason</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Restarts</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Uptime</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Node</th>
-                  <th className="text-left px-5 py-3.5 font-semibold">Actions</th>
+                <tr>
+                  <th className="text-left px-5 py-3.5 eyebrow">Namespace</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Pod</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Phase</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Reason</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Restarts</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Uptime</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Node</th>
+                  <th className="text-left px-5 py-3.5 eyebrow">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-pilot-border">
@@ -71,10 +74,10 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
                   <tr
                     key={`${pod.Namespace}/${pod.Name}`}
                     onClick={onRowClick ? () => onRowClick(pod.Namespace, pod.Name) : undefined}
-                    className={`hover:bg-pilot-surface-2/50 ${onRowClick ? "cursor-pointer" : ""}`}
+                    className={`hover:bg-pilot-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
                   >
                     <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.Namespace}</td>
-                    <td className="px-5 py-3.5 text-sm text-white font-mono">{pod.Name}</td>
+                    <td className="px-5 py-3.5 text-sm text-pilot-text-primary font-mono font-semibold">{pod.Name}</td>
                     <td className="px-5 py-3.5">
                       <PhaseChip phase={pod.Phase} ready={pod.Ready} />
                     </td>
@@ -151,10 +154,10 @@ function PhaseChip({ phase, ready }: { phase: string; ready: boolean }) {
     : "text-pilot-danger";
 
   const bgColor = isOk
-    ? "bg-emerald-500/10"
+    ? "bg-pilot-success/10"
     : isPending
-    ? "bg-amber-500/10"
-    : "bg-red-500/10";
+    ? "bg-pilot-warning/10"
+    : "bg-pilot-danger/10";
 
   const Icon = isOk ? CheckCircle : AlertTriangle;
 
@@ -185,10 +188,10 @@ function TroubleshootPanel({
       <div className="w-full max-w-xl bg-pilot-bg border-l border-pilot-border h-full overflow-y-auto p-6 animate-slide-in-right">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="font-bold text-white text-base">AI Diagnosis</h3>
+            <h3 className="font-bold font-display text-pilot-text-primary text-base">AI Diagnosis</h3>
             <p className="text-sm text-pilot-muted mt-0.5 font-mono">{namespace}/{pod}</p>
           </div>
-          <button onClick={onClose} className="text-pilot-muted hover:text-white p-1.5 rounded-lg hover:bg-pilot-surface">
+          <button onClick={onClose} className="text-pilot-muted hover:text-pilot-text-primary p-1.5 rounded-lg hover:bg-pilot-surface">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -203,16 +206,16 @@ function TroubleshootPanel({
         {report && (
           <div className="space-y-5 animate-fade-in">
             <div className="bg-pilot-surface border border-pilot-border rounded-xl p-5">
-              <p className="text-xs font-medium text-pilot-muted uppercase tracking-wider mb-2">Root Cause</p>
+              <p className="eyebrow mb-2">Root Cause</p>
               <p className="text-base font-bold text-pilot-danger leading-relaxed">{report.RootCause || "Unknown"}</p>
             </div>
             <div className="bg-pilot-surface border border-pilot-border rounded-xl p-5">
-              <p className="text-xs font-medium text-pilot-muted uppercase tracking-wider mb-2">Analysis</p>
-              <p className="text-sm text-white leading-relaxed">{report.Analysis}</p>
+              <p className="eyebrow mb-2">Analysis</p>
+              <p className="text-sm text-pilot-text-primary leading-relaxed">{report.Analysis}</p>
             </div>
             {(report.Actions || []).length > 0 && (
               <div>
-                <p className="text-xs font-medium text-pilot-muted uppercase tracking-wider mb-3">Suggested Actions</p>
+                <p className="eyebrow mb-3">Suggested Actions</p>
                 <div className="space-y-2">
                   {(report.Actions || []).map((action, i) => (
                     <div

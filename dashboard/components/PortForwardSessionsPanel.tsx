@@ -31,20 +31,20 @@ export function PortForwardSessionsPanel({ mutationsEnabled }: { mutationsEnable
 
   return (
     <section>
-      <h2 className="text-base font-bold text-white mb-3 flex items-center gap-2">
+      <h2 className="text-base font-display font-bold text-pilot-text-primary mb-3 flex items-center gap-2">
         <ArrowRightLeft className="w-4 h-4 text-pilot-accent" /> Active Port Forwards
       </h2>
       <div className="bg-pilot-surface border border-pilot-border rounded-xl overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-pilot-surface-2 text-pilot-muted text-xs uppercase tracking-wider">
-                <th className="text-left px-5 py-3 font-semibold">Kind</th>
-                <th className="text-left px-5 py-3 font-semibold">Target</th>
-                <th className="text-center px-5 py-3 font-semibold">Remote</th>
-                <th className="text-left px-5 py-3 font-semibold">Access URL</th>
-                <th className="text-left px-5 py-3 font-semibold">Status</th>
-                <th className="text-right px-5 py-3 font-semibold">Action</th>
+              <tr>
+                <th className="text-left px-5 py-3 eyebrow">Kind</th>
+                <th className="text-left px-5 py-3 eyebrow">Target</th>
+                <th className="text-center px-5 py-3 eyebrow">Remote</th>
+                <th className="text-left px-5 py-3 eyebrow">Access URL</th>
+                <th className="text-left px-5 py-3 eyebrow">Status</th>
+                <th className="text-right px-5 py-3 eyebrow">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-pilot-border">
@@ -71,9 +71,9 @@ function SessionRow({
   const statusVariant =
     session.status === "active" ? "success" : session.status === "error" ? "danger" : "muted";
   return (
-    <tr className="hover:bg-pilot-surface-2/50">
+    <tr className="hover:bg-pilot-accent/[0.03]">
       <td className="px-5 py-3 text-pilot-text-secondary capitalize">{session.kind}</td>
-      <td className="px-5 py-3 text-white font-mono">
+      <td className="px-5 py-3 text-pilot-text-primary font-mono">
         {session.namespace}/{session.name}
       </td>
       <td className="px-5 py-3 text-center text-pilot-text-secondary">{session.remote_port}</td>

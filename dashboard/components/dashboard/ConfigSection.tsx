@@ -49,7 +49,7 @@ function ConfigMapsTab({ namespace, onViewYAML }: Props) {
   });
   const columns: Column<ConfigMapSummary>[] = [
     { header: "Namespace", cell: (c) => <span className="text-pilot-text-secondary">{c.Namespace}</span> },
-    { header: "Name", cell: (c) => <span className="text-white font-mono">{c.Name}</span> },
+    { header: "Name", cell: (c) => <span className="text-pilot-text-primary font-mono">{c.Name}</span> },
     { header: "Keys", align: "center", cell: (c) => <span className="text-pilot-text-secondary">{c.KeyCount}</span> },
   ];
   return (
@@ -72,13 +72,13 @@ function SecretsTab({ namespace, onViewYAML }: Props) {
   });
   const columns: Column<SecretSummary>[] = [
     { header: "Namespace", cell: (s) => <span className="text-pilot-text-secondary">{s.Namespace}</span> },
-    { header: "Name", cell: (s) => <span className="text-white font-mono">{s.Name}</span> },
+    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono">{s.Name}</span> },
     { header: "Type", cell: (s) => <Badge variant="muted">{s.Type}</Badge> },
     { header: "Keys", align: "center", cell: (s) => <span className="text-pilot-text-secondary">{s.KeyCount}</span> },
   ];
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2 text-xs text-pilot-warning bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+      <div className="mb-3 flex items-center gap-2 text-xs text-pilot-warning bg-pilot-warning/10 border border-pilot-warning/25 rounded-lg px-3 py-2">
         <ShieldAlert className="w-4 h-4 shrink-0" />
         Secret values are never displayed. Only metadata and key counts are shown.
       </div>
@@ -102,7 +102,7 @@ function PVCsTab({ namespace, onViewYAML }: Props) {
   });
   const columns: Column<PVCSummary>[] = [
     { header: "Namespace", cell: (p) => <span className="text-pilot-text-secondary">{p.Namespace}</span> },
-    { header: "Name", cell: (p) => <span className="text-white font-mono">{p.Name}</span> },
+    { header: "Name", cell: (p) => <span className="text-pilot-text-primary font-mono">{p.Name}</span> },
     {
       header: "Status",
       cell: (p) => (
@@ -133,7 +133,7 @@ function StorageClassesTab({ onViewYAML }: { onViewYAML: Props["onViewYAML"] }) 
     queryFn: () => listStorageClasses(),
   });
   const columns: Column<StorageClassInfo>[] = [
-    { header: "Name", cell: (s) => <span className="text-white font-mono">{s.Name}</span> },
+    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono">{s.Name}</span> },
     { header: "Provisioner", cell: (s) => <span className="text-pilot-text-secondary font-mono text-xs">{s.Provisioner}</span> },
     { header: "Reclaim", cell: (s) => <span className="text-pilot-text-secondary">{s.ReclaimPolicy || "—"}</span> },
     { header: "Binding", cell: (s) => <span className="text-pilot-text-secondary">{s.VolumeBindingMode || "—"}</span> },

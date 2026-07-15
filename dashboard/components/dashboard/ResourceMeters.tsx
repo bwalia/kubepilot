@@ -13,6 +13,14 @@ import {
   type ResourcePressureSummary,
   type StorageClassSummary,
 } from "@/lib/api";
+import { useThemeColors } from "@/lib/useThemeColors";
+
+/** The instrument-shell palette, resolved from the active theme's tokens. */
+interface ShellColors {
+  shell: string;   // die / module / cylinder body
+  stroke: string;  // body outline + connector pins
+  empty: string;   // unlit cells / recessed detail
+}
 
 function formatBytes(bytes: number | undefined): string {
   if (!bytes || bytes <= 0) return "0";
@@ -31,9 +39,11 @@ function formatCPU(milli: number | undefined): string {
   return milli >= 1000 ? `${(milli / 1000).toFixed(1)} cores` : `${milli}m`;
 }
 
-// green < 60%, amber < 85%, red >= 85%
-function colorFor(p: number): string {
-  return p >= 85 ? "#ef4444" : p >= 60 ? "#f59e0b" : "#10b981";
+// green < 60%, amber < 85%, red >= 85% — resolved from the active theme.
+function colorFor(p: number, t: Record<string, string>): string {
+  if (p >= 85) return t.danger || "#c71e26";
+  if (p >= 60) return t.warning || "#b05008";
+  return t.success || "#157a3a";
 }
 
 interface MeterShellProps {
@@ -51,11 +61,13 @@ function MeterShell({ label, icon, color, percent, primary, secondary, children 
   return (
     <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4 shadow-card hover:shadow-card-hover transition-all">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span style={{ color }}>{icon}</span>
-          <span className="text-xs uppercase tracking-wider text-pilot-muted font-medium">{label}</span>
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-pilot-surface-2 border border-pilot-border" style={{ color }}>
+            {icon}
+          </span>
+          <span className="eyebrow">{label}</span>
         </div>
-        <span className="text-2xl font-bold tracking-tight tabular-nums" style={{ color }}>
+        <span className="font-display text-3xl font-bold tracking-tight tabular-nums" style={{ color }}>
           {clamped}%
         </span>
       </div>
@@ -69,7 +81,7 @@ function MeterShell({ label, icon, color, percent, primary, secondary, children 
 }
 
 /** CPU processor die — a grid of cores that light up proportionally to load. */
-function CpuDie({ percent, color }: { percent: number; color: string }) {
+function CpuDie({ percent, color, sc }: { percent: number; color: string; sc: ShellColors }) {
   const cols = 6;
   const rows = 6;
   const total = cols * rows;
@@ -87,12 +99,12 @@ function CpuDie({ percent, color }: { percent: number; color: string }) {
       {/* connector pins along top and bottom edges */}
       {pinOffsets.map((off, i) => (
         <g key={`pin-${i}`}>
-          <rect x={off - 1.5} y={-pinLen} width={3} height={pinLen} fill="#2a3f66" rx={1} />
-          <rect x={off - 1.5} y={dieH} width={3} height={pinLen} fill="#2a3f66" rx={1} />
+          <rect x={off - 1.5} y={-pinLen} width={3} height={pinLen} fill={sc.stroke} rx={1} />
+          <rect x={off - 1.5} y={dieH} width={3} height={pinLen} fill={sc.stroke} rx={1} />
         </g>
       ))}
       {/* die body */}
-      <rect x={0} y={0} width={dieW} height={dieH} rx={6} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.5} />
+      <rect x={0} y={0} width={dieW} height={dieH} rx={6} fill={sc.shell} stroke={sc.stroke} strokeWidth={1.5} />
       {/* cores */}
       {Array.from({ length: total }).map((_, i) => {
         const c = i % cols;
@@ -106,7 +118,7 @@ function CpuDie({ percent, color }: { percent: number; color: string }) {
             width={size}
             height={size}
             rx={2}
-            fill={on ? color : "rgba(255,255,255,0.05)"}
+            fill={on ? color : sc.empty}
             opacity={on ? 0.9 : 1}
           >
             {on && <animate attributeName="opacity" values="0.55;0.95;0.55" dur={`${1.6 + (i % 5) * 0.25}s`} repeatCount="indefinite" />}
@@ -118,7 +130,7 @@ function CpuDie({ percent, color }: { percent: number; color: string }) {
 }
 
 /** RAM — vertical DIMM modules that fill from the bottom with usage. */
-function RamSticks({ percent, color }: { percent: number; color: string }) {
+function RamSticks({ percent, color, sc }: { percent: number; color: string; sc: ShellColors }) {
   const sticks = 4;
   const stickW = 18;
   const stickH = 96;
@@ -134,14 +146,14 @@ function RamSticks({ percent, color }: { percent: number; color: string }) {
         return (
           <g key={i}>
             {/* module board */}
-            <rect x={x} y={0} width={stickW} height={stickH} rx={3} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.2} />
+            <rect x={x} y={0} width={stickW} height={stickH} rx={3} fill={sc.shell} stroke={sc.stroke} strokeWidth={1.2} />
             {/* fill level */}
             <rect x={x + 1.5} y={stickH - fillH} width={stickW - 3} height={fillH} rx={2} fill={color} opacity={0.85}>
               <animate attributeName="opacity" values="0.65;0.9;0.65" dur={`${2 + i * 0.3}s`} repeatCount="indefinite" />
             </rect>
             {/* chip notches */}
             {[0.18, 0.4, 0.62].map((cy, k) => (
-              <rect key={k} x={x + 3} y={stickH * cy} width={stickW - 6} height={6} rx={1} fill="rgba(255,255,255,0.06)" />
+              <rect key={k} x={x + 3} y={stickH * cy} width={stickW - 6} height={6} rx={1} fill={sc.empty} />
             ))}
             {/* gold connector pins at bottom */}
             <rect x={x + 2} y={stickH + 1} width={stickW - 4} height={4} rx={1} fill="#caa24a" opacity={0.7} />
@@ -153,7 +165,7 @@ function RamSticks({ percent, color }: { percent: number; color: string }) {
 }
 
 /** Disk — a 3D cylinder (database/drum) with a liquid fill level. */
-function DiskCylinder({ percent, color }: { percent: number; color: string }) {
+function DiskCylinder({ percent, color, sc }: { percent: number; color: string; sc: ShellColors }) {
   const w = 90;
   const h = 110;
   const rx = w / 2;
@@ -174,7 +186,7 @@ function DiskCylinder({ percent, color }: { percent: number; color: string }) {
         </clipPath>
       </defs>
       {/* shell */}
-      <path d={cylPath} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.5} />
+      <path d={cylPath} fill={sc.shell} stroke={sc.stroke} strokeWidth={1.5} />
       {/* liquid fill */}
       <g clipPath="url(#disk-clip)">
         <rect x={0} y={fillTopY} width={w} height={bodyBottom - fillTopY + ry} fill={color} opacity={0.75} />
@@ -183,10 +195,10 @@ function DiskCylinder({ percent, color }: { percent: number; color: string }) {
         </ellipse>
       </g>
       {/* top rim */}
-      <ellipse cx={rx} cy={bodyTop} rx={rx} ry={ry} fill="#0e1626" stroke="#2a3f66" strokeWidth={1.5} />
+      <ellipse cx={rx} cy={bodyTop} rx={rx} ry={ry} fill={sc.shell} stroke={sc.stroke} strokeWidth={1.5} />
       {/* platter rings on the rim */}
-      <ellipse cx={rx} cy={bodyTop} rx={rx * 0.6} ry={ry * 0.55} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-      <ellipse cx={rx} cy={bodyTop} rx={rx * 0.28} ry={ry * 0.28} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+      <ellipse cx={rx} cy={bodyTop} rx={rx * 0.6} ry={ry * 0.55} fill="none" stroke={sc.empty} strokeWidth={1} />
+      <ellipse cx={rx} cy={bodyTop} rx={rx * 0.28} ry={ry * 0.28} fill="none" stroke={sc.stroke} strokeWidth={1} />
     </svg>
   );
 }
@@ -217,40 +229,48 @@ export function ResourceMeters() {
   const storageSecondary = hasStorageUsage ? `of ${formatBytes(rp?.storage_capacity_bytes)}` : "capacity";
   const storageLabel = storageSource === "longhorn" ? "Storage (Longhorn)" : "Storage";
 
+  // Instrument-shell colours resolved from the active theme (recolour on toggle).
+  const t = useThemeColors(["success", "warning", "danger", "surface-2", "border", "border-hover"]);
+  const sc: ShellColors = {
+    shell: t["surface-2"] || "rgb(228 233 239)",
+    stroke: t["border-hover"] || "rgb(193 205 216)",
+    empty: t["border"] || "rgb(218 225 232)",
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <MeterShell
           label="CPU Cores"
           icon={<Cpu className="w-5 h-5" />}
-          color={colorFor(cpuPercent)}
+          color={colorFor(cpuPercent, t)}
           percent={cpuPercent}
           primary={cpuPrimary}
           secondary={cpuSecondary}
         >
-          <CpuDie percent={cpuPercent} color={colorFor(cpuPercent)} />
+          <CpuDie percent={cpuPercent} color={colorFor(cpuPercent, t)} sc={sc} />
         </MeterShell>
 
         <MeterShell
           label="Memory (RAM)"
           icon={<MemoryStick className="w-5 h-5" />}
-          color={colorFor(memPercent)}
+          color={colorFor(memPercent, t)}
           percent={memPercent}
           primary={memPrimary}
           secondary={memSecondary}
         >
-          <RamSticks percent={memPercent} color={colorFor(memPercent)} />
+          <RamSticks percent={memPercent} color={colorFor(memPercent, t)} sc={sc} />
         </MeterShell>
 
         <MeterShell
           label={storageLabel}
           icon={<HardDrive className="w-5 h-5" />}
-          color={colorFor(storagePercent)}
+          color={colorFor(storagePercent, t)}
           percent={storagePercent}
           primary={storagePrimary}
           secondary={storageSecondary}
         >
-          <DiskCylinder percent={storagePercent} color={colorFor(storagePercent)} />
+          <DiskCylinder percent={storagePercent} color={colorFor(storagePercent, t)} sc={sc} />
         </MeterShell>
       </div>
 
@@ -266,7 +286,7 @@ function StorageClassBreakdown({ classes }: { classes: StorageClassSummary[] }) 
     <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Database className="w-4 h-4 text-pilot-accent" />
-        <span className="text-xs uppercase tracking-wider text-pilot-muted font-medium">
+        <span className="eyebrow">
           Provisioned by StorageClass
         </span>
       </div>
@@ -274,7 +294,7 @@ function StorageClassBreakdown({ classes }: { classes: StorageClassSummary[] }) 
         {classes.map((sc) => (
           <div key={sc.name} className="bg-pilot-bg border border-pilot-border rounded-lg p-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-white truncate" title={sc.name}>
+              <span className="text-sm font-semibold text-pilot-text-primary truncate" title={sc.name}>
                 {sc.name}
               </span>
               <span className="text-2xs text-pilot-muted font-mono">

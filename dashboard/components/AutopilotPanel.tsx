@@ -39,35 +39,35 @@ const VERDICT_META: Record<
 > = {
   executed: {
     label: "Executed",
-    badge: "bg-emerald-900/30 text-emerald-400 border-emerald-700/50",
+    badge: "bg-pilot-success/12 text-pilot-success border-pilot-success/25",
     Icon: CheckCircle2,
   },
   "dry-run": {
     label: "Dry-run",
-    badge: "bg-sky-900/30 text-sky-400 border-sky-700/50",
+    badge: "bg-pilot-accent/12 text-pilot-accent border-pilot-accent/25",
     Icon: Eye,
   },
   skipped: {
     label: "Skipped",
-    badge: "bg-gray-800/50 text-gray-400 border-gray-700/50",
+    badge: "bg-pilot-surface-2 text-pilot-muted border-pilot-border",
     Icon: SkipForward,
   },
   escalated: {
     label: "Escalated",
-    badge: "bg-amber-900/30 text-amber-400 border-amber-700/50",
+    badge: "bg-pilot-warning/12 text-pilot-warning border-pilot-warning/25",
     Icon: UserCog,
   },
   failed: {
     label: "Failed",
-    badge: "bg-red-900/30 text-red-400 border-red-700/50",
+    badge: "bg-pilot-danger/12 text-pilot-danger border-pilot-danger/25",
     Icon: XCircle,
   },
 };
 
 const MODE_BADGE: Record<string, string> = {
-  off: "bg-gray-800/50 text-gray-400 border-gray-700/50",
-  "dry-run": "bg-sky-900/30 text-sky-400 border-sky-700/50",
-  active: "bg-emerald-900/30 text-emerald-400 border-emerald-700/50",
+  off: "bg-pilot-surface-2 text-pilot-muted border-pilot-border",
+  "dry-run": "bg-pilot-accent/12 text-pilot-accent border-pilot-accent/25",
+  active: "bg-pilot-success/12 text-pilot-success border-pilot-success/25",
 };
 
 function formatCooldown(ns?: number): string {
@@ -116,11 +116,11 @@ export function AutopilotPanel() {
         <div className="flex items-center gap-2.5">
           <Bot className="w-6 h-6 text-pilot-accent" />
           <div>
-            <h1 className="text-xl font-bold leading-tight">Autopilot</h1>
+            <h1 className="text-xl font-display font-bold leading-tight text-pilot-text-primary">Autopilot</h1>
             <p className="text-sm text-pilot-muted">AI-driven self-healing</p>
           </div>
           <span
-            className={`ml-2 text-xs font-bold uppercase px-2 py-0.5 rounded-md border ${
+            className={`ml-2 eyebrow px-2 py-0.5 rounded-md border ${
               MODE_BADGE[mode] || MODE_BADGE.off
             }`}
           >
@@ -160,7 +160,7 @@ export function AutopilotPanel() {
               }}
             />
           </div>
-          <span className="text-[10px] text-pilot-muted">
+          <span className="text-[12px] text-pilot-muted">
             {setMode.isPending ? "applying…" : "switches instantly — no restart"}
           </span>
         </div>
@@ -177,21 +177,21 @@ export function AutopilotPanel() {
             return (
               <div
                 key={v}
-                className="bg-pilot-surface border border-pilot-border rounded-xl p-3"
+                className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-3"
               >
-                <div className="flex items-center gap-1.5 text-xs text-pilot-muted">
+                <div className="flex items-center gap-1.5 eyebrow">
                   <meta.Icon className="w-3.5 h-3.5" /> {meta.label}
                 </div>
-                <div className="text-2xl font-bold mt-1">{stats[v] ?? 0}</div>
+                <div className="text-2xl font-display font-bold tabular-nums text-pilot-text-primary mt-1">{stats[v] ?? 0}</div>
               </div>
             );
           },
         )}
-        <div className="bg-pilot-surface border border-pilot-border rounded-xl p-3">
-          <div className="flex items-center gap-1.5 text-xs text-pilot-muted">
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-3">
+          <div className="flex items-center gap-1.5 eyebrow">
             <ShieldCheck className="w-3.5 h-3.5" /> Last hour
           </div>
-          <div className="text-2xl font-bold mt-1">
+          <div className="text-2xl font-display font-bold tabular-nums text-pilot-text-primary mt-1">
             {stats["actions_last_hour"] ?? 0}
             {policy ? (
               <span className="text-sm text-pilot-muted font-normal">
@@ -204,8 +204,8 @@ export function AutopilotPanel() {
 
       {/* Policy summary */}
       {policy && (
-        <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
-          <h2 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
+        <div className="bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-4">
+          <h2 className="text-sm font-display font-semibold text-pilot-text-primary mb-3 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-pilot-accent" /> Active policy
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
@@ -235,10 +235,10 @@ export function AutopilotPanel() {
 
       {/* Auto-remediated pods — dedicated "what did Autopilot actually fix?" section */}
       <div>
-        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <h2 className="text-sm font-display font-semibold text-pilot-text-primary mb-3 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-pilot-success" />
           Auto-remediated pods
-          <span className="text-xs font-bold px-2 py-0.5 rounded-md border border-emerald-700/50 bg-emerald-900/20 text-emerald-400">
+          <span className="text-xs font-medium px-2 py-0.5 rounded-md border border-pilot-success/25 bg-pilot-success/12 text-pilot-success">
             {executed.length} executed
           </span>
           {executed.length > 0 ? (
@@ -261,7 +261,7 @@ export function AutopilotPanel() {
 
       {/* Decision ledger */}
       <div>
-        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <h2 className="text-sm font-display font-semibold text-pilot-text-primary mb-3 flex items-center gap-2">
           All recent decisions
           {decisions.length > 0 ? (
             <span className="text-xs font-normal text-pilot-muted">
@@ -301,8 +301,8 @@ export function AutopilotPanel() {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-xs text-pilot-muted">{label}</div>
-      <div className="font-medium truncate">{value}</div>
+      <div className="eyebrow">{label}</div>
+      <div className="font-medium text-pilot-text-primary truncate">{value}</div>
     </div>
   );
 }
@@ -324,10 +324,10 @@ function ModeButton({
   onClick: () => void;
 }) {
   const activeTone: Record<string, string> = {
-    muted: "bg-gray-700/40 text-gray-200 border-gray-600/50",
-    sky: "bg-sky-900/40 text-sky-300 border-sky-700/50",
-    emerald: "bg-emerald-900/40 text-emerald-300 border-emerald-700/50",
-    danger: "bg-red-900/40 text-red-300 border-red-600/60 animate-pulse",
+    muted: "bg-pilot-surface-2 text-pilot-text-secondary border-pilot-border",
+    sky: "bg-pilot-accent/15 text-pilot-accent border-pilot-accent/40",
+    emerald: "bg-pilot-success/15 text-pilot-success border-pilot-success/40",
+    danger: "bg-pilot-danger/15 text-pilot-danger border-pilot-danger/50 animate-pulse",
   };
   return (
     <button
@@ -335,10 +335,10 @@ function ModeButton({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`flex items-center gap-1.5 text-xs font-bold uppercase px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50 ${
+      className={`flex items-center gap-1.5 eyebrow px-3 py-1.5 rounded-md border transition-colors disabled:opacity-50 ${
         active || tone === "danger"
           ? activeTone[tone]
-          : "border-transparent text-pilot-muted hover:text-white hover:bg-pilot-bg/60"
+          : "border-transparent text-pilot-muted hover:text-pilot-text-primary hover:bg-pilot-bg/60"
       }`}
     >
       <Icon className="w-3.5 h-3.5" />
@@ -369,45 +369,45 @@ function ExecutedCard({ d, onClick }: { d: AutopilotDecision; onClick: () => voi
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-4 cursor-pointer transition-colors hover:border-emerald-500/60 hover:bg-emerald-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+      className="w-full text-left bg-pilot-success/[0.06] border border-pilot-success/25 rounded-xl shadow-card p-4 cursor-pointer transition-all hover:border-pilot-success/50 hover:shadow-card-hover hover:bg-pilot-success/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pilot-success/50"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-xs font-bold uppercase px-2 py-0.5 rounded-md border border-emerald-700/50 bg-emerald-900/30 text-emerald-400 shrink-0">
+        <span className="flex items-center gap-1.5 eyebrow px-2 py-0.5 rounded-md border border-pilot-success/25 bg-pilot-success/12 text-pilot-success shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5" /> Executed
         </span>
-        <span className="flex items-center gap-0.5 text-xs text-emerald-400 font-medium shrink-0">
+        <span className="flex items-center gap-0.5 text-xs text-pilot-success font-medium shrink-0">
           Full detail <ChevronRight className="w-4 h-4" />
         </span>
       </div>
 
-      <div className="mt-2 font-mono text-sm text-white font-semibold truncate">
+      <div className="mt-2 font-mono text-sm text-pilot-text-primary font-semibold truncate">
         {d.resource.namespace}/{d.resource.name}
       </div>
 
       {/* what was wrong → what was done */}
       <div className="flex items-center gap-2 mt-2 text-xs flex-wrap">
         <span className="px-1.5 py-0.5 rounded bg-pilot-bg border border-pilot-border text-pilot-muted">
-          Problem: <span className="text-white font-semibold">{d.root_cause || "—"}</span>
+          Problem: <span className="text-pilot-text-primary font-semibold">{d.root_cause || "—"}</span>
         </span>
         <ArrowRight className="w-3.5 h-3.5 text-pilot-muted" />
-        <span className="px-1.5 py-0.5 rounded bg-pilot-bg border border-emerald-800/40 font-mono text-emerald-300">
+        <span className="px-1.5 py-0.5 rounded bg-pilot-bg border border-pilot-success/25 font-mono text-pilot-success">
           {d.action || "remediated"}
         </span>
       </div>
 
       <p className="flex items-start gap-1.5 text-sm text-pilot-muted mt-2">
-        <Wrench className="w-3.5 h-3.5 mt-0.5 text-emerald-400 shrink-0" />
+        <Wrench className="w-3.5 h-3.5 mt-0.5 text-pilot-success shrink-0" />
         {describeFix(d.action)}
       </p>
 
       {d.output ? (
-        <pre className="text-xs text-emerald-300/80 mt-2 whitespace-pre-wrap break-all font-mono bg-pilot-bg rounded-md p-2 border border-pilot-border">
+        <pre className="text-xs text-pilot-success/80 mt-2 whitespace-pre-wrap break-all font-mono bg-pilot-bg rounded-md p-2 border border-pilot-border">
           {d.output}
         </pre>
       ) : null}
 
       <div className="flex items-center gap-3 mt-2 text-xs text-pilot-muted">
-        <span className="font-medium">{confidence}% confidence</span>
+        <span className="font-medium tabular-nums">{confidence}% confidence</span>
         <span className="flex items-center gap-1">
           <Clock className="w-3 h-3" /> {new Date(d.time).toLocaleString()}
         </span>
@@ -425,12 +425,12 @@ function DecisionRow({ d, onClick }: { d: AutopilotDecision; onClick: () => void
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left bg-pilot-surface border border-pilot-border rounded-xl p-4 cursor-pointer transition-colors hover:border-pilot-accent/60 hover:bg-pilot-surface/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pilot-accent/50"
+      className="w-full text-left bg-pilot-surface border border-pilot-border rounded-xl shadow-card p-4 cursor-pointer transition-all hover:border-pilot-border-hover hover:shadow-card-hover hover:bg-pilot-surface/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pilot-accent/50"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <span
-            className={`flex items-center gap-1 text-xs font-bold uppercase px-2 py-0.5 rounded-md shrink-0 border ${meta.badge}`}
+            className={`flex items-center gap-1 eyebrow px-2 py-0.5 rounded-md shrink-0 border ${meta.badge}`}
           >
             <meta.Icon className="w-3 h-3" /> {meta.label}
           </span>
@@ -439,12 +439,12 @@ function DecisionRow({ d, onClick }: { d: AutopilotDecision; onClick: () => void
               {d.action}
             </span>
           ) : null}
-          <span className="text-sm text-white font-semibold truncate">
+          <span className="text-sm text-pilot-text-primary font-semibold truncate">
             {d.root_cause || "—"}
           </span>
         </div>
         <div className="flex items-center gap-3 text-sm text-pilot-muted shrink-0">
-          <span className="font-medium">{confidence}%</span>
+          <span className="font-medium tabular-nums">{confidence}%</span>
           <span className="hidden sm:inline">{ts.toLocaleString()}</span>
           <span className="flex items-center gap-0.5 text-pilot-accent font-medium">
             Details <ChevronRight className="w-4 h-4" />

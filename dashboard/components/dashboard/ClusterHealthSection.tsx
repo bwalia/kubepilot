@@ -30,15 +30,15 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
       {/* Insights */}
       {data?.insights && data.insights.length > 0 && (
         <section>
-          <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold font-display text-pilot-text-primary mb-3 flex items-center gap-2">
             <Activity className="w-4 h-4 text-pilot-accent" /> Insights
           </h3>
           <div className="space-y-2">
             {data.insights.map((insight) => (
-              <div key={insight.id} className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
+              <div key={insight.id} className="bg-pilot-surface border border-pilot-border rounded-xl p-4 shadow-card">
                 <div className="flex items-center gap-2 mb-1.5">
                   <SeverityBadge severity={insight.severity} />
-                  <span className="text-sm font-semibold text-white">{insight.title}</span>
+                  <span className="text-sm font-semibold font-display text-pilot-text-primary">{insight.title}</span>
                 </div>
                 <p className="text-sm text-pilot-text-secondary leading-relaxed">{insight.summary}</p>
                 {insight.suggestions && insight.suggestions.length > 0 && (
@@ -58,7 +58,7 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
 
       {/* Problem pods */}
       <section>
-        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-bold font-display text-pilot-text-primary mb-3 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-pilot-danger" /> Problem Pods
         </h3>
         <ProblemPodsTable pods={data?.problem_pods ?? []} loading={isLoading} />
@@ -66,7 +66,7 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
 
       {/* Node health */}
       <section>
-        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-bold font-display text-pilot-text-primary mb-3 flex items-center gap-2">
           <Activity className="w-4 h-4 text-pilot-accent" /> Node Health
         </h3>
         <NodeHealthTable nodes={data?.nodes ?? []} loading={isLoading} />
@@ -77,9 +77,9 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
 
 function HealthStat({ label, value, alert }: { label: string; value: number; alert?: boolean }) {
   return (
-    <div className={`bg-pilot-surface border rounded-xl p-4 ${alert ? "border-pilot-danger/40" : "border-pilot-border"}`}>
-      <div className="text-xs uppercase tracking-wider text-pilot-muted font-medium mb-1">{label}</div>
-      <div className={`text-2xl font-bold ${alert ? "text-pilot-danger" : "text-white"}`}>{value}</div>
+    <div className={`bg-pilot-surface border rounded-xl p-4 shadow-card ${alert ? "border-pilot-danger/40" : "border-pilot-border"}`}>
+      <div className="eyebrow mb-1">{label}</div>
+      <div className={`text-2xl font-bold font-display tabular-nums ${alert ? "text-pilot-danger" : "text-pilot-text-primary"}`}>{value}</div>
     </div>
   );
 }
@@ -87,7 +87,7 @@ function HealthStat({ label, value, alert }: { label: string; value: number; ale
 function ProblemPodsTable({ pods, loading }: { pods: ProblemPod[]; loading: boolean }) {
   const columns: Column<ProblemPod>[] = [
     { header: "Namespace", cell: (p) => <span className="text-pilot-text-secondary">{p.namespace}</span> },
-    { header: "Pod", cell: (p) => <span className="text-white font-mono">{p.name}</span> },
+    { header: "Pod", cell: (p) => <span className="text-pilot-text-primary font-mono">{p.name}</span> },
     { header: "Status", cell: (p) => <span className="text-pilot-danger font-semibold">{p.status}</span> },
     { header: "Reason", cell: (p) => <span className="text-pilot-text-secondary">{p.reason || "—"}</span> },
     { header: "Restarts", align: "center", cell: (p) => <span className="text-pilot-warning">{p.restarts}</span> },
@@ -105,7 +105,7 @@ function ProblemPodsTable({ pods, loading }: { pods: ProblemPod[]; loading: bool
 
 function NodeHealthTable({ nodes, loading }: { nodes: NodeHealthRow[]; loading: boolean }) {
   const columns: Column<NodeHealthRow>[] = [
-    { header: "Node", cell: (n) => <span className="text-white font-mono">{n.name}</span> },
+    { header: "Node", cell: (n) => <span className="text-pilot-text-primary font-mono">{n.name}</span> },
     {
       header: "IP Address",
       cell: (n) => <NodeIPDisplay node={n} />,

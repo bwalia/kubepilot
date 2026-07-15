@@ -81,4 +81,29 @@ if [[ "$(uname -s)" == "Darwin" ]] && command -v otool >/dev/null 2>&1; then
   fi
 fi
 
+# On macOS, sign with a STABLE code-signing identity so the binary keeps its
+# code identity across rebuilds. This matters for the "Local Network" privacy
+# grant (System Settings > Privacy & Security > Local Network): an ad-hoc
+# signature's identity is its content hash, so every rebuild is treated as a
+# brand-new app and silently loses LAN access — which surfaces as
+# "dial tcp <cluster-ip>: connect: no route to host" from the launchd daemon.
+# Signing with a fixed identity + identifier keeps the designated requirement
+# constant, so the grant persists. Set up the identity once with
+# scripts/setup-codesign-identity.sh. Override the identity via KP_SIGN_IDENTITY.
+if [[ "$(uname -s)" == "Darwin" ]] && command -v codesign >/dev/null 2>&1; then
+  SIGN_IDENTITY="${KP_SIGN_IDENTITY:-KubePilot Local Signing}"
+  if security find-identity -v -p codesigning 2>/dev/null | grep -qF "$SIGN_IDENTITY"; then
+    echo "Signing $OUT_PATH as '$SIGN_IDENTITY' (identifier: com.kubepilot.server)"
+    codesign --force --identifier com.kubepilot.server \
+      --sign "$SIGN_IDENTITY" "$OUT_PATH"
+    codesign --verify --strict "$OUT_PATH" 2>/dev/null \
+      && echo "Signature verified." \
+      || echo "warning: codesign --verify --strict failed (self-signed is expected to run locally regardless)" >&2
+  else
+    echo "warning: code-signing identity '$SIGN_IDENTITY' not found — leaving ad-hoc signature." >&2
+    echo "         The macOS Local Network grant will reset on every rebuild until you run" >&2
+    echo "         scripts/setup-codesign-identity.sh once. See that script's header." >&2
+  fi
+fi
+
 echo "Build complete: $OUT_PATH"

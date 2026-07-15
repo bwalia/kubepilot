@@ -52,10 +52,10 @@ export function JobScheduler() {
   return (
     <section>
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-base font-bold text-white">Jobs</h2>
+        <h2 className="text-base font-display font-bold text-pilot-text-primary">Jobs</h2>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-pilot-accent text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-500 font-semibold shadow-glow-blue"
+          className="flex items-center gap-2 bg-pilot-accent text-pilot-bg text-sm px-4 py-2 rounded-lg hover:bg-pilot-accent-light font-semibold shadow-glow-blue"
         >
           <Plus className="w-4 h-4" />
           New Job
@@ -106,7 +106,7 @@ function JobCard({ job, onCancel }: { job: Job; onCancel: () => void }) {
     <div className="bg-pilot-surface border border-pilot-border rounded-xl px-5 py-4 flex items-start justify-between gap-4 hover:border-pilot-border-hover transition-colors shadow-card">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-bold text-white truncate">{job.Name}</span>
+          <span className="text-sm font-bold text-pilot-text-primary truncate">{job.Name}</span>
           {job.Schedule && (
             <span className="text-xs bg-pilot-surface-2 text-pilot-muted px-2 py-0.5 rounded-md font-medium">
               <Clock className="inline w-3 h-3 mr-1" />
@@ -117,10 +117,10 @@ function JobCard({ job, onCancel }: { job: Job; onCancel: () => void }) {
             className={clsx(
               "text-xs px-2 py-0.5 rounded-md font-semibold",
               job.TargetEnv === "production"
-                ? "bg-red-900/30 text-pilot-danger"
+                ? "bg-pilot-danger/12 text-pilot-danger"
                 : job.TargetEnv === "staging"
-                ? "bg-yellow-900/30 text-pilot-warning"
-                : "bg-green-900/30 text-pilot-success"
+                ? "bg-pilot-warning/12 text-pilot-warning"
+                : "bg-pilot-success/12 text-pilot-success"
             )}
           >
             {job.TargetEnv}
@@ -193,11 +193,11 @@ function NewJobModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-pilot-bg border border-pilot-border rounded-2xl w-full max-w-lg p-6 animate-fade-in shadow-card-hover">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-white text-lg flex items-center gap-2">
+          <h3 className="font-display font-bold text-pilot-text-primary text-lg flex items-center gap-2">
             <Play className="w-5 h-5 text-pilot-accent" />
             Create New Job
           </h3>
-          <button onClick={onClose} className="text-pilot-muted hover:text-white p-1">
+          <button onClick={onClose} className="text-pilot-muted hover:text-pilot-text-primary p-1">
             <XCircle className="w-5 h-5" />
           </button>
         </div>
@@ -231,7 +231,7 @@ function NewJobModal({
           </div>
 
           {form.target_environment === "production" && (
-            <div className="bg-red-950/50 border border-pilot-danger/40 rounded-xl p-4 space-y-3">
+            <div className="bg-pilot-danger/10 border border-pilot-danger/40 rounded-xl p-4 space-y-3">
               <p className="text-sm text-pilot-danger font-bold flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4" />
                 Production job \u2014 CR code required
@@ -246,18 +246,18 @@ function NewJobModal({
           )}
 
           {error && (
-            <p className="text-sm text-pilot-danger bg-red-950/50 border border-pilot-danger/40 rounded-xl p-3">{error}</p>
+            <p className="text-sm text-pilot-danger bg-pilot-danger/10 border border-pilot-danger/40 rounded-xl p-3">{error}</p>
           )}
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 border border-pilot-border text-white text-sm py-2.5 rounded-lg font-medium hover:bg-pilot-surface">
+          <button onClick={onClose} className="flex-1 border border-pilot-border text-pilot-text-secondary text-sm py-2.5 rounded-lg font-medium hover:border-pilot-accent/50 hover:text-pilot-text-primary">
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 bg-pilot-accent text-white text-sm py-2.5 rounded-lg font-bold hover:bg-blue-500 disabled:opacity-50 shadow-glow-blue"
+            className="flex-1 bg-pilot-accent text-pilot-bg text-sm py-2.5 rounded-lg font-bold hover:bg-pilot-accent-light disabled:opacity-50 shadow-glow-blue"
           >
             {loading ? "Submitting\u2026" : "Create Job"}
           </button>
@@ -280,4 +280,4 @@ function Field({ label, required, children }: { label: string; required?: boolea
 }
 
 const inputCls =
-  "w-full bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent focus:ring-1 focus:ring-pilot-accent/30";
+  "w-full bg-pilot-surface border border-pilot-border rounded-lg px-4 py-2.5 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25";

@@ -99,9 +99,9 @@ function edgePath(fx: number, fy: number, tx: number, ty: number): string {
 function statusRing(status: string): string {
   switch (status) {
     case "healthy":  return "#22c55e"; // green-500
-    case "degraded": return "#ef4444"; // red-500
-    case "pending":  return "#f59e0b"; // amber-500
-    default:         return "#6b7280"; // gray-500
+    case "degraded": return "#f5555d"; // red-500
+    case "pending":  return "#f5a623"; // amber-500
+    default:         return "#8ba3aa"; // gray-500
   }
 }
 
@@ -135,10 +135,10 @@ function KindIcon({ kind, size = 14 }: { kind: string; size?: number }) {
 function StatusIcon({ status, size = 12 }: { status: string; size?: number }) {
   const s = { width: size, height: size };
   switch (status) {
-    case "healthy":  return <CheckCircle2 style={s} className="shrink-0 text-green-400" />;
-    case "degraded": return <AlertTriangle style={s} className="shrink-0 text-red-400" />;
-    case "pending":  return <Clock        style={s} className="shrink-0 text-amber-400" />;
-    default:         return <HelpCircle   style={s} className="shrink-0 text-gray-400" />;
+    case "healthy":  return <CheckCircle2 style={s} className="shrink-0 text-pilot-success" />;
+    case "degraded": return <AlertTriangle style={s} className="shrink-0 text-pilot-danger" />;
+    case "pending":  return <Clock        style={s} className="shrink-0 text-pilot-warning" />;
+    default:         return <HelpCircle   style={s} className="shrink-0 text-pilot-muted" />;
   }
 }
 
@@ -153,7 +153,7 @@ function NodeCard({
   onClick: () => void;
 }) {
   const accent = kindColor(node.kind);
-  const border = selected ? accent : "rgba(255,255,255,0.1)";
+  const border = selected ? accent : "rgb(var(--p-border-hover))";
 
   return (
     <div
@@ -165,7 +165,7 @@ function NodeCard({
         border: `1.5px solid ${border}`,
         boxShadow: selected ? `0 0 0 2px ${accent}55` : undefined,
       }}
-      className="absolute bg-[#0f1117] rounded-lg cursor-pointer hover:brightness-125 transition-all select-none overflow-hidden"
+      className="absolute bg-pilot-surface rounded-lg cursor-pointer shadow-card hover:shadow-card-hover transition-all select-none overflow-hidden"
     >
       {/* top accent bar */}
       <div style={{ height: 3, background: accent }} />
@@ -174,29 +174,29 @@ function NodeCard({
         {/* kind badge + name */}
         <div className="flex items-center gap-1.5">
           <span
-            className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+            className="text-[12px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
             style={{ color: accent, background: accent + "22" }}
           >
             {node.kind}
           </span>
           <StatusIcon status={node.status} size={11} />
           {node.kind === "Ingress" && node.tls && (
-            <span className="text-[9px] font-bold text-green-400 bg-green-900/30 px-1 rounded">TLS</span>
+            <span className="text-[9px] font-bold text-pilot-success bg-pilot-success/15 px-1 rounded">TLS</span>
           )}
         </div>
 
         {/* name */}
-        <p className="text-white text-xs font-semibold truncate leading-tight">
+        <p className="text-pilot-text-primary text-xs font-semibold truncate leading-tight">
           {node.name}
         </p>
 
         {/* sub-line */}
-        <div className="text-[10px] text-gray-400 truncate leading-tight">
+        <div className="text-[12px] text-pilot-muted truncate leading-tight">
           {node.kind === "Pod" && (
             <>
               {node.phase}
               {node.restarts && node.restarts > 0
-                ? <span className="text-red-400 ml-1">↻{node.restarts}</span>
+                ? <span className="text-pilot-danger ml-1">↻{node.restarts}</span>
                 : null}
               {node.node_name && <span className="ml-1">· {node.node_name}</span>}
             </>
@@ -231,7 +231,7 @@ function DetailPanel({
       : node.image ?? "";
 
   return (
-    <div className="w-80 shrink-0 bg-[#0f1117] border-l border-white/10 flex flex-col">
+    <div className="w-80 shrink-0 bg-pilot-surface border-l border-pilot-border flex flex-col">
       {/* header */}
       <div
         className="flex items-center justify-between px-4 py-3 border-b"
@@ -239,11 +239,11 @@ function DetailPanel({
       >
         <div className="flex items-center gap-2">
           <KindIcon kind={node.kind} size={16} />
-          <span className="font-bold text-white text-sm truncate max-w-[180px]">{node.name}</span>
+          <span className="font-bold text-pilot-text-primary text-sm truncate max-w-[180px]">{node.name}</span>
         </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-white p-1 rounded hover:bg-white/10"
+          className="text-pilot-muted hover:text-pilot-text-primary p-1 rounded hover:bg-pilot-hover/[0.06]"
         >
           <X className="w-4 h-4" />
         </button>
@@ -273,7 +273,7 @@ function DetailPanel({
                   href={node.ingress_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sky-400 hover:underline"
+                  className="flex items-center gap-1 text-pilot-accent hover:underline"
                 >
                   {node.ingress_url}
                   <ExternalLink className="w-3 h-3" />
@@ -292,32 +292,32 @@ function DetailPanel({
               <Row label="External IPs">
                 <div className="space-y-0.5">
                   {node.external_ips.map((ip) => (
-                    <div key={ip} className="text-green-300">{ip}</div>
+                    <div key={ip} className="text-pilot-success">{ip}</div>
                   ))}
                 </div>
               </Row>
             )}
             {node.ports && node.ports.length > 0 && (
               <div>
-                <p className="text-gray-500 uppercase tracking-wider text-[10px] mb-1.5">Ports</p>
+                <p className="text-pilot-muted uppercase tracking-wider text-[12px] mb-1.5">Ports</p>
                 <div className="space-y-1">
                   {node.ports.map((p, i) => (
                     <div
                       key={i}
-                      className="bg-white/5 rounded px-2 py-1.5 flex items-center justify-between"
+                      className="bg-pilot-surface-2 rounded px-2 py-1.5 flex items-center justify-between"
                     >
-                      <span className="text-gray-300 font-mono">
+                      <span className="text-pilot-text-secondary font-mono">
                         {p.name || `port-${i}`}
                       </span>
-                      <span className="text-sky-300 font-mono">
+                      <span className="text-pilot-accent font-mono">
                         {p.port}
                         {p.target_port !== String(p.port) && (
-                          <span className="text-gray-500">→{p.target_port}</span>
+                          <span className="text-pilot-muted">→{p.target_port}</span>
                         )}
                         {p.node_port ? (
-                          <span className="text-amber-400"> NP:{p.node_port}</span>
+                          <span className="text-pilot-warning"> NP:{p.node_port}</span>
                         ) : null}
-                        <span className="text-gray-500 ml-1">{p.protocol}</span>
+                        <span className="text-pilot-muted ml-1">{p.protocol}</span>
                       </span>
                     </div>
                   ))}
@@ -334,14 +334,14 @@ function DetailPanel({
           <>
             <Row label="Replicas">
               <span>
-                <span className="text-green-400">{node.ready_replicas ?? 0}</span>
-                <span className="text-gray-500">/{node.replicas ?? 0}</span>
-                <span className="text-gray-500 ml-1">ready</span>
+                <span className="text-pilot-success">{node.ready_replicas ?? 0}</span>
+                <span className="text-pilot-muted">/{node.replicas ?? 0}</span>
+                <span className="text-pilot-muted ml-1">ready</span>
               </span>
             </Row>
             {imgShort && (
               <Row label="Image">
-                <span className="font-mono break-all text-sky-300">{imgShort}</span>
+                <span className="font-mono break-all text-pilot-accent">{imgShort}</span>
               </Row>
             )}
           </>
@@ -353,7 +353,7 @@ function DetailPanel({
             <Row label="Phase">{node.phase}</Row>
             <Row label="Ready">{node.ready ? "Yes ✓" : "No ✗"}</Row>
             <Row label="Restarts">
-              <span className={node.restarts && node.restarts > 0 ? "text-red-400" : ""}>
+              <span className={node.restarts && node.restarts > 0 ? "text-pilot-danger" : ""}>
                 {node.restarts ?? 0}
               </span>
             </Row>
@@ -364,12 +364,12 @@ function DetailPanel({
         {/* Labels */}
         {node.labels && Object.keys(node.labels).length > 0 && (
           <div>
-            <p className="text-gray-500 uppercase tracking-wider text-[10px] mb-1.5">Labels</p>
+            <p className="text-pilot-muted uppercase tracking-wider text-[12px] mb-1.5">Labels</p>
             <div className="flex flex-wrap gap-1">
               {Object.entries(node.labels).map(([k, v]) => (
                 <span
                   key={k}
-                  className="bg-white/5 rounded px-1.5 py-0.5 font-mono text-[10px] text-gray-300"
+                  className="bg-pilot-surface-2 rounded px-1.5 py-0.5 font-mono text-[12px] text-pilot-text-secondary"
                 >
                   {k}={v}
                 </span>
@@ -391,8 +391,8 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="text-gray-500 shrink-0 w-24">{label}</span>
-      <span className="text-gray-200 break-all flex-1">{children}</span>
+      <span className="text-pilot-muted shrink-0 w-24">{label}</span>
+      <span className="text-pilot-text-secondary break-all flex-1">{children}</span>
     </div>
   );
 }
@@ -400,7 +400,7 @@ function Row({
 // ── Legend ─────────────────────────────────────────────────────────────────────
 function Legend() {
   return (
-    <div className="flex items-center gap-4 px-4 py-2 border-t border-white/10 text-[10px] text-gray-500 flex-wrap">
+    <div className="flex items-center gap-4 px-4 py-2 border-t border-pilot-border text-[12px] text-pilot-muted flex-wrap">
       {Object.entries(KIND_COLORS).map(([kind, color]) => (
         <span key={kind} className="flex items-center gap-1">
           <span
@@ -411,9 +411,9 @@ function Legend() {
         </span>
       ))}
       <span className="ml-auto flex items-center gap-3">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Healthy</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Pending</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Degraded</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-pilot-success inline-block" /> Healthy</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-pilot-warning inline-block" /> Pending</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-pilot-danger inline-block" /> Degraded</span>
       </span>
     </div>
   );
@@ -423,7 +423,7 @@ function Legend() {
 function ColHeader({ label, count, color }: { label: string; count: number; color: string }) {
   return (
     <div
-      className="absolute flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
+      className="absolute flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest"
       style={{ color }}
     >
       {label}
@@ -501,14 +501,14 @@ export function ServiceTopologyCanvas() {
   const activeNamespaceLabel = namespace === "" ? "all namespaces" : namespace;
 
   return (
-    <div className="flex flex-col h-full bg-[#080a0f] rounded-lg border border-white/10 overflow-hidden">
+    <div className="flex flex-col h-full bg-pilot-bg rounded-lg border border-pilot-border overflow-hidden">
       {/* ── toolbar ── */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/10 shrink-0">
-        <Layers className="w-4 h-4 text-sky-400" />
-        <span className="text-sm font-bold text-white tracking-wide">Service Topology</span>
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-pilot-border shrink-0">
+        <Layers className="w-4 h-4 text-pilot-accent" />
+        <span className="text-sm font-bold text-pilot-text-primary tracking-wide">Service Topology</span>
         {locked ? (
           <span
-            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border bg-sky-600/20 text-sky-300 border-sky-500/40 ml-2"
+            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border bg-pilot-accent/12 text-pilot-accent border-pilot-accent/35 ml-2"
             title="Locked to this namespace via URL parameter"
           >
             <Lock className="w-3 h-3" />
@@ -525,8 +525,8 @@ export function ServiceTopologyCanvas() {
               }}
               className={`text-xs px-2.5 py-1 rounded border ${
                 namespace === ""
-                  ? "bg-sky-600 text-white border-sky-500"
-                  : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
+                  ? "bg-pilot-accent text-pilot-bg border-pilot-accent"
+                  : "bg-pilot-surface-2 text-pilot-text-secondary border-pilot-border hover:bg-pilot-hover/[0.06]"
               }`}
             >
               All Namespaces
@@ -536,11 +536,11 @@ export function ServiceTopologyCanvas() {
                 value={nsInput}
                 onChange={(e) => setNsInput(e.target.value)}
                 placeholder="Namespace (or all)"
-                className="bg-white/5 border border-white/10 rounded px-3 py-1 text-xs text-white placeholder:text-gray-500 focus:outline-none focus:border-sky-500 w-36"
+                className="bg-pilot-surface-2 border border-pilot-border rounded px-3 py-1 text-xs text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent w-36"
               />
               <button
                 type="submit"
-                className="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded font-semibold"
+                className="text-xs bg-pilot-accent hover:bg-pilot-accent-light text-pilot-bg px-3 py-1 rounded font-semibold"
               >
                 Go
               </button>
@@ -549,7 +549,7 @@ export function ServiceTopologyCanvas() {
         )}
         <button
           onClick={() => refetch()}
-          className="ml-auto p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white"
+          className="ml-auto p-1.5 rounded hover:bg-pilot-hover/[0.06] text-pilot-muted hover:text-pilot-text-primary"
           title="Refresh"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -559,20 +559,20 @@ export function ServiceTopologyCanvas() {
       {/* ── canvas + detail panel ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* scrollable canvas area */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-4 diagram-grid">
           {isLoading && (
-            <div className="flex items-center justify-center h-40 text-gray-500 text-sm">
+            <div className="flex items-center justify-center h-40 text-pilot-muted text-sm">
               Loading topology…
             </div>
           )}
           {isError && (
-            <div className="flex items-center justify-center h-40 text-red-400 text-sm">
+            <div className="flex items-center justify-center h-40 text-pilot-danger text-sm">
               Failed to load service graph.
             </div>
           )}
           {!isLoading && !isError && data && (
             nodes.length === 0 ? (
-              <div className="flex items-center justify-center h-40 text-gray-500 text-sm">
+              <div className="flex items-center justify-center h-40 text-pilot-muted text-sm">
                 No resources found in {activeNamespaceLabel}.
               </div>
             ) : (
@@ -615,7 +615,7 @@ export function ServiceTopologyCanvas() {
                       key={key}
                       d={path}
                       fill="none"
-                      stroke="rgba(255,255,255,0.12)"
+                      className="stroke-pilot-border-hover"
                       strokeWidth={1.5}
                     />
                   ))}

@@ -7,11 +7,11 @@ import { AlertTriangle, AlertOctagon, Info, Clock } from "lucide-react";
 import { listAnomalies, type Anomaly, type Severity } from "@/lib/api";
 
 const SEVERITY_STYLES: Record<Severity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-red-900/30", text: "text-red-400", icon: <AlertOctagon className="w-4 h-4" /> },
-  high: { bg: "bg-orange-900/30", text: "text-orange-400", icon: <AlertTriangle className="w-4 h-4" /> },
-  medium: { bg: "bg-yellow-900/30", text: "text-yellow-400", icon: <AlertTriangle className="w-4 h-4" /> },
-  low: { bg: "bg-blue-900/30", text: "text-blue-400", icon: <Info className="w-4 h-4" /> },
-  info: { bg: "bg-gray-800/50", text: "text-gray-400", icon: <Info className="w-4 h-4" /> },
+  critical: { bg: "bg-pilot-danger/12", text: "text-pilot-danger", icon: <AlertOctagon className="w-4 h-4" /> },
+  high: { bg: "bg-pilot-danger/10", text: "text-pilot-danger", icon: <AlertTriangle className="w-4 h-4" /> },
+  medium: { bg: "bg-pilot-warning/12", text: "text-pilot-warning", icon: <AlertTriangle className="w-4 h-4" /> },
+  low: { bg: "bg-pilot-info/12", text: "text-pilot-info", icon: <Info className="w-4 h-4" /> },
+  info: { bg: "bg-pilot-surface-2", text: "text-pilot-muted", icon: <Info className="w-4 h-4" /> },
 };
 
 export function AnomalyTimeline() {
@@ -39,7 +39,7 @@ export function AnomalyTimeline() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-pilot-muted uppercase tracking-wider">
+      <h3 className="eyebrow">
         Anomaly Timeline
       </h3>
       <div className="space-y-2 max-h-[500px] overflow-y-auto">
@@ -64,7 +64,7 @@ function AnomalyRow({ anomaly }: { anomaly: Anomaly }) {
           <span className={`font-bold uppercase text-xs ${style.text}`}>{anomaly.severity}</span>
           <span className="text-pilot-muted text-sm">{anomaly.rule}</span>
         </div>
-        <p className="text-sm text-white mt-0.5 leading-relaxed">{anomaly.description}</p>
+        <p className="text-sm text-pilot-text-primary mt-0.5 leading-relaxed">{anomaly.description}</p>
         <div className="flex items-center gap-2 text-sm text-pilot-muted mt-1">
           <span className="font-mono text-xs">{anomaly.resource.namespace}/{anomaly.resource.name}</span>
         </div>

@@ -32,7 +32,7 @@ export function MetricsPanel({ deployments }: Props) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <h2 className="text-base font-bold text-pilot-text-primary flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-pilot-accent" />
           Deployment Health
         </h2>
@@ -55,40 +55,40 @@ export function MetricsPanel({ deployments }: Props) {
             <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 11, fill: "#7c8ba3", fontFamily: "JetBrains Mono, monospace" }}
+                tick={{ fontSize: 11, fill: "#8ba3aa", fontFamily: "JetBrains Mono, monospace" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#7c8ba3" }}
+                tick={{ fontSize: 11, fill: "#8ba3aa" }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  background: "#1a2540",
-                  border: "1px solid #1e2d4a",
+                  background: "#16292d",
+                  border: "1px solid #1e343a",
                   borderRadius: 10,
                   fontSize: 13,
                   fontFamily: "Inter, sans-serif",
                   padding: "10px 14px",
                 }}
                 labelStyle={{ color: "#fff", fontWeight: 600 }}
-                cursor={{ fill: "rgba(59, 130, 246, 0.06)" }}
+                cursor={{ fill: "rgba(34, 211, 238, 0.07)" }}
               />
               <Bar dataKey="ready" name="Ready" stackId="a" radius={[0, 0, 4, 4]}>
                 {chartData.map((entry, i) => (
                   <Cell
                     key={i}
-                    fill={entry.degraded > 0 ? "#f59e0b" : "#10b981"}
+                    fill={entry.degraded > 0 ? "#f5a623" : "#22c55e"}
                   />
                 ))}
               </Bar>
-              <Bar dataKey="degraded" name="Degraded" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="degraded" name="Degraded" stackId="a" fill="#f5555d" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
           <p className="text-sm text-pilot-muted mt-3 text-center">
-            <span className="font-semibold text-white">{totalReady}</span> ready / <span className="font-semibold text-white">{totalDesired}</span> desired across {deployments.length} deployments
+            <span className="font-semibold text-pilot-text-primary">{totalReady}</span> ready / <span className="font-semibold text-pilot-text-primary">{totalDesired}</span> desired across {deployments.length} deployments
           </p>
         </div>
       ) : (

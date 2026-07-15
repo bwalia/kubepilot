@@ -39,31 +39,31 @@ export function ClusterList({ nodes, loading }: Props) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <h2 className="text-base font-bold font-display text-pilot-text-primary flex items-center gap-2">
           <Server className="w-5 h-5 text-pilot-accent" />
           Cluster Nodes
         </h2>
-        <span className="text-sm text-pilot-muted font-medium">{nodes.length} total</span>
+        <span className="text-sm text-pilot-muted font-medium tabular-nums">{nodes.length} total</span>
       </div>
       <div className="bg-pilot-surface border border-pilot-border rounded-xl overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-pilot-surface-2 text-pilot-muted text-xs uppercase tracking-wider">
-                <th className="text-left px-5 py-3.5 font-semibold">Node</th>
-                <th className="text-left px-5 py-3.5 font-semibold">IP Address</th>
-                <th className="text-left px-5 py-3.5 font-semibold">Status</th>
-                <th className="text-left px-5 py-3.5 font-semibold">CPU</th>
-                <th className="text-left px-5 py-3.5 font-semibold">Memory</th>
-                <th className="text-left px-5 py-3.5 font-semibold">Kubelet</th>
-                <th className="text-left px-5 py-3.5 font-semibold">Pressure</th>
+              <tr>
+                <th className="text-left px-5 py-3.5 eyebrow">Node</th>
+                <th className="text-left px-5 py-3.5 eyebrow">IP Address</th>
+                <th className="text-left px-5 py-3.5 eyebrow">Status</th>
+                <th className="text-left px-5 py-3.5 eyebrow">CPU</th>
+                <th className="text-left px-5 py-3.5 eyebrow">Memory</th>
+                <th className="text-left px-5 py-3.5 eyebrow">Kubelet</th>
+                <th className="text-left px-5 py-3.5 eyebrow">Pressure</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-pilot-border">
               {nodes.map((node) => (
                 <tr
                   key={node.Name}
-                  className="hover:bg-pilot-surface-2/50"
+                  className="hover:bg-pilot-accent/[0.03]"
                 >
                   <td className="px-5 py-3.5 font-mono text-sm text-white">{node.Name}</td>
                   <td className="px-5 py-3.5">

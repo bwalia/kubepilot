@@ -3,17 +3,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-pilot-accent/40 disabled:opacity-50 disabled:pointer-events-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pilot-accent/50 disabled:opacity-50 disabled:pointer-events-none",
   {
     variants: {
       variant: {
-        default: "bg-pilot-accent text-white hover:bg-blue-500",
-        success: "bg-pilot-success text-black hover:brightness-110",
-        warning: "bg-pilot-warning text-black hover:brightness-110",
-        danger: "bg-pilot-danger text-white hover:brightness-110",
+        default: "bg-pilot-accent text-pilot-bg hover:bg-pilot-accent-light hover:shadow-glow-blue",
+        success: "bg-pilot-success text-pilot-bg hover:brightness-110",
+        warning: "bg-pilot-warning text-pilot-bg hover:brightness-110",
+        danger: "bg-pilot-danger text-pilot-bg hover:brightness-110 hover:shadow-glow-red",
         outline:
-          "border border-pilot-border bg-transparent text-pilot-text-secondary hover:border-pilot-border-hover hover:text-white",
-        ghost: "bg-transparent text-pilot-muted hover:text-white hover:bg-pilot-surface",
+          "border border-pilot-border bg-transparent text-pilot-text-secondary hover:border-pilot-accent/50 hover:text-pilot-text-primary hover:bg-pilot-hover/[0.04]",
+        ghost: "bg-transparent text-pilot-muted hover:text-pilot-text-primary hover:bg-pilot-hover/[0.06]",
       },
       size: {
         default: "h-9 px-4 py-2",

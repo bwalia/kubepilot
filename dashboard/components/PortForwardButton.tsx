@@ -138,14 +138,14 @@ export function PortForwardButton({
           {phase === "pick" && (
             <div className="space-y-4">
               <div>
-                <label className="text-xs uppercase tracking-wider text-pilot-muted">
+                <label className="eyebrow">
                   Target port
                 </label>
                 {availablePorts.length > 1 ? (
                   <select
                     value={remotePort}
                     onChange={(e) => setRemotePort(e.target.value)}
-                    className="mt-1 w-full bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-white"
+                    className="mt-1 w-full bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
                   >
                     {availablePorts.map((p) => (
                       <option key={p} value={p}>
@@ -159,7 +159,7 @@ export function PortForwardButton({
                     value={remotePort}
                     onChange={(e) => setRemotePort(e.target.value)}
                     placeholder={availablePorts.length === 1 ? String(availablePorts[0]) : "e.g. 8080"}
-                    className="mt-1 w-full bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-white font-mono"
+                    className="mt-1 w-full bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted font-mono focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
                   />
                 )}
                 <p className="text-xs text-pilot-muted mt-1">
@@ -184,7 +184,7 @@ export function PortForwardButton({
           {phase === "result" && session && (
             <div className="space-y-4">
               <div>
-                <label className="text-xs uppercase tracking-wider text-pilot-muted">
+                <label className="eyebrow">
                   Access URL (HTTP, remote port {session.remote_port})
                 </label>
                 <div className="mt-1 flex items-center gap-2">
@@ -218,7 +218,7 @@ export function PortForwardButton({
 
           {phase === "error" && (
             <div className="space-y-4">
-              <div className="text-sm text-pilot-danger bg-red-500/10 border border-pilot-danger/30 rounded-lg p-3">
+              <div className="text-sm text-pilot-danger bg-pilot-danger/10 border border-pilot-danger/30 rounded-lg p-3">
                 {errorMsg}
               </div>
               <div className="flex justify-end gap-2">

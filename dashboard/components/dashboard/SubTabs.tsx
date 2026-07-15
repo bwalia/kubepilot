@@ -14,7 +14,7 @@ export function SubTabs<K extends string>({ tabs, active, onChange }: Props<K>) 
           onClick={() => onChange(tab.key)}
           className={`px-3 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
             active === tab.key
-              ? "border-pilot-accent text-white"
+              ? "border-pilot-accent text-pilot-text-primary"
               : "border-transparent text-pilot-muted hover:text-pilot-text-secondary"
           }`}
         >

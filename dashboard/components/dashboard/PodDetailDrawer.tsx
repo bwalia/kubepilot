@@ -36,7 +36,7 @@ export function PodDetailDrawer({ namespace, pod, mutationsEnabled, onClose, onA
       <DrawerContent aria-describedby={undefined}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-pilot-border shrink-0">
           <div>
-            <h3 className="font-bold text-white text-base">Pod Details</h3>
+            <h3 className="font-bold font-display text-pilot-text-primary text-base">Pod Details</h3>
             <p className="text-sm text-pilot-muted mt-0.5 font-mono">
               {namespace}/{pod}
             </p>
@@ -51,7 +51,7 @@ export function PodDetailDrawer({ namespace, pod, mutationsEnabled, onClose, onA
             />
             <button
               onClick={onClose}
-              className="text-pilot-muted hover:text-white p-1.5 rounded-lg hover:bg-pilot-surface"
+              className="text-pilot-muted hover:text-pilot-text-primary p-1.5 rounded-lg hover:bg-pilot-surface"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -190,7 +190,7 @@ function ContainerCard({ container: c }: { container: ContainerDiag }) {
   return (
     <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-white font-mono">{c.name}</span>
+        <span className="text-sm font-semibold text-pilot-text-primary font-mono">{c.name}</span>
         <Badge variant={stateVariant}>{c.state || "Unknown"}</Badge>
       </div>
       <p className="text-xs text-pilot-muted font-mono mb-2">{c.image}</p>
@@ -235,7 +235,7 @@ function LogsTab({ namespace, pod }: { namespace: string; pod: string }) {
         <select
           value={container}
           onChange={(e) => setContainer(e.target.value)}
-          className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-white"
+          className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
         >
           <option value="">Default container</option>
           {containers.map((c) => (
@@ -249,7 +249,7 @@ function LogsTab({ namespace, pod }: { namespace: string; pod: string }) {
             key={n}
             onClick={() => setTail(n)}
             className={`text-xs px-2.5 py-1.5 rounded-lg font-medium ${
-              tail === n ? "bg-pilot-accent text-white" : "bg-pilot-surface text-pilot-muted hover:text-white"
+              tail === n ? "bg-pilot-accent text-pilot-bg" : "bg-pilot-surface text-pilot-muted hover:text-pilot-text-primary"
             }`}
           >
             Tail {n}
@@ -257,7 +257,7 @@ function LogsTab({ namespace, pod }: { namespace: string; pod: string }) {
         ))}
         <button
           onClick={() => refetch()}
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-pilot-surface text-pilot-muted hover:text-white"
+          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-pilot-surface text-pilot-muted hover:text-pilot-text-primary"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
         </button>
@@ -282,7 +282,7 @@ function EventsTab({ namespace, pod }: { namespace: string; pod: string }) {
         <div key={i} className="bg-pilot-surface border border-pilot-border rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
             <Badge variant={e.type === "Warning" ? "warning" : "muted"}>{e.type}</Badge>
-            <span className="text-sm font-semibold text-white">{e.reason}</span>
+            <span className="text-sm font-semibold text-pilot-text-primary">{e.reason}</span>
             {e.count > 1 && <span className="text-xs text-pilot-muted">×{e.count}</span>}
           </div>
           <p className="text-sm text-pilot-text-secondary">{e.message}</p>
@@ -329,7 +329,7 @@ function AIAnalysisTab({
         </p>
         <button
           onClick={() => setEnabled(true)}
-          className="bg-pilot-accent hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-glow-blue"
+          className="bg-pilot-accent hover:bg-pilot-accent-light text-pilot-bg px-6 py-2.5 rounded-lg text-sm font-semibold shadow-glow-blue"
         >
           Analyze with AI
         </button>
@@ -352,11 +352,11 @@ function AIAnalysisTab({
         <p className="text-base font-bold text-pilot-danger leading-relaxed">{report.RootCause || "Unknown"}</p>
       </Panel>
       <Panel title="Analysis">
-        <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{report.Analysis}</p>
+        <p className="text-sm text-pilot-text-primary leading-relaxed whitespace-pre-wrap">{report.Analysis}</p>
       </Panel>
       {report.Actions && report.Actions.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-pilot-muted uppercase tracking-wider mb-2">Suggested Actions</p>
+          <p className="eyebrow mb-2">Suggested Actions</p>
           <div className="space-y-2">
             {report.Actions.map((action, i) => (
               <div key={i} className="bg-pilot-surface border border-pilot-border rounded-xl p-4 flex items-start justify-between gap-3">
@@ -370,7 +370,7 @@ function AIAnalysisTab({
                   title={mutationsEnabled ? undefined : "Mutations are disabled on this server"}
                   className={`shrink-0 text-xs px-3 py-2 rounded-lg font-semibold ${
                     mutationsEnabled
-                      ? "bg-pilot-success text-black hover:brightness-110"
+                      ? "bg-pilot-success text-pilot-bg hover:brightness-110"
                       : "bg-pilot-surface-2 text-pilot-muted cursor-not-allowed"
                   }`}
                 >
@@ -388,8 +388,8 @@ function AIAnalysisTab({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wider text-pilot-muted">{label}</div>
-      <div className="text-sm text-white font-mono break-all">{value}</div>
+      <div className="eyebrow">{label}</div>
+      <div className="text-sm text-pilot-text-primary font-mono break-all">{value}</div>
     </div>
   );
 }
@@ -397,7 +397,7 @@ function Field({ label, value }: { label: string; value: string }) {
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-pilot-surface border border-pilot-border rounded-xl p-4">
-      <p className="text-xs font-medium text-pilot-muted uppercase tracking-wider mb-2">{title}</p>
+      <p className="eyebrow mb-2">{title}</p>
       {children}
     </div>
   );

@@ -47,28 +47,28 @@ export function CRCodeApproval({ action, onClose, onAuthorized }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-pilot-bg border border-pilot-border rounded-xl w-full max-w-md p-6 shadow-2xl">
+      <div className="bg-pilot-bg border border-pilot-border rounded-xl w-full max-w-md p-6 shadow-card-hover">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Lock className="w-5 h-5 text-pilot-warning" />
-            <h2 className="font-bold text-white text-sm">Production Authorization Required</h2>
+            <h2 className="font-display font-bold text-pilot-text-primary text-sm">Production Authorization Required</h2>
           </div>
-          <button onClick={onClose} className="text-pilot-muted hover:text-white">
+          <button onClick={onClose} className="text-pilot-muted hover:text-pilot-text-primary">
             <XCircle className="w-5 h-5" />
           </button>
         </div>
 
         {/* Action summary */}
         <div className="bg-pilot-surface border border-pilot-border rounded-lg p-3 mb-5">
-          <p className="text-xs text-pilot-muted mb-1">Requested action</p>
+          <p className="eyebrow mb-1">Requested action</p>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-pilot-accent uppercase">{action.type}</span>
+            <span className="eyebrow text-pilot-accent">{action.type}</span>
             {action.namespace && (
               <span className="text-xs text-pilot-muted">{action.namespace}</span>
             )}
             {action.resource && (
-              <span className="text-xs text-white">/ {action.resource}</span>
+              <span className="text-xs text-pilot-text-primary">/ {action.resource}</span>
             )}
           </div>
           <p className="text-xs text-pilot-muted mt-1">{action.explanation}</p>
@@ -85,7 +85,7 @@ export function CRCodeApproval({ action, onClose, onAuthorized }: Props) {
               value={changeId}
               onChange={(e) => setChangeId(e.target.value)}
               placeholder="INFRA-1234"
-              className="w-full bg-pilot-surface border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+              className="w-full bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
             />
           </div>
           <div>
@@ -96,7 +96,7 @@ export function CRCodeApproval({ action, onClose, onAuthorized }: Props) {
               onChange={(e) => setCrCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="Enter CR code"
-              className="w-full bg-pilot-surface border border-pilot-border rounded px-3 py-2 text-sm text-white placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent"
+              className="w-full bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
             />
             <p className="text-xs text-pilot-muted mt-1">
               CR codes are validated against Kubernetes secrets in the{" "}
@@ -105,7 +105,7 @@ export function CRCodeApproval({ action, onClose, onAuthorized }: Props) {
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 bg-red-950 border border-pilot-danger rounded p-3">
+            <div className="flex items-start gap-2 bg-pilot-danger/10 border border-pilot-danger/30 rounded-lg p-3">
               <XCircle className="w-4 h-4 text-pilot-danger shrink-0 mt-0.5" />
               <p className="text-xs text-pilot-danger">{error}</p>
             </div>
@@ -116,14 +116,14 @@ export function CRCodeApproval({ action, onClose, onAuthorized }: Props) {
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 bg-pilot-surface border border-pilot-border text-white text-sm py-2 rounded hover:bg-pilot-border"
+            className="flex-1 border border-pilot-border text-pilot-text-secondary text-sm py-2 rounded-lg hover:border-pilot-accent/50 hover:text-pilot-text-primary"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 bg-pilot-warning text-black text-sm py-2 rounded font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 bg-pilot-warning text-pilot-bg text-sm py-2 rounded-lg font-bold hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               "Authorizing…"
