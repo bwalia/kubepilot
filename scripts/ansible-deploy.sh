@@ -57,15 +57,26 @@ export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY_FILE"
 # 2.16 itself needs a controller Python >= 3.10, and this runner's default
 # `python3` is older (pip there only offers ansible-core <= 2.11). So pick the
 # newest Python >= 3.10 on the box to install + run ansible with.
+#
+# The interpreter must also have a usable pip. Some runners ship a bare
+# python3.13 with no pip module (`No module named pip`); selecting it purely by
+# version leaves us unable to install ansible-core. So require pip too — trying
+# `ensurepip` first — and otherwise fall through to the next candidate (e.g. the
+# runner's python3.12, which does ship pip).
 ANSIBLE_CORE_SPEC="ansible-core>=2.16,<2.17"
 PYBIN=""
 for c in python3.13 python3.12 python3.11 python3.10 python3; do
   command -v "$c" >/dev/null 2>&1 || continue
   v="$("$c" -c 'import sys; print("%d%02d" % sys.version_info[:2])' 2>/dev/null || echo 0)"
-  if [ "${v:-0}" -ge 310 ]; then PYBIN="$c"; break; fi
+  [ "${v:-0}" -ge 310 ] || continue
+  # Ensure pip is importable, bootstrapping it if the interpreter allows.
+  "$c" -m pip --version >/dev/null 2>&1 \
+    || "$c" -m ensurepip --default-pip >/dev/null 2>&1 || true
+  "$c" -m pip --version >/dev/null 2>&1 || continue
+  PYBIN="$c"; break
 done
 if [ -z "$PYBIN" ]; then
-  echo "::error::No Python >= 3.10 found on the runner to install ansible-core ${ANSIBLE_CORE_SPEC}." >&2
+  echo "::error::No Python >= 3.10 with pip found on the runner to install ansible-core ${ANSIBLE_CORE_SPEC}." >&2
   exit 1
 fi
 echo "Using controller Python: $("$PYBIN" --version 2>&1) ($PYBIN)"
