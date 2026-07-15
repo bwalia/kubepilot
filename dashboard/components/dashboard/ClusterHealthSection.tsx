@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getClusterTroubleshootingSummary, type NodeHealthRow, type ProblemPod } from "@/lib/api";
+import { NodeIPDisplay } from "@/components/NodeIPDisplay";
 import { ResourceMeters } from "@/components/dashboard/ResourceMeters";
 import { ResourceTable, type Column } from "./ResourceTable";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +106,10 @@ function ProblemPodsTable({ pods, loading }: { pods: ProblemPod[]; loading: bool
 function NodeHealthTable({ nodes, loading }: { nodes: NodeHealthRow[]; loading: boolean }) {
   const columns: Column<NodeHealthRow>[] = [
     { header: "Node", cell: (n) => <span className="text-pilot-text-primary font-mono">{n.name}</span> },
+    {
+      header: "IP Address",
+      cell: (n) => <NodeIPDisplay node={n} />,
+    },
     {
       header: "Status",
       cell: (n) =>

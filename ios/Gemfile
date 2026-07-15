@@ -1,0 +1,5 @@
+source "https://rubygems.org"
+
+# fastlane drives signing (cert + sigh), TestFlight upload, and App Store
+# submission. See fastlane/Fastfile and .github/workflows/ios_release.yml.
+gem "fastlane"

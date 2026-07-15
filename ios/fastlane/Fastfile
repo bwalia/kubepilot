@@ -1,0 +1,234 @@
+# Fastfile — KubePilot native iOS release (GitHub Actions + Vault + fastlane).
+#
+# CI signs with an App Store Connect API key and a distribution-certificate
+# private key pulled from Vault by ci/load-ios-vault-secrets.sh. See
+# .github/workflows/ios_release.yml and docs/IOS_RELEASE.md.
+
+default_platform(:ios)
+
+APP_ID = "io.kubepilot.app".freeze
+WIDGET_APP_ID = "io.kubepilot.app.widgets".freeze
+
+def team_id
+  ENV.fetch("APPLE_TEAM_ID") do
+    UI.user_error!("APPLE_TEAM_ID is not set — add it to Vault secret/kubepilot/ios")
+  end
+end
+
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: ENV.fetch("ASC_KEY_FILEPATH"),
+    in_house: false
+  )
+end
+
+def emit_github(file_env_var, line)
+  path = ENV[file_env_var]
+  File.write(path, "#{line}\n", mode: "a") if path && !path.empty?
+end
+
+def write_export_options(path, app_profile, widget_profile)
+  File.write(path, <<~PLIST)
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+    \t<key>method</key>
+    \t<string>app-store-connect</string>
+    \t<key>teamID</key>
+    \t<string>#{team_id}</string>
+    \t<key>signingStyle</key>
+    \t<string>manual</string>
+    \t<key>uploadSymbols</key>
+    \t<true/>
+    \t<key>compileBitcode</key>
+    \t<false/>
+    \t<key>stripSwiftSymbols</key>
+    \t<true/>
+    \t<key>manageAppVersionAndBuildNumber</key>
+    \t<false/>
+    \t<key>provisioningProfiles</key>
+    \t<dict>
+    \t\t<key>#{APP_ID}</key>
+    \t\t<string>#{app_profile}</string>
+    \t\t<key>#{WIDGET_APP_ID}</key>
+    \t\t<string>#{widget_profile}</string>
+    \t</dict>
+    </dict>
+    </plist>
+  PLIST
+end
+
+platform :ios do
+  desc "Run unit tests on the simulator"
+  lane :test do
+    sh("xcodegen", "generate")
+    run_tests(
+      project: "KubePilot.xcodeproj",
+      scheme: "KubePilot",
+      devices: ["iPhone 16"],
+      clean: true
+    )
+  end
+
+  desc "Print next TestFlight build number for VERSION_NAME to GITHUB_OUTPUT"
+  lane :ci_build_number do
+    version = ENV.fetch("VERSION_NAME")
+    latest = latest_testflight_build_number(
+      api_key: asc_api_key,
+      app_identifier: APP_ID,
+      version: version,
+      initial_build_number: 0
+    )
+    nxt = latest.to_i + 1
+    UI.message("Latest TestFlight build for #{version} is #{latest}; next is #{nxt}")
+    emit_github("GITHUB_OUTPUT", "build_number=#{nxt}")
+  end
+
+  desc "Set up code signing from Vault material into a temporary keychain"
+  lane :prepare_signing do
+    api_key = asc_api_key
+    kc_path = ENV.fetch("BUILD_KEYCHAIN_PATH")
+    kc_pass = ENV.fetch("BUILD_KEYCHAIN_PASSWORD")
+    dist_key = ENV.fetch("DIST_CERT_KEY_FILEPATH")
+    tmp_dir = ENV["RUNNER_TEMP"] || Dir.pwd
+
+    create_keychain(
+      path: kc_path,
+      password: kc_pass,
+      default_keychain: false,
+      unlock: true,
+      timeout: 3600,
+      add_to_search_list: true
+    )
+
+    sh("security", "import", dist_key, "-k", kc_path, "-P", "", "-A", "-T", "/usr/bin/codesign")
+
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      filepath: ENV.fetch("ASC_KEY_FILEPATH")
+    )
+    key_modulus = sh("openssl", "rsa", "-in", dist_key, "-noout", "-modulus", log: false).strip
+    matching = Spaceship::ConnectAPI::Certificate.all(
+      filter: { certificateType: "DISTRIBUTION" }
+    ).find do |c|
+      next false unless c.certificate_content
+      cer = File.join(tmp_dir, "#{c.id}.cer")
+      File.binwrite(cer, c.certificate_content.unpack1("m"))
+      sh("openssl", "x509", "-in", cer, "-inform", "DER", "-noout", "-modulus", log: false).strip == key_modulus
+    end
+    UI.user_error!(
+      "No live Apple Distribution certificate matches the Vault private key."
+    ) if matching.nil?
+    sh("security", "import", File.join(tmp_dir, "#{matching.id}.cer"),
+       "-k", kc_path, "-A", "-T", "/usr/bin/codesign")
+
+    cert(
+      api_key: api_key,
+      keychain_path: kc_path,
+      keychain_password: kc_pass,
+      output_path: tmp_dir
+    )
+
+    get_provisioning_profile(api_key: api_key, app_identifier: APP_ID, readonly: false)
+    app_profile_name = lane_context[SharedValues::SIGH_NAME]
+    app_profile_path = lane_context[SharedValues::SIGH_PROFILE_PATH]
+    emit_github("GITHUB_ENV", "INSTALLED_PROFILE_PATH=#{app_profile_path}") if app_profile_path
+
+    get_provisioning_profile(api_key: api_key, app_identifier: WIDGET_APP_ID, readonly: false)
+    widget_profile_name = lane_context[SharedValues::SIGH_NAME]
+    widget_profile_path = lane_context[SharedValues::SIGH_PROFILE_PATH]
+    emit_github("GITHUB_ENV", "INSTALLED_WIDGET_PROFILE_PATH=#{widget_profile_path}") if widget_profile_path
+
+    [
+      ["KubePilot", app_profile_name, APP_ID],
+      ["KubePilotWidgets", widget_profile_name, WIDGET_APP_ID]
+    ].each do |target, profile_name, bundle_id|
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "KubePilot.xcodeproj",
+        team_id: team_id,
+        code_sign_identity: "Apple Distribution",
+        profile_name: profile_name,
+        bundle_identifier: bundle_id,
+        targets: [target]
+      )
+    end
+
+    out = ENV.fetch("EXPORT_OPTIONS_PLIST", File.join(tmp_dir, "ExportOptions.plist"))
+    write_export_options(out, app_profile_name, widget_profile_name)
+    UI.success("Signing ready — ExportOptions at #{out}")
+  end
+
+  desc "Archive and export a signed App Store IPA"
+  lane :build_ipa do
+    sh("xcodegen", "generate")
+
+    if ENV["VERSION_NAME"] && !ENV["VERSION_NAME"].empty?
+      increment_version_number(
+        version_number: ENV["VERSION_NAME"],
+        xcodeproj: "KubePilot.xcodeproj"
+      )
+    end
+    increment_build_number(
+      build_number: ENV.fetch("BUILD_NUMBER"),
+      xcodeproj: "KubePilot.xcodeproj"
+    )
+
+    export_plist = ENV.fetch("EXPORT_OPTIONS_PLIST")
+    build_app(
+      project: "KubePilot.xcodeproj",
+      scheme: "KubePilot",
+      export_method: "app-store",
+      export_options: export_plist,
+      output_directory: "./build",
+      output_name: "KubePilot.ipa",
+      clean: true
+    )
+  end
+
+  desc "Upload the built IPA to TestFlight (internal testers only)"
+  lane :beta do
+    ipa = Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] ||
+          File.expand_path("build/KubePilot.ipa", Dir.pwd)
+    UI.user_error!("No IPA at #{ipa}") unless File.exist?(ipa)
+
+    upload_to_testflight(
+      api_key: asc_api_key,
+      ipa: ipa,
+      skip_waiting_for_build_processing: false,
+      distribute_external: false
+    )
+  end
+
+  desc "Submit the latest build for App Store review (manual release gate)"
+  lane :release do
+    key = asc_api_key
+    ipa = Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] ||
+          File.expand_path("build/KubePilot.ipa", Dir.pwd)
+
+    upload_to_testflight(
+      api_key: key,
+      ipa: ipa,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+
+    deliver(
+      api_key: key,
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false
+      }
+    )
+  end
+end
