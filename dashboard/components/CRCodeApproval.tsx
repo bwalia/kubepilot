@@ -46,7 +46,7 @@ export function CRCodeApproval({ action, onClose, onAuthorized }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4">
       <div className="bg-pilot-bg border border-pilot-border rounded-xl w-full max-w-md p-6 shadow-card-hover">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

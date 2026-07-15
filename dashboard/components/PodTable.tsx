@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PodSummary } from "@/lib/api";
 import { troubleshootPod } from "@/lib/api";
@@ -183,15 +183,40 @@ function TroubleshootPanel({
     queryFn: () => troubleshootPod(namespace, pod),
   });
 
+  // Close on Escape, mirroring the backdrop click, so the panel is dismissable
+  // even if a narrow viewport clips the corner close button.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
-      <div className="w-full max-w-xl bg-pilot-bg border-l border-pilot-border h-full overflow-y-auto p-6 animate-slide-in-right">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+    // z-[70] sits above the sticky GlobalNav (z-[60]) and mobile sidebar (z-[66])
+    // so the header no longer overlaps the panel or hides its close button.
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex justify-end"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`AI diagnosis for ${namespace}/${pod}`}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xl bg-pilot-bg border-l border-pilot-border h-full overflow-y-auto p-6 animate-slide-in-right"
+      >
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="min-w-0">
             <h3 className="font-bold font-display text-pilot-text-primary text-base">AI Diagnosis</h3>
-            <p className="text-sm text-pilot-muted mt-0.5 font-mono">{namespace}/{pod}</p>
+            <p className="text-sm text-pilot-muted mt-0.5 font-mono truncate">{namespace}/{pod}</p>
           </div>
-          <button onClick={onClose} className="text-pilot-muted hover:text-pilot-text-primary p-1.5 rounded-lg hover:bg-pilot-surface">
+          <button
+            onClick={onClose}
+            aria-label="Close diagnosis panel"
+            className="shrink-0 text-pilot-muted hover:text-pilot-text-primary p-1.5 rounded-lg hover:bg-pilot-surface"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -126,7 +126,7 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-pilot-bg border border-pilot-border rounded-2xl p-6 space-y-5 animate-fade-in shadow-card-hover">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-display font-bold text-pilot-text-primary">Switch Cluster / Kubeconfig</h3>
