@@ -380,6 +380,19 @@ export interface AIHealthStatus {
   error?: string;
 }
 
+// Build provenance reported by the Go backend (/api/v1/version). `version` is
+// `git describe --tags`, so it reflects the current git tag of the deployment.
+export interface VersionInfo {
+  version: string;
+  build: string;
+  commit: string;
+  goVersion: string;
+  platform: string;
+}
+
+export const getVersion = (): Promise<VersionInfo> =>
+  http.get("/version").then((r) => r.data);
+
 export const getAIHealth = (): Promise<AIHealthStatus> =>
   http.get("/ai/health").then((r) => r.data);
 

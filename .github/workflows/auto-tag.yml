@@ -1,0 +1,77 @@
+name: Auto Tag
+
+# On every push to the default branch, cut the next patch release tag
+# (vMAJOR.MINOR.PATCH+1). The tag is what the dashboard footer surfaces via
+# `git describe --tags` (/api/v1/version) and what docker-publish.yml builds from.
+#
+# Notes:
+#  - Pushing a tag with the default GITHUB_TOKEN pushes the tag but does NOT
+#    trigger tag-listening workflows (docker-publish on 'v*'). To have images
+#    auto-build on each tag, add a repo secret RELEASE_PAT (a PAT with
+#    `contents: write`); this workflow uses it for checkout/push when present.
+#  - Add `[skip tag]` to a commit message to skip tagging for that push.
+
+on:
+  push:
+    branches: [master, main]
+
+concurrency:
+  # Serialize tag bumps so two quick pushes can't race to the same tag.
+  group: auto-tag-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: ${{ !contains(github.event.head_commit.message, '[skip tag]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Compute next patch tag
+        id: ver
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+
+          # Highest existing v-prefixed semver tag.
+          latest="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1 | sed 's/^v//')"
+          if [ -z "$latest" ]; then
+            # No v* tag yet: seed from the highest legacy 'kubepilot-X.Y.Z' tag,
+            # otherwise default to 0.2.0. The patch bump below yields v0.2.1.
+            latest="$(git tag -l 'kubepilot-[0-9]*.[0-9]*.[0-9]*' | sed 's/^kubepilot-//' | sort -V | tail -n1)"
+            latest="${latest:-0.2.0}"
+          fi
+
+          major="${latest%%.*}"
+          rest="${latest#*.}"
+          minor="${rest%%.*}"
+          patch="${rest##*.}"
+          patch=$((patch + 1))
+          next="v${major}.${minor}.${patch}"
+
+          # Never clobber an existing tag (belt-and-braces against races).
+          while git rev-parse -q --verify "refs/tags/${next}" >/dev/null; do
+            patch=$((patch + 1))
+            next="v${major}.${minor}.${patch}"
+          done
+
+          echo "next=${next}" >> "$GITHUB_OUTPUT"
+          echo "Next tag: ${next} (base: ${latest})"
+
+      - name: Create and push tag
+        env:
+          NEXT: ${{ steps.ver.outputs.next }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${NEXT}" -m "Release ${NEXT} (auto-bumped from ${GITHUB_SHA})"
+          git push origin "${NEXT}"
+          echo "Pushed ${NEXT}"
