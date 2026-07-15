@@ -2,14 +2,20 @@ name: Deploy
 
 # Autodeploys KubePilot to the home-lab hosts as a systemd service via Ansible.
 #
-#   int env  → bwalia@192.168.1.193   (self-hosted runner labelled "int")
-#   test env → bwalia@192.168.1.140   (self-hosted runner labelled "test")
+#   int env  → bwalia@192.168.1.193
+#   test env → bwalia@192.168.1.140
+#
+# Both deploy jobs run on the Mac Studio runner ([self-hosted, macOS, ARM64]).
+# It has ansible installed and LAN reachability to both targets, and is a single
+# known-good machine — unlike the "int"/"test" labels, which each span several
+# Linux runners where ansible is only present on some, so the job would land on
+# a runner without ansible and fail to bootstrap it.
 #
 # Flow:
 #   build       → compile the Go binary + Next.js dashboard once (hosted runner),
 #                 upload as an artifact.
-#   deploy-int  → on a LAN runner, download the artifact and run Ansible over SSH
-#                 to install/refresh the systemd service on the int host.
+#   deploy-int  → on the Mac Studio, download the artifact and run Ansible over
+#                 SSH to install/refresh the systemd service on the int host.
 #   deploy-test → same for test, but ONLY if int succeeded (`needs: deploy-int`),
 #                 so a bad build never reaches test.
 #
@@ -100,7 +106,7 @@ jobs:
   deploy-int:
     name: Deploy → int (192.168.1.193)
     needs: build
-    runs-on: [self-hosted, int]
+    runs-on: [self-hosted, macOS, ARM64]
     environment: int
     steps:
       - name: Checkout code
@@ -129,7 +135,7 @@ jobs:
   deploy-test:
     name: Deploy → test (192.168.1.140)
     needs: deploy-int
-    runs-on: [self-hosted, test]
+    runs-on: [self-hosted, macOS, ARM64]
     environment: test
     steps:
       - name: Checkout code
