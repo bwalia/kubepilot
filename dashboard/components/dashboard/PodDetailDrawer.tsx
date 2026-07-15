@@ -370,7 +370,7 @@ function AIAnalysisTab({
                   title={mutationsEnabled ? undefined : "Mutations are disabled on this server"}
                   className={`shrink-0 text-xs px-3 py-2 rounded-lg font-semibold ${
                     mutationsEnabled
-                      ? "bg-pilot-success text-black hover:brightness-110"
+                      ? "bg-pilot-success text-pilot-bg hover:brightness-110"
                       : "bg-pilot-surface-2 text-pilot-muted cursor-not-allowed"
                   }`}
                 >

@@ -227,7 +227,7 @@ export function ClusterEventsTroubleshooting() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-pilot-surface-2">
+              <tr>
                 <th className="text-left px-5 py-3.5 eyebrow">Node</th>
                 <th className="text-left px-5 py-3.5 eyebrow">Status</th>
                 <th className="text-left px-5 py-3.5 eyebrow">CPU</th>
@@ -281,7 +281,7 @@ export function ClusterEventsTroubleshooting() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-pilot-surface-2">
+              <tr>
                 <th className="text-left px-5 py-3.5 eyebrow">Pod</th>
                 <th className="text-left px-5 py-3.5 eyebrow">Namespace</th>
                 <th className="text-left px-5 py-3.5 eyebrow">Status</th>
@@ -385,7 +385,7 @@ export function ClusterEventsTroubleshooting() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-pilot-surface-2">
+                  <tr>
                     <th className="text-left px-5 py-3.5 eyebrow">Time</th>
                     <th className="text-left px-5 py-3.5 eyebrow">Namespace</th>
                     <th className="text-left px-5 py-3.5 eyebrow">Object</th>

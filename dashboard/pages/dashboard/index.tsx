@@ -14,6 +14,7 @@ import {
   type SuggestedAction,
 } from "@/lib/api";
 import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { useSessionState } from "@/lib/useSessionState";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { LogViewer } from "@/components/LogViewer";
 import { CRCodeApproval } from "@/components/CRCodeApproval";
@@ -26,8 +27,10 @@ import { EventsSection } from "@/components/dashboard/EventsSection";
 import { TopologySection } from "@/components/dashboard/TopologySection";
 import { PodDetailDrawer } from "@/components/dashboard/PodDetailDrawer";
 import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel";
+import { DeckSidebar } from "@/components/DeckSidebar";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
-import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Lock } from "lucide-react";
+import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Lock, Menu } from "lucide-react";
 
 type Section = "overview" | "workloads" | "network" | "config" | "topology" | "health" | "events";
 
@@ -49,10 +52,15 @@ interface YAMLTarget {
 
 export default function KubernetesDashboard() {
   const { locked, namespace: lockedNamespace } = useNamespaceLock();
-  const [selectedNamespace, setSelectedNamespace] = useState("");
+  // Persisted for the session so a page refresh keeps the chosen namespace.
+  const [selectedNamespace, setSelectedNamespace] = useSessionState("kubepilot-dashboard-ns", "");
   // When the URL locks a namespace, it overrides the dropdown selection.
   const namespace = locked ? lockedNamespace! : selectedNamespace;
-  const [section, setSection] = useState<Section>("overview");
+  // Section persists across refresh (session-scoped), like the namespace.
+  const [sectionRaw, setSectionRaw] = useSessionState("kubepilot-dashboard-section", "overview");
+  const section = sectionRaw as Section;
+  const setSection = (s: Section) => setSectionRaw(s);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedPod, setSelectedPod] = useState<{ namespace: string; name: string } | null>(null);
   const [yamlTarget, setYamlTarget] = useState<YAMLTarget | null>(null);
   const [crAction, setCrAction] = useState<SuggestedAction | null>(null);
@@ -85,95 +93,97 @@ export default function KubernetesDashboard() {
   return (
     <div className="min-h-screen bg-pilot-bg text-pilot-text-primary">
       {/* Header */}
-      <header className="border-b border-pilot-border px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-xl font-bold tracking-tight text-pilot-text-primary">Kubernetes Dashboard</h1>
-          <p className="text-[13px] text-pilot-muted mt-0.5">Read-only cluster resource browser</p>
+      <header className="bg-pilot-surface border-b border-pilot-border px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open sections"
+            className="lg:hidden shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl border border-pilot-border bg-pilot-surface-2 text-pilot-text-secondary hover:text-pilot-text-primary transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">Kubernetes Dashboard</h1>
+            <p className="text-sm text-pilot-muted mt-0.5">Read-only cluster resource browser</p>
+          </div>
         </div>
         <KubeconfigSwitcher onSwitched={() => setSelectedPod(null)} />
       </header>
 
-      {/* Namespace selector + section tabs */}
-      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b border-pilot-border flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="eyebrow">Namespace</span>
-          {locked ? (
-            <span
-              className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-1.5 text-sm font-medium min-w-44"
-              title="Locked to this namespace via URL parameter"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              {namespace}
-            </span>
-          ) : (
-            <select
-              value={selectedNamespace}
-              onChange={(e) => setSelectedNamespace(e.target.value)}
-              className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-1.5 text-sm text-pilot-text-primary min-w-44"
-            >
-              <option value="">All Namespaces</option>
-              {namespaces.map((ns) => (
-                <option key={ns.Name} value={ns.Name}>
-                  {ns.Name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+      {/* Sidebar + section content */}
+      <div className="flex items-start">
+        <DeckSidebar
+          heading="Browse"
+          items={SECTIONS}
+          active={section}
+          onSelect={setSection}
+          mobileOpen={mobileNavOpen}
+          onMobileOpenChange={setMobileNavOpen}
+          storageKey="kubepilot-dashboard-sidebar"
+        />
 
-        <nav className="flex gap-1 overflow-x-auto" role="tablist">
-          {SECTIONS.map((s) => {
-            const Icon = s.icon;
-            const active = section === s.key;
-            return (
-              <button
-                key={s.key}
-                onClick={() => setSection(s.key)}
-                role="tab"
-                aria-selected={active}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-lg whitespace-nowrap transition-colors ${
-                  active
-                    ? "bg-pilot-accent/12 text-pilot-accent-light border border-pilot-accent/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                    : "text-pilot-muted hover:text-pilot-text-primary hover:bg-white/[0.03] border border-transparent"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {s.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Section content */}
-      <main className="px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
-        {section === "overview" && <OverviewSection namespace={namespace} />}
-        {section === "workloads" && (
-          <WorkloadsSection
-            namespace={namespace}
-            onSelectPod={(ns, name) => setSelectedPod({ namespace: ns, name })}
-            mutationsEnabled={mutationsEnabled}
-          />
-        )}
-        {section === "network" && (
-          <NetworkSection namespace={namespace} mutationsEnabled={mutationsEnabled} />
-        )}
-        {section === "config" && (
-          <ConfigSection
-            namespace={namespace}
-            onViewYAML={(kind, ns, name) => setYamlTarget({ kind, namespace: ns, name })}
-          />
-        )}
-        {section === "topology" && <TopologySection />}
-        {section === "health" && <ClusterHealthSection namespace={namespace} />}
-        {section === "events" && <EventsSection />}
-
-        {section !== "topology" && (
-          <div className="mt-6">
-            <PortForwardSessionsPanel mutationsEnabled={mutationsEnabled} />
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6">
+          {/* Breadcrumb (no duplicate heading) + namespace picker */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
+            <Breadcrumb items={["Dashboard", SECTIONS.find((s) => s.key === section)?.label ?? ""]} className="mr-auto" />
+            <div className="flex items-center gap-2">
+              <span className="eyebrow">Namespace</span>
+              {locked ? (
+                <span
+                  className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-2 text-sm font-medium min-w-44"
+                  title="Locked to this namespace via URL parameter"
+                >
+                  <Lock className="w-4 h-4" />
+                  {namespace}
+                </span>
+              ) : (
+                <select
+                  value={selectedNamespace}
+                  onChange={(e) => setSelectedNamespace(e.target.value)}
+                  className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary min-w-44"
+                >
+                  <option value="">All Namespaces</option>
+                  {namespaces.map((ns) => (
+                    <option key={ns.Name} value={ns.Name}>
+                      {ns.Name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
-        )}
-      </main>
+
+          <div className="animate-fade-in">
+            {section === "overview" && <OverviewSection namespace={namespace} />}
+            {section === "workloads" && (
+              <WorkloadsSection
+                namespace={namespace}
+                onSelectPod={(ns, name) => setSelectedPod({ namespace: ns, name })}
+                mutationsEnabled={mutationsEnabled}
+              />
+            )}
+            {section === "network" && (
+              <NetworkSection namespace={namespace} mutationsEnabled={mutationsEnabled} />
+            )}
+            {section === "config" && (
+              <ConfigSection
+                namespace={namespace}
+                onViewYAML={(kind, ns, name) => setYamlTarget({ kind, namespace: ns, name })}
+              />
+            )}
+            {section === "topology" && <TopologySection />}
+            {section === "health" && <ClusterHealthSection namespace={namespace} />}
+            {section === "events" && <EventsSection />}
+
+            {section !== "topology" && (
+              <div className="mt-6">
+                <PortForwardSessionsPanel mutationsEnabled={mutationsEnabled} />
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
 
       {/* Pod detail drawer */}
       {selectedPod && (

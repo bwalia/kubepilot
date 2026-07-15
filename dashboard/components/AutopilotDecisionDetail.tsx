@@ -270,9 +270,9 @@ export function AutopilotDecisionDetail({
                             <div key={i} className="bg-pilot-surface border border-pilot-border rounded-lg p-3">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-pilot-bg border border-pilot-border">#{s.order} {s.action}</span>
-                                <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${RISK_BADGE[s.risk?.toLowerCase()] || RISK_BADGE.moderate}`}>{s.risk}</span>
-                                {s.auto_apply ? <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border border-pilot-success/25 text-pilot-success">auto-apply</span> : null}
-                                {s.requires_cr ? <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border border-pilot-warning/25 text-pilot-warning">needs CR code</span> : null}
+                                <span className={`text-[12px] font-bold uppercase px-1.5 py-0.5 rounded border ${RISK_BADGE[s.risk?.toLowerCase()] || RISK_BADGE.moderate}`}>{s.risk}</span>
+                                {s.auto_apply ? <span className="text-[12px] font-bold uppercase px-1.5 py-0.5 rounded border border-pilot-success/25 text-pilot-success">auto-apply</span> : null}
+                                {s.requires_cr ? <span className="text-[12px] font-bold uppercase px-1.5 py-0.5 rounded border border-pilot-warning/25 text-pilot-warning">needs CR code</span> : null}
                               </div>
                               <p className="text-sm text-pilot-text-primary mt-1.5">{s.description}</p>
                               {s.command ? (

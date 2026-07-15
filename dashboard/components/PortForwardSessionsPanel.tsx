@@ -38,7 +38,7 @@ export function PortForwardSessionsPanel({ mutationsEnabled }: { mutationsEnable
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-pilot-surface-2">
+              <tr>
                 <th className="text-left px-5 py-3 eyebrow">Kind</th>
                 <th className="text-left px-5 py-3 eyebrow">Target</th>
                 <th className="text-center px-5 py-3 eyebrow">Remote</th>

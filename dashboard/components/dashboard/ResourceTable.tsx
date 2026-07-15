@@ -54,11 +54,11 @@ export function ResourceTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-pilot-surface-2">
+            <tr>
               {columns.map((col, i) => (
                 <th
                   key={i}
-                  className={`px-5 py-3.5 ${
+                  className={`px-5 py-3 border-b-2 border-pilot-border ${
                     col.align === "right"
                       ? "text-right"
                       : col.align === "center"
@@ -76,7 +76,7 @@ export function ResourceTable<T>({
               <tr
                 key={rowKey(item)}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
-                className={`hover:bg-pilot-accent/[0.03] transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
+                className={`hover:bg-pilot-surface-2 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
               >
                 {columns.map((col, i) => (
                   <td

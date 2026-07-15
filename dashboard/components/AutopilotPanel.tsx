@@ -160,7 +160,7 @@ export function AutopilotPanel() {
               }}
             />
           </div>
-          <span className="text-[10px] text-pilot-muted">
+          <span className="text-[12px] text-pilot-muted">
             {setMode.isPending ? "applying…" : "switches instantly — no restart"}
           </span>
         </div>

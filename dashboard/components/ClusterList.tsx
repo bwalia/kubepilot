@@ -48,7 +48,7 @@ export function ClusterList({ nodes, loading }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-pilot-surface-2">
+              <tr>
                 <th className="text-left px-5 py-3.5 eyebrow">Node</th>
                 <th className="text-left px-5 py-3.5 eyebrow">IP Address</th>
                 <th className="text-left px-5 py-3.5 eyebrow">Status</th>

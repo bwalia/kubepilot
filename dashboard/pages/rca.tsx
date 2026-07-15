@@ -58,7 +58,7 @@ export default function RCAPage() {
   return (
     <div className="min-h-screen bg-pilot-bg text-pilot-text-primary p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-xl font-bold font-display text-pilot-text-primary flex items-center gap-2.5">
+        <h1 className="text-2xl font-bold font-display tracking-tight text-pilot-text-primary flex items-center gap-2.5">
           <FileSearch className="w-6 h-6 text-pilot-accent" />
           RCA Reports
         </h1>
@@ -136,26 +136,24 @@ function ReportRow({
       onClick={onClick}
       className="w-full text-left bg-pilot-surface border border-pilot-border rounded-xl p-4 hover:border-pilot-border-hover hover:shadow-card-hover transition-all"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-md shrink-0 border ${badgeClass}`}>
-            {report.severity}
-          </span>
-          <span className="text-sm text-pilot-text-primary font-semibold truncate">
-            {report.root_cause.summary}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-sm text-pilot-muted shrink-0">
-          <span>{report.root_cause.category}</span>
-          <span className="font-medium">{confidence}%</span>
-          <span>{ts.toLocaleString()}</span>
-        </div>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-md shrink-0 border ${badgeClass}`}>
+          {report.severity}
+        </span>
+        <span className="text-[0.95rem] text-pilot-text-primary font-semibold truncate min-w-0">
+          {report.root_cause.summary}
+        </span>
+        <span className="ml-auto shrink-0 font-semibold text-sm text-pilot-accent-light tabular-nums">{confidence}%</span>
       </div>
-      <div className="flex items-center gap-2 mt-2 text-sm text-pilot-muted">
-        <span className="font-mono text-xs">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-pilot-muted">
+        <span className="font-mono text-xs truncate max-w-full">
           {report.target_resource.namespace}/{report.target_resource.name}
         </span>
-        <span className="ml-auto font-medium">{report.status}</span>
+        <span className="text-pilot-border-hover" aria-hidden="true">·</span>
+        <span>{report.root_cause.category}</span>
+        <span className="text-pilot-border-hover" aria-hidden="true">·</span>
+        <span>{ts.toLocaleString()}</span>
+        <span className="sm:ml-auto font-semibold text-pilot-text-secondary">{report.status}</span>
       </div>
     </button>
   );

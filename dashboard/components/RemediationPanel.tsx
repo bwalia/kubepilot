@@ -72,7 +72,7 @@ export function RemediationPanel({ reportId, steps }: RemediationPanelProps) {
                   <span className="uppercase text-pilot-text-primary font-semibold">{step.action}</span>
                   <RiskBadge risk={step.risk} />
                   {step.requires_cr && (
-                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-pilot-info/12 text-pilot-info">
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[12px] font-bold uppercase bg-pilot-info/12 text-pilot-info">
                       <Lock className="w-2.5 h-2.5" /> CR
                     </span>
                   )}
@@ -165,7 +165,7 @@ function RiskBadge({ risk }: { risk: string }) {
       : "bg-pilot-danger/12 text-pilot-danger";
 
   return (
-    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${classes}`}>
+    <span className={`px-1.5 py-0.5 rounded text-[12px] font-bold uppercase ${classes}`}>
       {risk}
     </span>
   );

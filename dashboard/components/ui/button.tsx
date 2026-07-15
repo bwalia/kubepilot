@@ -10,10 +10,10 @@ const buttonVariants = cva(
         default: "bg-pilot-accent text-pilot-bg hover:bg-pilot-accent-light hover:shadow-glow-blue",
         success: "bg-pilot-success text-pilot-bg hover:brightness-110",
         warning: "bg-pilot-warning text-pilot-bg hover:brightness-110",
-        danger: "bg-pilot-danger text-pilot-text-primary hover:brightness-110 hover:shadow-glow-red",
+        danger: "bg-pilot-danger text-pilot-bg hover:brightness-110 hover:shadow-glow-red",
         outline:
-          "border border-pilot-border bg-transparent text-pilot-text-secondary hover:border-pilot-accent/50 hover:text-pilot-text-primary hover:bg-white/[0.02]",
-        ghost: "bg-transparent text-pilot-muted hover:text-pilot-text-primary hover:bg-white/[0.04]",
+          "border border-pilot-border bg-transparent text-pilot-text-secondary hover:border-pilot-accent/50 hover:text-pilot-text-primary hover:bg-pilot-hover/[0.04]",
+        ghost: "bg-transparent text-pilot-muted hover:text-pilot-text-primary hover:bg-pilot-hover/[0.06]",
       },
       size: {
         default: "h-9 px-4 py-2",

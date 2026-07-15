@@ -1,17 +1,20 @@
 /**
- * GlobalNav — the flight-deck top rail shared across all pages.
- * Purely additive: it renders above each page's own content and does not
- * replace the existing AI Troubleshooting page header.
+ * GlobalNav — the single primary top bar shared across every page: brand,
+ * product navigation (CoPilot / Dashboard / AutoPilot), and the theme toggle.
+ * It is the one place the product names itself, so page headers below it carry
+ * only their own title + context (no duplicated brand).
  */
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Navigation, Lock } from "lucide-react";
+import { Navigation, Lock, Sparkles, LayoutDashboard, Bot } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
-const NAV_LINKS = [
-  { href: "/", label: "CoPilot" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/autopilot", label: "AutoPilot" },
+const NAV_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/", label: "CoPilot", icon: Sparkles },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/autopilot", label: "AutoPilot", icon: Bot },
 ];
 
 // Stamped at build time by `make dashboard` (NEXT_PUBLIC_BUILD_VERSION).
@@ -26,63 +29,55 @@ export function GlobalNav() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <div className="sticky top-0 z-[60] bg-pilot-bg/85 backdrop-blur-md border-b border-pilot-border">
-      <div className="flex items-center gap-4 px-4 sm:px-6 lg:px-8 h-12">
-        {/* Brand mark */}
-        <Link href="/" className="flex items-center gap-2.5 mr-1 group" aria-label="KubePilot home">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-pilot-accent/12 border border-pilot-accent/25 group-hover:border-pilot-accent/50 transition-colors">
-            <Navigation className="text-pilot-accent w-4 h-4 -rotate-45" />
+    <div className="sticky top-0 z-[60] bg-pilot-surface/90 backdrop-blur-md shadow-bar">
+      <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-8 h-14">
+        {/* Brand mark — the one and only product brand on screen */}
+        <Link href="/" className="flex items-center gap-2.5 shrink-0 group" aria-label="KubePilot home">
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-pilot-accent/12 border border-pilot-accent/25 group-hover:border-pilot-accent/50 transition-colors">
+            <Navigation className="text-pilot-accent w-[1.15rem] h-[1.15rem] -rotate-45" />
           </div>
-          <span className="font-display text-[15px] font-bold tracking-tight text-pilot-text-primary hidden sm:inline">
+          <span className="font-display text-lg font-bold tracking-tight text-pilot-text-primary hidden md:inline">
             Kube<span className="text-pilot-accent">Pilot</span>
           </span>
         </Link>
 
-        {/* Primary nav */}
-        <nav className="flex items-center gap-0.5" aria-label="Primary">
+        {/* Primary nav — readable icon+label pills with a clear active state */}
+        <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar" aria-label="Primary">
           {NAV_LINKS.map((link) => {
+            const Icon = link.icon;
             const active = isActive(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors ${
+                className={`inline-flex items-center gap-2 px-3 sm:px-3.5 h-10 rounded-xl text-[0.95rem] font-semibold whitespace-nowrap transition-colors ${
                   active
-                    ? "text-pilot-text-primary bg-pilot-accent/10"
-                    : "text-pilot-muted hover:text-pilot-text-primary hover:bg-white/[0.03]"
+                    ? "bg-pilot-accent/12 text-pilot-accent-light border border-pilot-accent/30"
+                    : "text-pilot-text-secondary hover:text-pilot-text-primary hover:bg-pilot-hover/[0.05] border border-transparent"
                 }`}
               >
+                <Icon className={`w-[1.15rem] h-[1.15rem] ${active ? "text-pilot-accent" : "text-pilot-muted"}`} />
                 {link.label}
-                {active && (
-                  <span className="absolute inset-x-3 -bottom-[7px] h-0.5 rounded-full bg-pilot-accent shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
-                )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
           {locked && (
             <span
-              className="inline-flex items-center gap-1.5 bg-pilot-accent/12 text-pilot-accent-light border border-pilot-accent/35 rounded-md px-2.5 py-1 text-xs font-medium"
+              className="hidden sm:inline-flex items-center gap-1.5 bg-pilot-accent/12 text-pilot-accent-light border border-pilot-accent/35 rounded-lg px-2.5 py-1.5 text-xs font-medium max-w-[12rem]"
               title="The dashboard is locked to this namespace via the URL. Remove the ?namespace= parameter to browse all namespaces."
             >
-              <Lock className="w-3 h-3" />
-              <span className="hidden sm:inline text-pilot-muted">ns</span>
-              <span className="font-mono">{namespace}</span>
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-pilot-muted">ns</span>
+              <span className="font-mono truncate">{namespace}</span>
             </span>
           )}
-          {/* Live telemetry indicator */}
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-2xs font-medium text-pilot-muted">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-pilot-success animate-pulse-dot" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-pilot-success" />
-            </span>
-            <span className="eyebrow !text-[10px]">Live</span>
-          </span>
+          <ThemeToggle />
           <span
-            className="font-mono text-[11px] text-pilot-muted/70 select-text"
+            className="hidden lg:inline font-mono text-xs text-pilot-muted/70 select-text"
             title="Dashboard build version"
           >
             {BUILD_VERSION}

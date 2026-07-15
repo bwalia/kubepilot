@@ -53,6 +53,32 @@ export function WorkloadsSection({ namespace, onSelectPod, mutationsEnabled = fa
   );
 }
 
+/** Parse a Kubernetes-style uptime string ("4d15h", "3h48m", "12m", "45s") to
+ *  minutes. Empty/unparseable → Infinity so it's excluded by an age filter. */
+function uptimeToMinutes(uptime: string): number {
+  if (!uptime) return Infinity;
+  let mins = 0;
+  const d = uptime.match(/(\d+)\s*d/);
+  const h = uptime.match(/(\d+)\s*h/);
+  const m = uptime.match(/(\d+)\s*m/);
+  const s = uptime.match(/(\d+)\s*s/);
+  if (d) mins += parseInt(d[1], 10) * 1440;
+  if (h) mins += parseInt(h[1], 10) * 60;
+  if (m) mins += parseInt(m[1], 10);
+  if (s) mins += parseInt(s[1], 10) / 60;
+  return d || h || m || s ? mins : Infinity;
+}
+
+const AGE_RANGES: { label: string; minutes: number }[] = [
+  { label: "Any time", minutes: 0 },
+  { label: "Last 1 hour", minutes: 60 },
+  { label: "Last 2 hours", minutes: 120 },
+  { label: "Last 6 hours", minutes: 360 },
+  { label: "Last 24 hours", minutes: 1440 },
+  { label: "Last 3 days", minutes: 4320 },
+  { label: "Last 7 days", minutes: 10080 },
+];
+
 function PodsTab({
   namespace,
   onSelectPod,
@@ -62,12 +88,48 @@ function PodsTab({
   onSelectPod: (ns: string, name: string) => void;
   mutationsEnabled: boolean;
 }) {
+  const [rangeMin, setRangeMin] = useState(0);
   const { data: pods = [], isLoading } = useQuery({
     queryKey: ["dash-pods", namespace],
     queryFn: () => listPods(namespace),
   });
+
+  // Filter to pods started within the selected window, newest first.
+  const shown =
+    rangeMin > 0
+      ? pods
+          .filter((p) => uptimeToMinutes(p.Uptime) <= rangeMin)
+          .sort((a, b) => uptimeToMinutes(a.Uptime) - uptimeToMinutes(b.Uptime))
+      : pods;
+
   return (
-    <PodTable pods={pods} loading={isLoading} onRowClick={onSelectPod} mutationsEnabled={mutationsEnabled} />
+    <PodTable
+      pods={shown}
+      loading={isLoading}
+      onRowClick={onSelectPod}
+      mutationsEnabled={mutationsEnabled}
+      filterSlot={
+        <div className="flex items-center gap-2">
+          {rangeMin > 0 && (
+            <span className="text-sm text-pilot-muted tabular-nums">
+              {shown.length} of {pods.length}
+            </span>
+          )}
+          <span className="eyebrow">Started within</span>
+          <select
+            value={rangeMin}
+            onChange={(e) => setRangeMin(Number(e.target.value))}
+            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
+          >
+            {AGE_RANGES.map((r) => (
+              <option key={r.minutes} value={r.minutes}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      }
+    />
   );
 }
 
@@ -78,7 +140,7 @@ function DeploymentsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<DeploymentSummary>[] = [
     { header: "Namespace", cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span> },
-    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono">{d.Name}</span> },
+    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono font-semibold">{d.Name}</span> },
     {
       header: "Ready",
       align: "center",
@@ -107,7 +169,7 @@ function StatefulSetsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<StatefulSetSummary>[] = [
     { header: "Namespace", cell: (s) => <span className="text-pilot-text-secondary">{s.Namespace}</span> },
-    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono">{s.Name}</span> },
+    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono font-semibold">{s.Name}</span> },
     { header: "Ready", align: "center", cell: (s) => <ReadyBadge ready={s.ReadyReplicas} total={s.Replicas} /> },
     { header: "Service", cell: (s) => <span className="text-pilot-text-secondary">{s.ServiceName || "—"}</span> },
     { header: "Image", cell: (s) => <span className="text-pilot-muted font-mono text-xs">{s.Image}</span> },
@@ -131,7 +193,7 @@ function DaemonSetsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<DaemonSetSummary>[] = [
     { header: "Namespace", cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span> },
-    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono">{d.Name}</span> },
+    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono font-semibold">{d.Name}</span> },
     { header: "Ready", align: "center", cell: (d) => <ReadyBadge ready={d.NumberReady} total={d.DesiredNumberScheduled} /> },
     { header: "Image", cell: (d) => <span className="text-pilot-muted font-mono text-xs">{d.Image}</span> },
   ];
@@ -154,7 +216,7 @@ function JobsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<K8sJobSummary>[] = [
     { header: "Namespace", cell: (j) => <span className="text-pilot-text-secondary">{j.Namespace}</span> },
-    { header: "Name", cell: (j) => <span className="text-pilot-text-primary font-mono">{j.Name}</span> },
+    { header: "Name", cell: (j) => <span className="text-pilot-text-primary font-mono font-semibold">{j.Name}</span> },
     { header: "Status", cell: (j) => <JobStatusBadge status={j.Status} /> },
     {
       header: "Completions",
@@ -185,7 +247,7 @@ function CronJobsTab({ namespace }: { namespace: string }) {
   });
   const columns: Column<CronJobSummary>[] = [
     { header: "Namespace", cell: (c) => <span className="text-pilot-text-secondary">{c.Namespace}</span> },
-    { header: "Name", cell: (c) => <span className="text-pilot-text-primary font-mono">{c.Name}</span> },
+    { header: "Name", cell: (c) => <span className="text-pilot-text-primary font-mono font-semibold">{c.Name}</span> },
     { header: "Schedule", cell: (c) => <span className="text-pilot-text-secondary font-mono text-xs">{c.Schedule}</span> },
     {
       header: "Suspended",

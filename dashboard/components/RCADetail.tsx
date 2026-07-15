@@ -141,7 +141,7 @@ export function RCADetail({ report }: { report: RCAReport }) {
                       <span className="text-pilot-accent font-bold">Step {step.order}</span>
                       <span className="uppercase text-pilot-muted">{step.action}</span>
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        className={`px-1.5 py-0.5 rounded text-[12px] font-bold uppercase ${
                           step.risk === "safe"
                             ? "bg-pilot-success/12 text-pilot-success"
                             : step.risk === "moderate"
@@ -152,7 +152,7 @@ export function RCADetail({ report }: { report: RCAReport }) {
                         {step.risk}
                       </span>
                       {step.requires_cr && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-pilot-info/12 text-pilot-info">
+                        <span className="px-1.5 py-0.5 rounded text-[12px] font-bold uppercase bg-pilot-info/12 text-pilot-info">
                           CR Required
                         </span>
                       )}

@@ -1,5 +1,14 @@
 /** @type {import('tailwindcss').Config} */
+
+// Every "pilot" colour is a CSS custom property holding space-separated RGB
+// channels, wrapped in rgb(... / <alpha-value>) so Tailwind opacity utilities
+// (e.g. bg-pilot-accent/12) keep working. The channel values live in
+// styles/globals.css and are redefined per theme — flip :root[data-theme] and
+// the entire UI re-skins between "Daylight" (light) and "Night" (dark).
+const tone = (name) => `rgb(var(--p-${name}) / <alpha-value>)`;
+
 module.exports = {
+  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,54 +17,61 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // KubePilot "Flight Deck" palette — an avionics instrument panel.
-        // Deep teal-ink neutrals + a cyan-phosphor primary. Status colours
-        // (green / amber / red) stay universal and unambiguous.
+        // KubePilot palette — theme-driven. Daylight = high-contrast light deck,
+        // Night = the classic cyan-phosphor Flight Deck. Status colours stay
+        // universal and unambiguous in both themes.
         pilot: {
-          bg:            "#081214",
-          surface:       "#0f1e21",
-          "surface-2":   "#16292d",
-          border:        "#1e343a",
-          "border-hover": "#2d4f57",
-          // cyan phosphor primary
-          accent:        "#22d3ee",
-          "accent-light": "#67e8f9",
-          "accent-deep": "#0e7490",
-          // status
-          success:       "#22c55e",
-          warning:       "#f5a623",
-          danger:        "#f5555d",
-          info:          "#a78bfa",
-          // text ramp (raised contrast vs. the old muted grey)
-          muted:         "#8ba3aa",
-          "text-secondary": "#c2d4d8",
-          "text-primary": "#e8f1f2",
+          bg:               tone("bg"),
+          surface:          tone("surface"),
+          "surface-2":      tone("surface-2"),
+          border:           tone("border"),
+          "border-hover":   tone("border-hover"),
+          accent:           tone("accent"),
+          "accent-light":   tone("accent-light"),
+          "accent-deep":    tone("accent-deep"),
+          success:          tone("success"),
+          warning:          tone("warning"),
+          danger:           tone("danger"),
+          info:             tone("info"),
+          muted:            tone("muted"),
+          "text-secondary": tone("text-secondary"),
+          "text-primary":   tone("text-primary"),
+          // Neutral hover tint: near-black in Daylight, near-white in Night —
+          // so hover overlays read correctly on either ground.
+          hover:            tone("hover"),
         },
       },
       fontFamily: {
-        // Data & prose: Inter (unbeatable at small tabular sizes)
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
-        // Headings & instrument labels: Space Grotesk (engineered character)
-        display: ["Space Grotesk", "Inter", "-apple-system", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        // IBM Plex — engineered for data-dense, all-day interfaces. Sans for
+        // UI/prose, Mono for identifiers & figures. Cohesive, unambiguous glyphs.
+        sans: ["'IBM Plex Sans'", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+        display: ["'IBM Plex Sans'", "-apple-system", "sans-serif"],
+        mono: ["'IBM Plex Mono'", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       fontSize: {
-        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
+        // Readability pass: the whole small-text ramp is nudged up so nothing
+        // reads as tiny. Combined with the 17px root (globals.css) this lifts
+        // every text-2xs / text-xs / text-sm across the app in one place.
+        "2xs": ["0.8rem", { lineHeight: "1.1rem" }],   // was 11px → ~13.6px
+        xs: ["0.85rem", { lineHeight: "1.2rem" }],      // was 12px → ~14.5px
+        sm: ["0.925rem", { lineHeight: "1.35rem" }],    // was 14px → ~15.7px
       },
       letterSpacing: {
-        eyebrow: "0.12em",
+        eyebrow: "0.1em",
       },
       borderRadius: {
         xl: "12px",
         "2xl": "16px",
       },
       boxShadow: {
-        // Instrument-bezel elevation: a hairline top highlight over depth.
-        card: "inset 0 1px 0 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.45), 0 10px 28px -16px rgba(0,0,0,0.65)",
-        "card-hover": "inset 0 1px 0 0 rgba(255,255,255,0.08), 0 2px 6px rgba(0,0,0,0.5), 0 16px 40px -14px rgba(0,0,0,0.75)",
-        "glow-blue": "0 0 0 1px rgba(34,211,238,0.30), 0 0 26px -6px rgba(34,211,238,0.45)",
-        "glow-red": "0 0 0 1px rgba(245,85,93,0.30), 0 0 26px -6px rgba(245,85,93,0.45)",
-        inset: "inset 0 1px 0 0 rgba(255,255,255,0.05)",
+        // Theme-aware elevation. Daylight uses soft ambient shadows; Night keeps
+        // the instrument-bezel highlight-over-depth. Defined in globals.css.
+        card: "var(--shadow-card)",
+        "card-hover": "var(--shadow-card-hover)",
+        bar: "var(--shadow-bar)",
+        "glow-blue": "var(--glow-blue)",
+        "glow-red": "var(--glow-red)",
+        inset: "var(--shadow-inset)",
       },
       animation: {
         "fade-in": "fadeIn 0.2s ease-out",

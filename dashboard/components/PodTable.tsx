@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PodSummary } from "@/lib/api";
 import { troubleshootPod } from "@/lib/api";
@@ -13,9 +13,11 @@ interface Props {
   onRowClick?: (namespace: string, name: string) => void;
   // Enables the per-row Port Forward control when the server allows mutations.
   mutationsEnabled?: boolean;
+  // Optional extra filter control rendered right-aligned on the search row.
+  filterSlot?: ReactNode;
 }
 
-export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }: Props) {
+export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false, filterSlot }: Props) {
   const [search, setSearch] = useState("");
   const [troubleshootTarget, setTroubleshootTarget] = useState<{
     namespace: string;
@@ -30,9 +32,9 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
 
   return (
     <div>
-      {/* Search bar */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex items-center gap-2 bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 w-72 focus-within:border-pilot-accent/60 focus-within:ring-2 focus-within:ring-pilot-accent/25">
+      {/* Filters row: search (left) + optional filter slot (right) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 w-72 max-w-full focus-within:border-pilot-accent/60 focus-within:ring-2 focus-within:ring-pilot-accent/25">
           <Search className="w-4 h-4 text-pilot-muted shrink-0" />
           <input
             type="text"
@@ -42,6 +44,7 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
             className="bg-transparent text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none w-full"
           />
         </div>
+        {filterSlot}
       </div>
 
       {loading ? (
@@ -55,7 +58,7 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-pilot-surface-2">
+                <tr>
                   <th className="text-left px-5 py-3.5 eyebrow">Namespace</th>
                   <th className="text-left px-5 py-3.5 eyebrow">Pod</th>
                   <th className="text-left px-5 py-3.5 eyebrow">Phase</th>
@@ -71,10 +74,10 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false }
                   <tr
                     key={`${pod.Namespace}/${pod.Name}`}
                     onClick={onRowClick ? () => onRowClick(pod.Namespace, pod.Name) : undefined}
-                    className={`hover:bg-pilot-accent/[0.03] ${onRowClick ? "cursor-pointer" : ""}`}
+                    className={`hover:bg-pilot-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
                   >
                     <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.Namespace}</td>
-                    <td className="px-5 py-3.5 text-sm text-pilot-text-primary font-mono">{pod.Name}</td>
+                    <td className="px-5 py-3.5 text-sm text-pilot-text-primary font-mono font-semibold">{pod.Name}</td>
                     <td className="px-5 py-3.5">
                       <PhaseChip phase={pod.Phase} ready={pod.Ready} />
                     </td>
