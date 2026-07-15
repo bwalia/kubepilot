@@ -17,7 +17,7 @@ name: Deploy
 # app's own cluster access (if any) is configured separately via its kubeconfig.
 #
 # Triggers:
-#   - Automatically after "Publish Docker Image" finishes successfully on master.
+#   - Automatically after "CI" finishes successfully on master.
 #   - Manually via workflow_dispatch.
 #
 # Required secrets (per environment unless noted):
@@ -28,7 +28,9 @@ name: Deploy
 
 on:
   workflow_run:
-    workflows: ["Publish Docker Image"]
+    # Gate on CI passing (not Docker publishing) so home-lab deploys are
+    # independent of the container image build.
+    workflows: ["CI"]
     types: [completed]
     branches: [master]
   workflow_dispatch:
