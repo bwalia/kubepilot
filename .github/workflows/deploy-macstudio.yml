@@ -1,0 +1,134 @@
+name: Deploy → Mac Studio
+
+# Redeploys KubePilot onto the Mac Studio (the "BalindeacStudio" self-hosted
+# runner) whenever something lands on master. The Mac Studio runs KubePilot as a
+# per-user launchd agent (com.kubepilot.server) that serves the dashboard on
+# :8383 and the MCP server on :9090 — see ~/Library/LaunchAgents.
+#
+# What it does, matching the verified manual deploy:
+#   1. Build the Next.js dashboard (static export) + the darwin/arm64 Go binary.
+#   2. Ensure a NON-linker code signature. macOS AMFI kills the Go linker's
+#      ad-hoc "linker-signed" binary under launchd (OS_REASON_CODESIGNING),
+#      which crash-loops the service. Re-signing with a real ad-hoc CodeDirectory
+#      and a stable identifier fixes it. If the durable "KubePilot Local Signing"
+#      identity exists (scripts/setup-codesign-identity.sh), the build already
+#      signed with it and we leave it alone.
+#   3. Install the binary + dashboard into ~/.kubepilot (backing up the old bin).
+#   4. Restart the launchd agent and health-check :8383.
+#
+# This is independent of the Linux home-lab Deploy workflow (deploy.yml) and of
+# Docker publishing — it needs neither.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-macstudio
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build + redeploy on Mac Studio
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build dashboard (static export)
+        working-directory: dashboard
+        run: |
+          set -euo pipefail
+          npm ci --prefer-offline
+          NEXT_PUBLIC_BUILD_VERSION="$(date -u +%Y-%m-%d.%H%M%SZ)-$(git rev-parse --short HEAD)" \
+            npm run build
+          test -f out/index.html  # fail fast if the export produced nothing
+
+      - name: Build kubepilot binary (darwin/arm64)
+        run: |
+          set -euo pipefail
+          bash scripts/build-kubepilot.sh kubepilot dist/kubepilot ./cmd/kubepilot
+          test -f dist/kubepilot
+
+      - name: Ensure launchd-compatible code signature
+        run: |
+          set -euo pipefail
+          IDENTITY="${KP_SIGN_IDENTITY:-KubePilot Local Signing}"
+          if security find-identity -v -p codesigning 2>/dev/null | grep -qF "$IDENTITY"; then
+            echo "Durable identity present — build already signed with it; leaving as-is."
+          else
+            echo "No durable identity — replacing linker-signed sig with stable ad-hoc CodeDirectory."
+            codesign --force --identifier com.kubepilot.server --sign - dist/kubepilot
+          fi
+          codesign --verify --strict dist/kubepilot
+          codesign -dvvv dist/kubepilot 2>&1 | grep -iE 'Identifier|flags' || true
+
+      - name: Install into ~/.kubepilot
+        run: |
+          set -euo pipefail
+          DEST="$HOME/.kubepilot"
+          mkdir -p "$DEST/bin" "$DEST/dashboard"
+          # Back up the currently deployed binary (keep last one).
+          if [ -f "$DEST/bin/kubepilot" ]; then
+            cp -p "$DEST/bin/kubepilot" "$DEST/bin/kubepilot.bak"
+          fi
+          cp dist/kubepilot "$DEST/bin/kubepilot"
+          chmod +x "$DEST/bin/kubepilot"
+          # Refresh the static dashboard the binary serves from ./dashboard/out.
+          rm -rf "$DEST/dashboard/out"
+          cp -R dashboard/out "$DEST/dashboard/out"
+
+      - name: Restart launchd service
+        run: |
+          set -euo pipefail
+          UID_NUM="$(id -u)"
+          LABEL="com.kubepilot.server"
+          PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
+          if [ ! -f "$PLIST" ]; then
+            echo "::error::$PLIST not found — the launchd agent must be installed on the Mac Studio first."
+            exit 1
+          fi
+          # Kickstart if already bootstrapped; otherwise bootstrap it fresh.
+          if launchctl print "gui/${UID_NUM}/${LABEL}" >/dev/null 2>&1; then
+            launchctl kickstart -k "gui/${UID_NUM}/${LABEL}"
+          else
+            launchctl bootstrap "gui/${UID_NUM}" "$PLIST"
+            launchctl kickstart "gui/${UID_NUM}/${LABEL}"
+          fi
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          UID_NUM="$(id -u)"
+          LABEL="com.kubepilot.server"
+          ok=""
+          for i in $(seq 1 20); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8383/ || true)"
+            # 200 (no auth) or 401 (auth enabled) both mean the server is up.
+            if [ "$code" = "200" ] || [ "$code" = "401" ]; then ok="1"; break; fi
+            sleep 1
+          done
+          echo "=== service status ==="
+          launchctl print "gui/${UID_NUM}/${LABEL}" 2>/dev/null | grep -E '^\s*(state|pid|last exit) =' || true
+          if [ -z "$ok" ]; then
+            echo "::error::Dashboard on :8383 did not come up after restart."
+            tail -20 "$HOME/.kubepilot/logs/stderr.log" 2>/dev/null || true
+            exit 1
+          fi
+          echo "Dashboard is up on :8383 (HTTP $code). Deploy complete."
