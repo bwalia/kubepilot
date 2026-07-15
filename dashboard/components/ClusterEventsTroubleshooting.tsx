@@ -615,14 +615,14 @@ function PodDiagnosticsModal({
   const diag = data?.diagnostics;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end">
-      <div className="w-full max-w-3xl bg-pilot-bg border-l border-pilot-border h-full overflow-y-auto p-6 animate-slide-in-right">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex justify-end" onClick={onClose}>
+      <div className="w-full max-w-3xl bg-pilot-bg border-l border-pilot-border h-full overflow-y-auto p-6 animate-slide-in-right" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="min-w-0">
             <h3 className="font-bold font-display text-pilot-text-primary text-lg">Pod Troubleshooting</h3>
-            <p className="text-sm text-pilot-muted mt-0.5 font-mono">{namespace}/{pod}</p>
+            <p className="text-sm text-pilot-muted mt-0.5 font-mono truncate">{namespace}/{pod}</p>
           </div>
-          <button onClick={onClose} className="text-pilot-muted hover:text-pilot-text-primary p-2 rounded-lg hover:bg-pilot-surface">
+          <button onClick={onClose} aria-label="Close panel" className="shrink-0 text-pilot-muted hover:text-pilot-text-primary p-2 rounded-lg hover:bg-pilot-surface">
             <X className="w-5 h-5" />
           </button>
         </div>

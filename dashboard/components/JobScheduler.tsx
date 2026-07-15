@@ -190,7 +190,7 @@ function NewJobModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
       <div className="bg-pilot-bg border border-pilot-border rounded-2xl w-full max-w-lg p-6 animate-fade-in shadow-card-hover">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display font-bold text-pilot-text-primary text-lg flex items-center gap-2">

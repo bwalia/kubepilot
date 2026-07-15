@@ -111,7 +111,7 @@ export function RemediationPanel({ reportId, steps }: RemediationPanelProps) {
 
       {/* CR Code Modal */}
       {crModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70]">
           <div className="bg-pilot-surface border border-pilot-border rounded-xl p-6 w-96 space-y-4 shadow-card">
             <h3 className="text-sm font-bold font-display text-pilot-text-primary flex items-center gap-2">
               <Lock className="w-4 h-4 text-pilot-warning" />
