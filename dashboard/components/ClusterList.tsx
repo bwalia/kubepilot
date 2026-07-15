@@ -65,7 +65,7 @@ export function ClusterList({ nodes, loading }: Props) {
                   key={node.Name}
                   className="hover:bg-pilot-accent/[0.03]"
                 >
-                  <td className="px-5 py-3.5 font-mono text-sm text-white">{node.Name}</td>
+                  <td className="px-5 py-3.5 font-mono text-sm font-semibold text-pilot-text-primary">{node.Name}</td>
                   <td className="px-5 py-3.5">
                     <NodeIPDisplay node={node} />
                   </td>
