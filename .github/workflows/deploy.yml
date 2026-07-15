@@ -27,9 +27,11 @@ name: Deploy
 #   - Manually via workflow_dispatch.
 #
 # Required secrets (per environment unless noted):
-#   DEPLOY_SSH_KEY            private key for `bwalia` on the target host (repo or env)
 #   DASHBOARD_AUTH_PASSWORD   dashboard password (auth is on by default)
 #   DASHBOARD_AUTH_USERNAME   optional, defaults to "admin"
+# SSH auth: the Mac Studio runner uses its own ~/.ssh key (already authorized for
+#   `bwalia` on the targets), so no DEPLOY_SSH_KEY secret is needed. If you ever
+#   run this on a different runner, set DEPLOY_SSH_KEY and the script will use it.
 # Prerequisite on each host: `bwalia` has passwordless sudo.
 
 on:
@@ -123,7 +125,6 @@ jobs:
       - name: Deploy with Ansible (systemd)
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KUBEPILOT_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
           KUBEPILOT_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
           # Optional: base64-encoded kubeconfig for the app to reach its cluster.
@@ -152,7 +153,6 @@ jobs:
       - name: Deploy with Ansible (systemd)
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KUBEPILOT_AUTH_USERNAME: ${{ secrets.DASHBOARD_AUTH_USERNAME || 'admin' }}
           KUBEPILOT_AUTH_PASSWORD: ${{ secrets.DASHBOARD_AUTH_PASSWORD }}
           # Optional: base64-encoded kubeconfig for the app to reach its cluster.

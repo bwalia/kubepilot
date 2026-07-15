@@ -30,23 +30,33 @@ if [[ -z "${KUBEPILOT_AUTH_PASSWORD:-}" ]]; then
   exit 1
 fi
 
-if [[ -z "${DEPLOY_SSH_KEY:-}" ]]; then
-  echo "::error::DEPLOY_SSH_KEY secret is not set — needed to SSH into the ${ENVIRONMENT} host." >&2
-  exit 1
-fi
-
 if [[ ! -x "$ROOT_DIR/artifact/kubepilot" ]] && [[ ! -f "$ROOT_DIR/artifact/kubepilot" ]]; then
   echo "::error::Missing build artifact at $ROOT_DIR/artifact/kubepilot — the build job must run first." >&2
   exit 1
 fi
 
-# ── Install the SSH key (cleaned up on exit) ─────────────────────────────────
-SSH_KEY_FILE="$(mktemp)"
-cleanup() { rm -f "$SSH_KEY_FILE"; }
-trap cleanup EXIT
-printf '%s\n' "$DEPLOY_SSH_KEY" > "$SSH_KEY_FILE"
-chmod 600 "$SSH_KEY_FILE"
-export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY_FILE"
+# ── SSH key ──────────────────────────────────────────────────────────────────
+# DEPLOY_SSH_KEY is optional. If provided, write it to a temp file and use it.
+# Otherwise fall back to the runner's own SSH setup (~/.ssh + agent) — the Mac
+# Studio runner already has a key authorized for bwalia on the target hosts, so
+# no private key needs to travel through CI secrets.
+if [[ -n "${DEPLOY_SSH_KEY:-}" ]]; then
+  SSH_KEY_FILE="$(mktemp)"
+  cleanup() { rm -f "$SSH_KEY_FILE"; }
+  trap cleanup EXIT
+  printf '%s\n' "$DEPLOY_SSH_KEY" > "$SSH_KEY_FILE"
+  chmod 600 "$SSH_KEY_FILE"
+  export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY_FILE"
+  echo "Using DEPLOY_SSH_KEY for SSH auth."
+else
+  for k in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa"; do
+    if [[ -f "$k" ]]; then
+      export ANSIBLE_PRIVATE_KEY_FILE="$k"
+      echo "DEPLOY_SSH_KEY not set — using the runner's SSH key: $k"
+      break
+    fi
+  done
+fi
 
 # ── Ensure ansible is available on the runner ────────────────────────────────
 # Prefer a pre-installed ansible (`sudo apt-get install -y ansible` on the
