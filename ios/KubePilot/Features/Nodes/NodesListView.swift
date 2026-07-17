@@ -11,6 +11,12 @@ struct NodesListView: View {
                 LoadingOverlay(message: "Loading nodes…")
             } else if let errorMessage, nodes.isEmpty {
                 ErrorBanner(message: errorMessage) { Task { await load() } }
+            } else if nodes.isEmpty {
+                EmptyStateView(
+                    title: "No Nodes",
+                    systemImage: "server.rack",
+                    description: "The cluster did not return any node records."
+                )
             } else {
                 List(nodes) { node in
                     NavigationLink {
@@ -18,10 +24,14 @@ struct NodesListView: View {
                     } label: {
                         NodeRow(node: node)
                     }
+                    .listRowBackground(Theme.surface)
                 }
+                .themedList()
             }
         }
         .navigationTitle("Nodes")
+        .navigationBarTitleDisplayMode(.large)
+        .themedScreen()
         .refreshable { await load() }
         .task { await load() }
     }
@@ -42,9 +52,11 @@ struct NodeRow: View {
     let node: NodeSummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.spacingXS) {
             HStack {
-                Text(node.name).font(.subheadline.weight(.semibold))
+                Text(node.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
                 StatusBadge(
                     text: node.ready ? "Ready" : "NotReady",
@@ -54,14 +66,15 @@ struct NodeRow: View {
             if !node.allIPs.isEmpty {
                 NodeIPLabels(node: node)
             }
-            HStack(spacing: 8) {
-                Text("CPU \(node.cpuCapacity)")
-                Text("Mem \(node.memoryCapacity)")
+            HStack(spacing: Theme.spacingSM) {
+                Label("CPU \(node.cpuCapacity)", systemImage: "cpu")
+                Label("Mem \(node.memoryCapacity)", systemImage: "memorychip")
             }
             .font(.caption2)
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(Theme.muted)
+            .labelStyle(.titleAndIcon)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Theme.spacingXS)
     }
 }
 
@@ -75,20 +88,29 @@ struct NodeDetailView: View {
                 LabeledContent("Kubelet", value: node.kubeletVersion)
                 LabeledContent("Unschedulable", value: node.unschedulable ? "Yes" : "No")
             }
+            .listRowBackground(Theme.surface)
+
             Section("IP Addresses") {
                 NodeIPLabels(node: node)
             }
+            .listRowBackground(Theme.surface)
+
             Section("Capacity") {
                 LabeledContent("CPU", value: node.cpuCapacity)
                 LabeledContent("Memory", value: node.memoryCapacity)
             }
+            .listRowBackground(Theme.surface)
+
             Section("Pressure") {
                 pressureRow("Memory", node.memoryPressure)
                 pressureRow("Disk", node.diskPressure)
                 pressureRow("PID", node.pidPressure)
             }
+            .listRowBackground(Theme.surface)
         }
+        .themedList()
         .navigationTitle(node.name)
+        .themedScreen()
     }
 
     private func pressureRow(_ label: String, _ active: Bool) -> some View {

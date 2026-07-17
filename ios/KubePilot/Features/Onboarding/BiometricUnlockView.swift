@@ -4,6 +4,7 @@ import LocalAuthentication
 struct BiometricUnlockView: View {
     @Environment(AppState.self) private var appState
     @State private var errorMessage: String?
+    @State private var unlockSucceeded = false
 
     var body: some View {
         ZStack {
@@ -33,6 +34,7 @@ struct BiometricUnlockView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Theme.accent)
+                    .controlSize(.large)
 
                     Button("Use Passcode") {
                         Task { await unlockPasscode() }
@@ -40,7 +42,8 @@ struct BiometricUnlockView: View {
                     .buttonStyle(.bordered)
                     .tint(Theme.accentLight)
                 }
-                .padding(.top, 8)
+                .padding(.top, Theme.spacingSM)
+                .sensoryFeedback(.success, trigger: unlockSucceeded)
             }
             .padding()
         }
@@ -51,6 +54,7 @@ struct BiometricUnlockView: View {
         do {
             try await appState.authManager.unlockWithBiometrics()
             errorMessage = nil
+            unlockSucceeded.toggle()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -60,6 +64,7 @@ struct BiometricUnlockView: View {
         do {
             try await appState.authManager.unlockWithPasscode()
             errorMessage = nil
+            unlockSucceeded.toggle()
         } catch {
             errorMessage = error.localizedDescription
         }

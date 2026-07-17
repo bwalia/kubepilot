@@ -38,11 +38,32 @@ enum Theme {
     static let cornerRadius: CGFloat = 16
     static let cornerRadiusSmall: CGFloat = 10
 
+    static let spacingXS: CGFloat = 4
+    static let spacingSM: CGFloat = 8
+    static let spacingMD: CGFloat = 16
+    static let spacingLG: CGFloat = 24
+    static let spacingXL: CGFloat = 32
+
+    enum Typography {
+        static let sectionTitle = Font.headline.weight(.semibold)
+        static let cardLabel = Font.caption.weight(.medium)
+        static let metricValue = Font.system(.title, design: .rounded, weight: .bold)
+        static let navTitle = Font.headline.weight(.semibold)
+    }
+
     static func healthColor(for score: HealthScore) -> Color {
         switch score {
         case .healthy: success
         case .degraded: warning
         case .critical: danger
+        }
+    }
+
+    static func severityColor(_ severity: String) -> Color {
+        switch severity.lowercased() {
+        case "critical", "high", "error": danger
+        case "medium", "warning": warning
+        default: accent
         }
     }
 }
@@ -74,13 +95,32 @@ struct BrandScreenBackground: View {
     var body: some View {
         ZStack {
             Theme.brandBg.ignoresSafeArea()
-            RadialGradient(
-                colors: [Theme.accent.opacity(0.18), .clear],
-                center: .top,
-                startRadius: 20,
-                endRadius: 420
-            )
-            .ignoresSafeArea()
+            if #available(iOS 18.0, *) {
+                MeshGradient(
+                    width: 3,
+                    height: 3,
+                    points: [
+                        [0, 0], [0.5, 0], [1, 0],
+                        [0, 0.5], [0.5, 0.5], [1, 0.5],
+                        [0, 1], [0.5, 1], [1, 1]
+                    ],
+                    colors: [
+                        Theme.brandBg, Theme.brandBg, Theme.brandBg,
+                        Theme.accent.opacity(0.12), Theme.purple.opacity(0.08), Theme.brandBg,
+                        Theme.brandBg, Theme.brandBg, Theme.brandBg
+                    ]
+                )
+                .ignoresSafeArea()
+                .opacity(0.9)
+            } else {
+                RadialGradient(
+                    colors: [Theme.accent.opacity(0.18), .clear],
+                    center: .top,
+                    startRadius: 20,
+                    endRadius: 420
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 }
@@ -108,31 +148,27 @@ struct MetricCard: View {
 
     var body: some View {
         Button(action: { action?() }) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(Theme.muted)
-                    .textCase(.uppercase)
-                Text(value)
-                    .font(.system(.title, design: .rounded, weight: .bold))
-                    .foregroundStyle(tint)
-                    .contentTransition(.numericText())
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption2)
+            SurfaceCard {
+                VStack(alignment: .leading, spacing: Theme.spacingSM) {
+                    Text(title)
+                        .font(Theme.Typography.cardLabel)
                         .foregroundStyle(Theme.muted)
+                        .textCase(.uppercase)
+                    Text(value)
+                        .font(Theme.Typography.metricValue)
+                        .foregroundStyle(tint)
+                        .contentTransition(.numericText())
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption2)
+                            .foregroundStyle(Theme.muted)
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-                    .stroke(Theme.brandBorder, lineWidth: 1)
-            )
         }
         .buttonStyle(.plain)
         .disabled(action == nil)
+        .sensoryFeedback(.selection, trigger: value)
     }
 }
 
@@ -145,7 +181,7 @@ struct StatusBadge: View {
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(color.opacity(0.15), in: Capsule())
+            .background(color.opacity(0.22), in: Capsule())
             .foregroundStyle(color)
     }
 }

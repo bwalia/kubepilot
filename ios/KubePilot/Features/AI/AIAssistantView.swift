@@ -6,42 +6,52 @@ struct AIAssistantView: View {
     var body: some View {
         let vm = appState.aiAssistant
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(vm.messages) { message in
-                                ChatBubble(message: message)
-                                    .id(message.id)
+            ZStack {
+                BrandScreenBackground()
+
+                VStack(spacing: 0) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(spacing: Theme.spacingSM) {
+                                ForEach(vm.messages) { message in
+                                    ChatBubble(message: message)
+                                        .id(message.id)
+                                }
+                                if vm.isSending {
+                                    HStack {
+                                        ProgressView()
+                                            .tint(Theme.accent)
+                                        Text("Thinking…")
+                                            .font(.caption)
+                                            .foregroundStyle(Theme.muted)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, Theme.spacingMD)
+                                }
+                            }
+                            .padding(Theme.spacingMD)
+                        }
+                        .onChange(of: vm.messages.count) { _, _ in
+                            if let last = vm.messages.last {
+                                withAnimation(.snappy) { proxy.scrollTo(last.id, anchor: .bottom) }
                             }
                         }
-                        .padding()
                     }
-                    .onChange(of: vm.messages.count) { _, _ in
-                        if let last = vm.messages.last {
-                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                        }
-                    }
-                }
 
-                suggestionChips(vm: vm)
+                    suggestionChips(vm: vm)
 
-                HStack(spacing: 8) {
-                    TextField("Ask KubePilot AI…", text: Bindable(vm).inputText, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
-                        .lineLimit(1...4)
-                    Button {
+                    ChatComposerBar(
+                        text: Bindable(vm).inputText,
+                        placeholder: "Ask KubePilot AI…",
+                        isSending: vm.isSending
+                    ) {
                         Task { await vm.send() }
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
                     }
-                    .disabled(vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vm.isSending)
                 }
-                .padding()
-                .background(.bar)
             }
             .navigationTitle("AI Assistant")
+            .navigationBarTitleDisplayMode(.large)
+            .themedScreen()
             .onAppear {
                 if vm.messages.isEmpty {
                     vm.seedWelcome()
@@ -53,17 +63,19 @@ struct AIAssistantView: View {
     @ViewBuilder
     private func suggestionChips(vm: AIAssistantViewModel) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack {
+            HStack(spacing: Theme.spacingSM) {
                 ForEach(vm.suggestions, id: \.self) { suggestion in
                     Button(suggestion) {
                         vm.inputText = suggestion
                         Task { await vm.send() }
                     }
                     .buttonStyle(.bordered)
-                    .font(.caption)
+                    .tint(Theme.accent)
+                    .font(.caption.weight(.medium))
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, Theme.spacingMD)
+            .padding(.bottom, Theme.spacingSM)
         }
     }
 }
@@ -73,26 +85,32 @@ struct ChatBubble: View {
 
     var body: some View {
         HStack {
-            if message.role == .user { Spacer(minLength: 40) }
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
+            if message.role == .user { Spacer(minLength: 48) }
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: Theme.spacingSM) {
                 Text(message.content)
                     .font(.subheadline)
-                    .padding(12)
-                    .background(
-                        message.role == .user ? Theme.accent.opacity(0.2) : Theme.surface,
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .foregroundStyle(message.role == .user ? Theme.textPrimary : Theme.textSecondary)
+                    .padding(Theme.spacingMD)
+                    .background(bubbleBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                            .stroke(message.role == .user ? Theme.accent.opacity(0.35) : Theme.brandBorder, lineWidth: 1)
                     )
 
                 if !message.actions.isEmpty {
                     ForEach(message.actions) { action in
-                        Text("→ \(action.explanation)")
+                        Label(action.explanation, systemImage: "arrow.right.circle")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.muted)
                     }
                 }
             }
-            if message.role != .user { Spacer(minLength: 40) }
+            if message.role != .user { Spacer(minLength: 48) }
         }
+    }
+
+    private var bubbleBackground: Color {
+        message.role == .user ? Theme.accent.opacity(0.18) : Theme.surface
     }
 }
 
@@ -135,7 +153,6 @@ final class AIAssistantViewModel {
                 : response.actions.map(\.explanation).joined(separator: "\n\n")
             messages.append(AIChatMessage(role: .assistant, content: text, actions: response.actions))
         } catch {
-            // Fallback: synthesise from troubleshooting summary
             if let summary = try? await KubePilotService.shared.fetchTroubleshootingSummary() {
                 let text = buildSummaryReply(summary, prompt: prompt)
                 messages.append(AIChatMessage(role: .assistant, content: text))
@@ -148,17 +165,17 @@ final class AIAssistantViewModel {
     private func buildSummaryReply(_ summary: ClusterTroubleshootingSummary, prompt: String) -> String {
         let h = summary.healthSummary
         var parts = [
-            "**Cluster snapshot**",
+            "Cluster snapshot",
             "• CrashLoop pods: \(h.crashloopPods)",
             "• Pending pods: \(h.pendingPods)",
             "• Not-ready nodes: \(h.notReadyNodes)",
             "• Warning events: \(h.warningEvents)"
         ]
         if !summary.insights.isEmpty {
-            parts.append("\n**Top insight:** \(summary.insights[0].title) — \(summary.insights[0].summary)")
+            parts.append("\nTop insight: \(summary.insights[0].title) — \(summary.insights[0].summary)")
         }
         if !h.recommendedActions.isEmpty {
-            parts.append("\n**Recommended:** \(h.recommendedActions.joined(separator: "; "))")
+            parts.append("\nRecommended: \(h.recommendedActions.joined(separator: "; "))")
         }
         return parts.joined(separator: "\n")
     }

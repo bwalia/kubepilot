@@ -29,28 +29,33 @@ struct MainTabView: View {
     var body: some View {
         @Bindable var state = appState
         TabView(selection: $state.selectedTab) {
-            ForEach(AppTab.allCases) { tab in
-                tabContent(for: tab)
-                    .tabItem { Label(tab.title, systemImage: tab.systemImage) }
-                    .tag(tab)
+            Tab(AppTab.dashboard.title, systemImage: AppTab.dashboard.systemImage, value: AppTab.dashboard) {
+                DashboardView()
+            }
+            Tab(AppTab.pods.title, systemImage: AppTab.pods.systemImage, value: AppTab.pods) {
+                PodsListView()
+            }
+            Tab(AppTab.ai.title, systemImage: AppTab.ai.systemImage, value: AppTab.ai) {
+                AIAssistantView()
+            }
+            Tab(AppTab.alerts.title, systemImage: AppTab.alerts.systemImage, value: AppTab.alerts) {
+                AlertsView()
+            }
+            Tab(AppTab.settings.title, systemImage: AppTab.settings.systemImage, value: AppTab.settings) {
+                SettingsView()
             }
         }
         .tint(Theme.accent)
+        .modifier(TabBarMinimizeModifier())
     }
+}
 
-    @ViewBuilder
-    private func tabContent(for tab: AppTab) -> some View {
-        switch tab {
-        case .dashboard:
-            DashboardView()
-        case .pods:
-            PodsListView()
-        case .ai:
-            AIAssistantView()
-        case .alerts:
-            AlertsView()
-        case .settings:
-            SettingsView()
+private struct TabBarMinimizeModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            content
         }
     }
 }

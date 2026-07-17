@@ -16,15 +16,18 @@ struct OnboardingView: View {
                             .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
                     }
 
-                    Section("Server") {
+                    Section {
                         TextField("https://kubepilot.example.com", text: $viewModel.serverURL)
                             .textInputAutocapitalization(.never)
                             .keyboardType(.URL)
                             .autocorrectionDisabled()
+                            .foregroundStyle(Theme.textPrimary)
+                    } header: {
+                        Text("Server")
                     }
                     .listRowBackground(Theme.surface)
 
-                    Section("Authentication") {
+                    Section {
                         Picker("Method", selection: $viewModel.authMethod) {
                             ForEach(ServerAccount.AuthMethod.allCases, id: \.self) { method in
                                 Text(method.label).tag(method)
@@ -39,43 +42,47 @@ struct OnboardingView: View {
                                 .textInputAutocapitalization(.never)
                             SecureField("Password", text: $viewModel.password)
                         }
+                    } header: {
+                        Text("Authentication")
                     }
                     .listRowBackground(Theme.surface)
 
-                    Section("Security") {
+                    Section {
                         Toggle("Require Face ID on launch", isOn: $viewModel.biometricLock)
+                    } header: {
+                        Text("Security")
+                    } footer: {
+                        Text("Protect cluster credentials with Face ID or device passcode when reopening the app.")
+                            .foregroundStyle(Theme.muted)
                     }
                     .listRowBackground(Theme.surface)
 
                     if let error = viewModel.errorMessage {
                         Section {
-                            Text(error).foregroundStyle(Theme.danger)
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(Theme.danger)
+                                .font(.subheadline)
                         }
                         .listRowBackground(Theme.surface)
                     }
 
                     Section {
-                        Button {
+                        ThemedPrimaryButton(
+                            title: viewModel.isConnecting ? "Connecting…" : "Connect",
+                            isLoading: viewModel.isConnecting
+                        ) {
                             Task { await viewModel.connect(using: appState.authManager) }
-                        } label: {
-                            HStack {
-                                if viewModel.isConnecting {
-                                    ProgressView().padding(.trailing, 4)
-                                }
-                                Text(viewModel.isConnecting ? "Connecting…" : "Connect")
-                                    .frame(maxWidth: .infinity)
-                            }
                         }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                         .disabled(viewModel.isConnecting || viewModel.serverURL.isEmpty)
                     }
-                    .listRowBackground(Theme.surface)
                 }
-                .scrollContentBackground(.hidden)
+                .themedForm()
             }
             .navigationTitle("Welcome")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.brandBg.opacity(0.95), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .themedScreen()
         }
     }
 }
