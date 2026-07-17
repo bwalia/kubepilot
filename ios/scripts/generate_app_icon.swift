@@ -10,17 +10,22 @@ let outPath = CommandLine.arguments.count > 1
     ? CommandLine.arguments[1]
     : "KubePilot/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
 
+// App Store validation (error 90717) rejects a 1024pt icon with an alpha
+// channel, so the bitmap is opaque RGB — no alpha sample to encode.
+// 32bpp with only 3 samples is deliberate: CoreGraphics has no 24bpp backing
+// store, so the 4th byte must exist but be skipped rather than dropped.
 guard let rep = NSBitmapImageRep(
     bitmapDataPlanes: nil,
     pixelsWide: size,
     pixelsHigh: size,
     bitsPerSample: 8,
-    samplesPerPixel: 4,
-    hasAlpha: true,
+    samplesPerPixel: 3,
+    hasAlpha: false,
     isPlanar: false,
     colorSpaceName: .deviceRGB,
-    bytesPerRow: 0,
-    bitsPerPixel: 0
+    bitmapFormat: [],
+    bytesPerRow: size * 4,
+    bitsPerPixel: 32
 ) else {
     fputs("Failed to create bitmap\n", stderr)
     exit(1)
@@ -30,11 +35,11 @@ NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
 let cgSize = CGFloat(size)
+// Fill edge to edge: iOS masks the icon with its own squircle, so baking a
+// corner radius here would only double-round it (and leave the corners clear).
 let bg = NSColor(red: 10 / 255, green: 15 / 255, blue: 28 / 255, alpha: 1)
 bg.setFill()
-let bgPath = NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: cgSize, height: cgSize),
-                          xRadius: cgSize * 0.22, yRadius: cgSize * 0.22)
-bgPath.fill()
+NSRect(x: 0, y: 0, width: cgSize, height: cgSize).fill()
 
 let glow = NSGradient(colors: [
     NSColor(red: 59 / 255, green: 130 / 255, blue: 246 / 255, alpha: 0.35),
