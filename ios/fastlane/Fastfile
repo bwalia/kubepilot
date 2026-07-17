@@ -68,7 +68,7 @@ platform :ios do
     run_tests(
       project: "KubePilot.xcodeproj",
       scheme: "KubePilot",
-      devices: ["iPhone 16"],
+      devices: ["iPhone 17"],
       clean: true
     )
   end

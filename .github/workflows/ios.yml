@@ -29,7 +29,7 @@ jobs:
           xcodebuild build \
             -project KubePilot.xcodeproj \
             -scheme KubePilot \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'generic/platform=iOS Simulator' \
             -quiet
 
       - name: Test
@@ -37,5 +37,5 @@ jobs:
           xcodebuild test \
             -project KubePilot.xcodeproj \
             -scheme KubePilot \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             -quiet
