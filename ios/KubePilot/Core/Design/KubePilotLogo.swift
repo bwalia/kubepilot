@@ -30,31 +30,36 @@ struct KubePilotWordmark: View {
     }
 }
 
-/// App icon mark — helm wheel on brand dark surface (matches landing hero glow).
+/// App icon mark — bespoke helm wheel on the brand dark surface, matching the
+/// 1024pt App Icon and the landing hero glow. Uses `HelmMark` as the source of
+/// truth for the wheel geometry so every surface renders the identical logo.
 struct KubePilotMark: View {
     var size: CGFloat = 88
+    /// When embedded on an already-dark surface, drop the tile chrome.
+    var showsTile: Bool = true
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .fill(Theme.brandBg)
-                .overlay(
-                    RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                        .stroke(Theme.brandBorder, lineWidth: max(1, size * 0.012))
+            if showsTile {
+                RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                    .fill(Theme.brandBg)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                            .stroke(Theme.brandBorder, lineWidth: max(1, size * 0.012))
+                    )
+
+                RadialGradient(
+                    colors: [Theme.accent.opacity(0.35), .clear],
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: size * 0.5
                 )
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+            }
 
-            RadialGradient(
-                colors: [Theme.accent.opacity(0.35), .clear],
-                center: .center,
-                startRadius: 0,
-                endRadius: size * 0.45
-            )
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
-
-            Image(systemName: "helm")
-                .font(.system(size: size * 0.44, weight: .semibold))
-                .foregroundStyle(Theme.brandGradient)
-                .symbolRenderingMode(.hierarchical)
+            HelmMark()
+                .frame(width: size * 0.82, height: size * 0.82)
+                .shadow(color: Theme.accent.opacity(showsTile ? 0.4 : 0), radius: size * 0.06)
         }
         .frame(width: size, height: size)
     }
