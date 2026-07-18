@@ -10,9 +10,17 @@ brew install xcodegen   # once
 open KubePilot.xcodeproj
 ```
 
-Build succeeded target: **iPhone Simulator (iOS 17+)**
+Build succeeded target: **iPhone Simulator (iOS 18+)**
 
-## Brand assets
+## Design system
+
+UIKit/SwiftUI patterns aligned with Apple's iOS 18+ HIG:
+
+- **Theme** — spacing tokens, typography, semantic colors (`Core/Design/Theme.swift`)
+- **Components** — `SurfaceCard`, `FilterChipBar`, `ContentUnavailableView` empty states, `ClusterContextBanner` (`Core/Design/DesignComponents.swift`)
+- **Navigation** — iOS 18 `Tab` API, large titles, ultra-thin materials, mesh gradient backgrounds
+- **Usability** — horizontal filter chips, surfaced errors, accessible health indicators, themed lists
+
 
 Visual identity matches [kubepilot.org](https://kubepilot.org/) (`docs/landing/index.html`):
 

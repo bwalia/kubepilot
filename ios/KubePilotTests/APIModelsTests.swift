@@ -59,6 +59,28 @@ final class APIModelsTests: XCTestCase {
         )
         XCTAssertEqual(pod.severity, .critical)
     }
+
+    func testAnomalyDecodesResourceObject() throws {
+        let json = """
+        [{
+          "id": "imagepull-test-1",
+          "detected_at": "2026-07-13T11:28:32.359557Z",
+          "rule": "ImagePullDetector",
+          "resource": {
+            "kind": "Pod",
+            "name": "api-1",
+            "namespace": "int"
+          },
+          "severity": "high",
+          "description": "Pod int/api-1 has image pull error"
+        }]
+        """.data(using: .utf8)!
+
+        let anomalies = try JSONDecoder.kubePilot.decode([Anomaly].self, from: json)
+        XCTAssertEqual(anomalies.count, 1)
+        XCTAssertEqual(anomalies[0].resource.displayString, "int/api-1")
+        XCTAssertEqual(anomalies[0].severity, "high")
+    }
 }
 
 final class PodFilterTests: XCTestCase {

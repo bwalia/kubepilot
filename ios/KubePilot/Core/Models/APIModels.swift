@@ -430,11 +430,27 @@ struct RCAReport: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
+struct AnomalyResource: Codable, Hashable, Sendable {
+    let kind: String
+    let name: String
+    let namespace: String?
+
+    var displayString: String {
+        if let namespace, !namespace.isEmpty {
+            return "\(namespace)/\(name)"
+        }
+        if !kind.isEmpty {
+            return "\(kind)/\(name)"
+        }
+        return name
+    }
+}
+
 struct Anomaly: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let detectedAt: Date
     let rule: String
-    let resource: String
+    let resource: AnomalyResource
     let severity: String
     let description: String
     let rcaReportId: String?
@@ -443,6 +459,24 @@ struct Anomaly: Codable, Identifiable, Hashable, Sendable {
         case id, rule, resource, severity, description
         case detectedAt = "detected_at"
         case rcaReportId = "rca_report_id"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        detectedAt = try container.decode(Date.self, forKey: .detectedAt)
+        rule = try container.decode(String.self, forKey: .rule)
+        severity = try container.decode(String.self, forKey: .severity)
+        description = try container.decode(String.self, forKey: .description)
+        rcaReportId = try container.decodeIfPresent(String.self, forKey: .rcaReportId)
+
+        if let resourceObject = try? container.decode(AnomalyResource.self, forKey: .resource) {
+            resource = resourceObject
+        } else if let resourceString = try? container.decode(String.self, forKey: .resource) {
+            resource = AnomalyResource(kind: "", name: resourceString, namespace: nil)
+        } else {
+            resource = AnomalyResource(kind: "Resource", name: "unknown", namespace: nil)
+        }
     }
 }
 

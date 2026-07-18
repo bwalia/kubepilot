@@ -5,8 +5,8 @@
 // `HelmMark` (ios/KubePilot/Core/Design/HelmMark.swift). Keep the fractions in
 // `Helm` below in sync with `HelmGeometry` there.
 //
-// HIG-compliant: a full-bleed, fully opaque 1024×1024 square with NO rounded
-// corners and NO transparency — iOS applies the corner mask itself.
+// HIG-compliant: a full-bleed 1024×1024 square with NO rounded corners — iOS
+// applies the corner mask itself.
 
 import AppKit
 import Foundation
@@ -38,10 +38,22 @@ enum Helm {
     static let spokeCount = 6
 }
 
+// App Store validation (error 90717) rejects a 1024pt icon with an alpha
+// channel, so the bitmap is opaque RGB — no alpha sample to encode. 32bpp with
+// only 3 samples is deliberate: CoreGraphics has no 24bpp backing store, so the
+// 4th byte must exist but be skipped rather than dropped.
 guard let rep = NSBitmapImageRep(
-    bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size,
-    bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-    colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+    bitmapDataPlanes: nil,
+    pixelsWide: size,
+    pixelsHigh: size,
+    bitsPerSample: 8,
+    samplesPerPixel: 3,
+    hasAlpha: false,
+    isPlanar: false,
+    colorSpaceName: .deviceRGB,
+    bitmapFormat: [],
+    bytesPerRow: size * 4,
+    bitsPerPixel: 32
 ) else { fputs("Failed to create bitmap\n", stderr); exit(1) }
 
 NSGraphicsContext.saveGraphicsState()

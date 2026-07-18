@@ -5,12 +5,12 @@ enum PodFilter: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .all: "All Pods"
+        case .all: "All"
         case .healthy: "Healthy"
         case .failing: "Failing"
-        case .crashloop: "CrashLoopBackOff"
+        case .crashloop: "CrashLoop"
         case .pending: "Pending"
-        case .oom: "OOMKilled"
+        case .oom: "OOM"
         }
     }
 }
@@ -22,36 +22,26 @@ struct PodsListView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                SearchBar(text: $viewModel.searchText, placeholder: "Search pods…")
-                    .padding(.horizontal)
+            ZStack {
+                BrandScreenBackground()
 
-                Picker("Filter", selection: $viewModel.filter) {
-                    ForEach(PodFilter.allCases, id: \.self) { filter in
-                        Text(filter.title).tag(filter)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+                VStack(spacing: Theme.spacingSM) {
+                    SearchBar(text: $viewModel.searchText, placeholder: "Search pods…")
+                        .padding(.horizontal, Theme.spacingMD)
 
-                if viewModel.isLoading && viewModel.pods.isEmpty {
-                    LoadingOverlay(message: "Loading pods…")
-                } else if let error = viewModel.errorMessage, viewModel.pods.isEmpty {
-                    ErrorBanner(message: error) {
-                        Task { await viewModel.load(namespace: appState.clusterManager.selectedNamespace) }
-                    }
-                } else {
-                    List(viewModel.filteredPods) { pod in
-                        NavigationLink {
-                            PodDetailView(namespace: pod.namespace, podName: pod.name)
-                        } label: {
-                            PodRow(pod: pod)
-                        }
-                    }
-                    .listStyle(.plain)
+                    FilterChipBar(
+                        items: Array(PodFilter.allCases),
+                        selection: $viewModel.filter,
+                        title: { $0.title }
+                    )
+
+                    content
                 }
+                .padding(.top, Theme.spacingSM)
             }
             .navigationTitle("Pods")
+            .navigationBarTitleDisplayMode(.large)
+            .themedScreen()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { NamespacePicker() }
             }
@@ -64,35 +54,66 @@ struct PodsListView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private var content: some View {
+        if viewModel.isLoading && viewModel.pods.isEmpty {
+            LoadingOverlay(message: "Loading pods…")
+        } else if let error = viewModel.errorMessage, viewModel.pods.isEmpty {
+            ErrorBanner(message: error) {
+                Task { await viewModel.load(namespace: appState.clusterManager.selectedNamespace) }
+            }
+        } else if viewModel.filteredPods.isEmpty {
+            EmptyStateView(
+                title: viewModel.searchText.isEmpty ? "No Pods" : "No Matches",
+                systemImage: "cube.box",
+                description: viewModel.searchText.isEmpty
+                    ? "No pods were returned for the current namespace."
+                    : "Try a different search term or filter."
+            )
+        } else {
+            List(viewModel.filteredPods) { pod in
+                NavigationLink {
+                    PodDetailView(namespace: pod.namespace, podName: pod.name)
+                } label: {
+                    PodRow(pod: pod)
+                }
+                .listRowBackground(Theme.surface)
+            }
+            .themedList()
+        }
+    }
 }
 
 struct PodRow: View {
     let pod: PodSummary
 
     var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(Theme.healthColor(for: pod.severity))
-                .frame(width: 10, height: 10)
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: Theme.spacingSM) {
+            HealthIndicator(
+                color: Theme.healthColor(for: pod.severity),
+                label: pod.displayStatus
+            )
+            VStack(alignment: .leading, spacing: Theme.spacingXS) {
                 Text(pod.name)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
                 Text(pod.namespace)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
             }
             Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: Theme.spacingXS) {
                 StatusBadge(
                     text: pod.displayStatus,
                     color: Theme.healthColor(for: pod.severity)
                 )
                 Text("\(pod.restarts) restarts · \(pod.uptime)")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Theme.muted)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Theme.spacingXS)
     }
 }
 

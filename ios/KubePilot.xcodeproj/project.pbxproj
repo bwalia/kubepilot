@@ -16,6 +16,7 @@
 		2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */; };
 		40A23F6F8F462CC8217A2B70 /* HelmMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A44B4A207F167F48D6C066 /* HelmMark.swift */; };
 		45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D27256635353D8F6669103 /* BiometricUnlockView.swift */; };
+		4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */; };
 		5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13FCFADC0A993DA318164 /* DashboardView.swift */; };
 		5852A6DA686B8892EE9EF2D5 /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EABD28677396C8067E479DA /* LogViewerView.swift */; };
 		6DACA3AA58C5DD2E70344D77 /* KubePilotWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -85,6 +86,7 @@
 		6EABD28677396C8067E479DA /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerView.swift; sourceTree = "<group>"; };
 		7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KubePilotWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignComponents.swift; sourceTree = "<group>"; };
 		9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListView.swift; sourceTree = "<group>"; };
 		A52A7423C3B4CAD5EFDA9628 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotIntents.swift; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 		15C6E83FD18EFE4FDD1CB873 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */,
 				64A44B4A207F167F48D6C066 /* HelmMark.swift */,
 				223945BA22626F8E81B1B55F /* KubePilotLogo.swift */,
 				C034A8644F934030296CD024 /* Theme.swift */,
@@ -468,6 +471,7 @@
 				1E97915AFCE77315B3ED07BA /* AuthManager.swift in Sources */,
 				45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */,
 				5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */,
+				4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */,
 				40A23F6F8F462CC8217A2B70 /* HelmMark.swift in Sources */,
 				F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */,
 				FDB7A6FE80E32AF8337CD86F /* KubePilotAPI.swift in Sources */,
@@ -632,7 +636,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -697,7 +701,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

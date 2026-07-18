@@ -8,27 +8,36 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    dashboardBrandHeader
-                    clusterHeader
-                    healthScoreCard
-                    metricsGrid
-                    if !viewModel.insights.isEmpty {
-                        insightsSection
+            ZStack {
+                BrandScreenBackground()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Theme.spacingLG) {
+                        ClusterContextBanner()
+
+                        if let error = viewModel.errorMessage {
+                            ErrorBanner(message: error) {
+                                Task { await viewModel.refresh(namespace: appState.clusterManager.selectedNamespace) }
+                            }
+                        }
+
+                        healthScoreCard
+                        metricsGrid
+
+                        if !viewModel.insights.isEmpty {
+                            insightsSection
+                        }
+                        if !viewModel.problemPods.isEmpty {
+                            problemPodsSection
+                        }
+                        clusterNodesSection
                     }
-                    if !viewModel.problemPods.isEmpty {
-                        problemPodsSection
-                    }
-                    clusterNodesSection
+                    .padding(Theme.spacingMD)
                 }
-                .padding()
             }
-            .background(Theme.background)
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.brandBg.opacity(0.95), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .navigationTitle("Dashboard")
+            .navigationBarTitleDisplayMode(.large)
+            .themedScreen()
             .toolbar { toolbarContent }
             .refreshable { await viewModel.refresh(namespace: appState.clusterManager.selectedNamespace) }
             .task(id: appState.clusterManager.selectedNamespace) {
@@ -49,47 +58,44 @@ struct DashboardView: View {
         }
     }
 
-    private var dashboardBrandHeader: some View {
-        HStack(alignment: .center, spacing: 12) {
-            KubePilotMark(size: 40)
-            KubePilotWordmark(size: .nav)
-            Spacer()
-        }
-        .padding(.top, 4)
-    }
-
-    private var clusterHeader: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(appState.authManager.activeAccount?.displayName ?? "Cluster")
-                .font(.headline)
-            Text(appState.clusterManager.activeContextName)
-                .font(.caption)
-                .foregroundStyle(Theme.muted)
-        }
-    }
-
     private var healthScoreCard: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Cluster Health")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-                Text(viewModel.healthScore.label)
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    .foregroundStyle(Theme.healthColor(for: viewModel.healthScore))
-            }
-            Spacer()
-            if viewModel.isLoading {
-                ProgressView()
+        SurfaceCard {
+            HStack {
+                VStack(alignment: .leading, spacing: Theme.spacingXS) {
+                    Text("Cluster Health")
+                        .font(Theme.Typography.cardLabel)
+                        .foregroundStyle(Theme.muted)
+                        .textCase(.uppercase)
+                    Text(viewModel.healthScore.label)
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .foregroundStyle(Theme.healthColor(for: viewModel.healthScore))
+                        .contentTransition(.numericText())
+                }
+                Spacer()
+                if viewModel.isLoading {
+                    ProgressView()
+                        .tint(Theme.accent)
+                } else {
+                    Image(systemName: healthSymbol)
+                        .font(.title)
+                        .foregroundStyle(Theme.healthColor(for: viewModel.healthScore))
+                        .symbolRenderingMode(.hierarchical)
+                        .symbolEffect(.pulse, options: .repeating, value: viewModel.healthScore)
+                }
             }
         }
-        .padding()
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var healthSymbol: String {
+        switch viewModel.healthScore {
+        case .healthy: "checkmark.seal.fill"
+        case .degraded: "exclamationmark.triangle.fill"
+        case .critical: "xmark.octagon.fill"
+        }
     }
 
     private var metricsGrid: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: Theme.spacingSM) {
             NavigationLink(value: DashboardDestination.pods(.healthy)) {
                 MetricCard(title: "Healthy Pods", value: "\(viewModel.healthyPods)", tint: Theme.success)
             }
@@ -123,41 +129,51 @@ struct DashboardView: View {
     }
 
     private var insightsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("AI Insights")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: Theme.spacingSM) {
+            SectionHeader(title: "AI Insights")
             ForEach(viewModel.insights.prefix(3)) { insight in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        StatusBadge(text: insight.severity.uppercased(), color: severityColor(insight.severity))
-                        Text(insight.title).font(.subheadline.weight(.semibold))
+                SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
+                    VStack(alignment: .leading, spacing: Theme.spacingXS) {
+                        HStack {
+                            StatusBadge(
+                                text: insight.severity.uppercased(),
+                                color: Theme.severityColor(insight.severity)
+                            )
+                            Text(insight.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Theme.textPrimary)
+                        }
+                        Text(insight.summary)
+                            .font(.caption)
+                            .foregroundStyle(Theme.textSecondary)
                     }
-                    Text(insight.summary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-                .padding()
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
     }
 
     private var problemPodsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Problem Pods")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: Theme.spacingSM) {
+            SectionHeader(title: "Problem Pods")
             ForEach(viewModel.problemPods.prefix(5)) { pod in
                 NavigationLink(value: DashboardDestination.pod(pod.namespace, pod.name)) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(pod.name).font(.subheadline.weight(.medium))
-                            Text(pod.namespace).font(.caption).foregroundStyle(.secondary)
+                    SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: Theme.spacingXS) {
+                                Text(pod.name)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(Theme.textPrimary)
+                                Text(pod.namespace)
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.muted)
+                            }
+                            Spacer()
+                            StatusBadge(
+                                text: pod.reason.isEmpty ? pod.status : pod.reason,
+                                color: Theme.danger
+                            )
                         }
-                        Spacer()
-                        StatusBadge(text: pod.reason.isEmpty ? pod.status : pod.reason, color: Theme.danger)
                     }
-                    .padding()
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -165,26 +181,25 @@ struct DashboardView: View {
     }
 
     private var clusterNodesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.spacingSM) {
             HStack {
-                Text("Cluster Nodes")
-                    .font(.headline)
-                Spacer()
+                SectionHeader(title: "Cluster Nodes")
                 if !viewModel.clusterNodes.isEmpty {
                     NavigationLink(value: DashboardDestination.nodes) {
                         Text("View all")
-                            .font(.caption)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Theme.accentLight)
                     }
                 }
             }
 
             if viewModel.clusterNodes.isEmpty {
-                Text("No nodes reported.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                EmptyStateView(
+                    title: "No Nodes",
+                    systemImage: "server.rack",
+                    description: "The cluster did not report any node health data."
+                )
+                .frame(minHeight: 120)
             } else {
                 ForEach(viewModel.clusterNodes) { node in
                     DashboardNodeHealthRow(node: node)
@@ -195,21 +210,11 @@ struct DashboardView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Text("Dashboard")
-                .font(.headline)
-                .foregroundStyle(Theme.textPrimary)
+        ToolbarItem(placement: .topBarLeading) {
+            KubePilotMark(size: 28)
         }
         ToolbarItem(placement: .topBarTrailing) {
             NamespacePicker()
-        }
-    }
-
-    private func severityColor(_ severity: String) -> Color {
-        switch severity.lowercased() {
-        case "critical", "high": Theme.danger
-        case "medium": Theme.warning
-        default: Theme.accent
         }
     }
 }
@@ -251,15 +256,29 @@ final class DashboardViewModel {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+
+        var errors: [String] = []
+
         do {
-            async let summaryTask = KubePilotService.shared.fetchTroubleshootingSummary(namespace: namespace)
-            async let podsTask = KubePilotService.shared.fetchPods(namespace: namespace)
-            async let anomaliesTask = KubePilotService.shared.fetchAnomalies()
-            summary = try await summaryTask
-            pods = try await podsTask
-            anomalies = try await anomaliesTask
+            summary = try await KubePilotService.shared.fetchTroubleshootingSummary(namespace: namespace)
         } catch {
-            errorMessage = error.localizedDescription
+            errors.append(error.localizedDescription)
+        }
+
+        do {
+            pods = try await KubePilotService.shared.fetchPods(namespace: namespace)
+        } catch {
+            errors.append(error.localizedDescription)
+        }
+
+        do {
+            anomalies = try await KubePilotService.shared.fetchAnomalies()
+        } catch {
+            anomalies = []
+        }
+
+        if summary == nil && pods.isEmpty {
+            errorMessage = errors.first
         }
     }
 }
@@ -268,44 +287,46 @@ struct DashboardNodeHealthRow: View {
     let node: NodeHealthRow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(node.name)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                StatusBadge(
-                    text: node.ready ? "Ready" : "NotReady",
-                    color: node.ready ? Theme.success : Theme.danger
-                )
-            }
-
-            NodeIPLabels(health: node)
-
-            HStack(spacing: 12) {
-                if let cpu = node.cpuUsagePercent {
-                    Text("CPU \(cpu)%")
-                } else {
-                    Text("CPU \(node.cpuCapacity)")
+        SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
+            VStack(alignment: .leading, spacing: Theme.spacingSM) {
+                HStack {
+                    Text(node.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer()
+                    StatusBadge(
+                        text: node.ready ? "Ready" : "NotReady",
+                        color: node.ready ? Theme.success : Theme.danger
+                    )
                 }
-                if let mem = node.memoryUsagePercent {
-                    Text("Mem \(mem)%")
-                } else {
-                    Text("Mem \(node.memoryCapacity)")
-                }
-            }
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
 
-            if node.diskPressure || node.memoryPressure || node.pidPressure {
-                HStack(spacing: 6) {
-                    if node.memoryPressure { StatusBadge(text: "Mem pressure", color: Theme.warning) }
-                    if node.diskPressure { StatusBadge(text: "Disk pressure", color: Theme.warning) }
-                    if node.pidPressure { StatusBadge(text: "PID pressure", color: Theme.warning) }
+                NodeIPLabels(health: node)
+
+                HStack(spacing: Theme.spacingMD) {
+                    if let cpu = node.cpuUsagePercent {
+                        Label("CPU \(cpu)%", systemImage: "cpu")
+                    } else {
+                        Label("CPU \(node.cpuCapacity)", systemImage: "cpu")
+                    }
+                    if let mem = node.memoryUsagePercent {
+                        Label("Mem \(mem)%", systemImage: "memorychip")
+                    } else {
+                        Label("Mem \(node.memoryCapacity)", systemImage: "memorychip")
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(Theme.muted)
+                .labelStyle(.titleAndIcon)
+
+                if node.diskPressure || node.memoryPressure || node.pidPressure {
+                    HStack(spacing: Theme.spacingXS) {
+                        if node.memoryPressure { StatusBadge(text: "Mem pressure", color: Theme.warning) }
+                        if node.diskPressure { StatusBadge(text: "Disk pressure", color: Theme.warning) }
+                        if node.pidPressure { StatusBadge(text: "PID pressure", color: Theme.warning) }
+                    }
                 }
             }
         }
-        .padding()
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -327,7 +348,10 @@ struct NamespacePicker: View {
                 appState.clusterManager.selectedNamespace.isEmpty ? "All" : appState.clusterManager.selectedNamespace,
                 systemImage: "line.3.horizontal.decrease.circle"
             )
+            .labelStyle(.iconOnly)
+            .foregroundStyle(Theme.accentLight)
         }
+        .accessibilityLabel("Namespace filter")
         .task { try? await appState.clusterManager.refresh() }
     }
 }
