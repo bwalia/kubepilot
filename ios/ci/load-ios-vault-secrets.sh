@@ -73,7 +73,9 @@ data = (payload.get("data") or {}).get("data")
 if not isinstance(data, dict):
     sys.exit("ERROR: unexpected Vault response at %s (no .data.data map)" % url)
 
-required = ["ASC_KEY_ID", "ASC_ISSUER_ID", "ASC_PRIVATE_KEY_B64", "CERT_PRIVATE_KEY_B64"]
+# fastlane provisions the distribution certificate from the ASC API key, so only
+# the ASC key is required. CERT_PRIVATE_KEY_B64 is accepted but optional.
+required = ["ASC_KEY_ID", "ASC_ISSUER_ID", "ASC_PRIVATE_KEY_B64"]
 missing = [k for k in required if not data.get(k)]
 if missing:
     sys.exit("ERROR: %s is missing required key(s): %s" % (secret_path, ", ".join(missing)))
@@ -87,14 +89,15 @@ def write_secret_file(name, b64_value):
     return path
 
 asc_key_path = write_secret_file("asc_api_key.p8", data["ASC_PRIVATE_KEY_B64"])
-dist_key_path = write_secret_file("dist_cert_key.pem", data["CERT_PRIVATE_KEY_B64"])
 
 env_lines = [
     ("ASC_KEY_ID", data["ASC_KEY_ID"]),
     ("ASC_ISSUER_ID", data["ASC_ISSUER_ID"]),
     ("ASC_KEY_FILEPATH", asc_key_path),
-    ("DIST_CERT_KEY_FILEPATH", dist_key_path),
 ]
+if data.get("CERT_PRIVATE_KEY_B64"):
+    env_lines.append(("DIST_CERT_KEY_FILEPATH",
+                      write_secret_file("dist_cert_key.pem", data["CERT_PRIVATE_KEY_B64"])))
 if data.get("APPLE_TEAM_ID"):
     env_lines.append(("APPLE_TEAM_ID", data["APPLE_TEAM_ID"]))
 if data.get("APP_STORE_APP_ID"):

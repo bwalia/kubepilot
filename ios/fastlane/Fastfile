@@ -87,45 +87,37 @@ platform :ios do
     emit_github("GITHUB_OUTPUT", "build_number=#{nxt}")
   end
 
-  desc "Set up code signing from Vault material into a temporary keychain"
+  desc "Provision code signing from the ASC API key into a persistent keychain"
   lane :prepare_signing do
     api_key = asc_api_key
     kc_path = ENV.fetch("BUILD_KEYCHAIN_PATH")
     kc_pass = ENV.fetch("BUILD_KEYCHAIN_PASSWORD")
-    dist_key = ENV.fetch("DIST_CERT_KEY_FILEPATH")
     tmp_dir = ENV["RUNNER_TEMP"] || Dir.pwd
 
-    create_keychain(
-      path: kc_path,
-      password: kc_pass,
-      default_keychain: false,
-      unlock: true,
-      timeout: 3600,
-      add_to_search_list: true
-    )
-
-    sh("security", "import", dist_key, "-k", kc_path, "-P", "", "-A", "-T", "/usr/bin/codesign")
-
-    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
-      key_id: ENV.fetch("ASC_KEY_ID"),
-      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
-      filepath: ENV.fetch("ASC_KEY_FILEPATH")
-    )
-    key_modulus = sh("openssl", "rsa", "-in", dist_key, "-noout", "-modulus", log: false).strip
-    matching = Spaceship::ConnectAPI::Certificate.all(
-      filter: { certificateType: "DISTRIBUTION" }
-    ).find do |c|
-      next false unless c.certificate_content
-      cer = File.join(tmp_dir, "#{c.id}.cer")
-      File.binwrite(cer, c.certificate_content.unpack1("m"))
-      sh("openssl", "x509", "-in", cer, "-inform", "DER", "-noout", "-modulus", log: false).strip == key_modulus
+    # The keychain persists across runs on the self-hosted runner so `cert` reuses
+    # the same Apple Distribution certificate instead of minting a new one every
+    # build (Apple caps distribution certs). Create it on first use, unlock after.
+    if File.exist?(kc_path)
+      unlock_keychain(path: kc_path, password: kc_pass, set_default: false)
+    else
+      create_keychain(
+        path: kc_path,
+        password: kc_pass,
+        default_keychain: false,
+        unlock: true,
+        timeout: 3600,
+        add_to_search_list: true
+      )
     end
-    UI.user_error!(
-      "No live Apple Distribution certificate matches the Vault private key."
-    ) if matching.nil?
-    sh("security", "import", File.join(tmp_dir, "#{matching.id}.cer"),
-       "-k", kc_path, "-A", "-T", "/usr/bin/codesign")
+    # Keep the keychain on the codesign search list regardless of which branch ran.
+    sh("security", "list-keychains", "-d", "user", "-s", kc_path,
+       File.expand_path("~/Library/Keychains/login.keychain-db"))
+    # Disable the auto-lock timeout so the keychain stays unlocked between the
+    # prepare_signing and build_ipa steps (separate fastlane processes).
+    sh("security", "set-keychain-settings", kc_path)
 
+    # Create (first run) or reuse (later runs) the distribution certificate from
+    # the ASC API key. No certificate private key is stored in Vault.
     cert(
       api_key: api_key,
       keychain_path: kc_path,

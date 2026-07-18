@@ -56,9 +56,20 @@ jobs:
       - name: Configure build keychain
         run: |
           set -euo pipefail
+          # Persist the signing keychain across runs on the self-hosted runner so
+          # fastlane `cert` reuses one Apple Distribution certificate instead of
+          # minting a new one each build (Apple caps distribution certs). The
+          # password is generated once, kept off the repo and out of the logs.
+          pass_file="$HOME/.secrets/kubepilot/keychain-password"
+          mkdir -p "$(dirname "$pass_file")"
+          if [ ! -s "$pass_file" ]; then
+            ( umask 077; openssl rand -base64 24 > "$pass_file" )
+          fi
+          kc_pass="$(cat "$pass_file")"
+          echo "::add-mask::$kc_pass"
           {
-            echo "BUILD_KEYCHAIN_PATH=$RUNNER_TEMP/kubepilot-ios.keychain-db"
-            echo "BUILD_KEYCHAIN_PASSWORD=$(openssl rand -base64 24)"
+            echo "BUILD_KEYCHAIN_PATH=$HOME/Library/Keychains/kubepilot-signing.keychain-db"
+            echo "BUILD_KEYCHAIN_PASSWORD=$kc_pass"
             echo "EXPORT_OPTIONS_PLIST=$RUNNER_TEMP/ExportOptions.plist"
           } >> "$GITHUB_ENV"
 
@@ -123,7 +134,9 @@ jobs:
       - name: Clean up signing material
         if: always()
         run: |
-          security delete-keychain "$BUILD_KEYCHAIN_PATH" 2>/dev/null || true
+          # The signing keychain is intentionally persistent (see Configure build
+          # keychain) — lock it rather than delete it so the cert survives.
+          security lock-keychain "$BUILD_KEYCHAIN_PATH" 2>/dev/null || true
           rm -f "$EXPORT_OPTIONS_PLIST" 2>/dev/null || true
           rm -f "${ASC_KEY_FILEPATH:-}" "${DIST_CERT_KEY_FILEPATH:-}" 2>/dev/null || true
           rm -f "${INSTALLED_PROFILE_PATH:-}" "${INSTALLED_WIDGET_PROFILE_PATH:-}" 2>/dev/null || true
