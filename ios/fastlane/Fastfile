@@ -64,7 +64,7 @@ end
 platform :ios do
   desc "Run unit tests on the simulator"
   lane :test do
-    sh("xcodegen", "generate")
+    sh("xcodegen", "generate", "--spec", "../project.yml")
     run_tests(
       project: "KubePilot.xcodeproj",
       scheme: "KubePilot",
@@ -89,6 +89,11 @@ platform :ios do
 
   desc "Provision code signing from the ASC API key into a persistent keychain"
   lane :prepare_signing do
+    # Generate the project first so the manual-signing settings applied below
+    # survive into build_ipa (which no longer regenerates). `sh` runs from the
+    # fastlane/ dir, so the spec is one level up.
+    sh("xcodegen", "generate", "--spec", "../project.yml")
+
     api_key = asc_api_key
     kc_path = ENV.fetch("BUILD_KEYCHAIN_PATH")
     kc_pass = ENV.fetch("BUILD_KEYCHAIN_PASSWORD")
@@ -157,8 +162,8 @@ platform :ios do
 
   desc "Archive and export a signed App Store IPA"
   lane :build_ipa do
-    sh("xcodegen", "generate")
-
+    # No xcodegen here: prepare_signing already generated the project and applied
+    # signing. Regenerating would wipe those settings.
     if ENV["VERSION_NAME"] && !ENV["VERSION_NAME"].empty?
       increment_version_number(
         version_number: ENV["VERSION_NAME"],
