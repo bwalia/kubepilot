@@ -43,7 +43,7 @@ defaults:
 jobs:
   release:
     name: Build & upload (${{ github.event_name == 'workflow_dispatch' && inputs.target || 'testflight' }})
-    runs-on: [self-hosted, macOS, ios_cicd]
+    runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 90
     env:
       VAULT_TOKEN_FILE: /Users/balinderwalia/.secrets/acc-vault/login-token.json
