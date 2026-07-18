@@ -29,6 +29,17 @@ def emit_github(file_env_var, line)
   File.write(path, "#{line}\n", mode: "a") if path && !path.empty?
 end
 
+# Deterministic IPA location, anchored to this file rather than Dir.pwd, so the
+# build lane and the upload lanes (separate fastlane processes with different
+# working directories) always agree on the path.
+def ipa_output_dir
+  File.expand_path("../build", __dir__)
+end
+
+def ipa_output_path
+  File.join(ipa_output_dir, "KubePilot.ipa")
+end
+
 def write_export_options(path, app_profile, widget_profile)
   File.write(path, <<~PLIST)
     <?xml version="1.0" encoding="UTF-8"?>
@@ -181,7 +192,7 @@ platform :ios do
       scheme: "KubePilot",
       export_method: "app-store",
       export_options: export_plist,
-      output_directory: "./build",
+      output_directory: ipa_output_dir,
       output_name: "KubePilot.ipa",
       clean: true
     )
@@ -189,8 +200,7 @@ platform :ios do
 
   desc "Upload the built IPA to TestFlight (internal testers only)"
   lane :beta do
-    ipa = Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] ||
-          File.expand_path("build/KubePilot.ipa", Dir.pwd)
+    ipa = Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] || ipa_output_path
     UI.user_error!("No IPA at #{ipa}") unless File.exist?(ipa)
 
     upload_to_testflight(
@@ -204,8 +214,7 @@ platform :ios do
   desc "Submit the latest build for App Store review (manual release gate)"
   lane :release do
     key = asc_api_key
-    ipa = Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] ||
-          File.expand_path("build/KubePilot.ipa", Dir.pwd)
+    ipa = Actions.lane_context[SharedValues::IPA_OUTPUT_PATH] || ipa_output_path
 
     upload_to_testflight(
       api_key: key,
