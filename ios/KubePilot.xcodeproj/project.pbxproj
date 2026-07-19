@@ -14,6 +14,7 @@
 		219951A2469EB84E4F1996AF /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ABD096080CD5CD496FE6032 /* PersistenceController.swift */; };
 		265BC537F3D67156D68B1679 /* PodDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05440CA63ED7D2CC7DB39FEE /* PodDetailView.swift */; };
 		2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */; };
+		40A23F6F8F462CC8217A2B70 /* HelmMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A44B4A207F167F48D6C066 /* HelmMark.swift */; };
 		45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D27256635353D8F6669103 /* BiometricUnlockView.swift */; };
 		4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */; };
 		5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13FCFADC0A993DA318164 /* DashboardView.swift */; };
@@ -81,6 +82,7 @@
 		4082921476E7A5048CD00194 /* KubePilotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KubePilotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		61D27256635353D8F6669103 /* BiometricUnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricUnlockView.swift; sourceTree = "<group>"; };
+		64A44B4A207F167F48D6C066 /* HelmMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelmMark.swift; sourceTree = "<group>"; };
 		6EABD28677396C8067E479DA /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerView.swift; sourceTree = "<group>"; };
 		7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KubePilotWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -117,6 +119,7 @@
 			isa = PBXGroup;
 			children = (
 				8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */,
+				64A44B4A207F167F48D6C066 /* HelmMark.swift */,
 				223945BA22626F8E81B1B55F /* KubePilotLogo.swift */,
 				C034A8644F934030296CD024 /* Theme.swift */,
 			);
@@ -422,8 +425,8 @@
 			projectRoot = "";
 			targets = (
 				3001FAC7570EFC75761A35C8 /* KubePilot */,
-				E958D0055E34A2388326F8DC /* KubePilotTests */,
 				1CB9552FBDA8038B79662F78 /* KubePilotWidgets */,
+				E958D0055E34A2388326F8DC /* KubePilotTests */,
 			);
 		};
 /* End PBXProject section */
@@ -469,6 +472,7 @@
 				45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */,
 				5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */,
 				4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */,
+				40A23F6F8F462CC8217A2B70 /* HelmMark.swift in Sources */,
 				F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */,
 				FDB7A6FE80E32AF8337CD86F /* KubePilotAPI.swift in Sources */,
 				B35CFE92D5FA30F48A6C55D6 /* KubePilotApp.swift in Sources */,
