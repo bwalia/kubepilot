@@ -81,6 +81,33 @@ func TestClassifyNodeIPsWireGuardInternalIP(t *testing.T) {
 	}
 }
 
+// A WireGuard-only node where k3s reports just the WireGuard 10.x as internal IP:
+// the node-labeler DaemonSet's kubepilot.io/lan-ip label is authoritative, so the
+// labeled address shows as LAN and the WireGuard address is demoted to Tunnel.
+func TestClassifyNodeIPsLANIPLabelOverride(t *testing.T) {
+	node := corev1.Node{}
+	node.Name = "wg-only"
+	node.Labels = map[string]string{labelLANIP: "192.168.1.140"}
+	node.Annotations = map[string]string{
+		annoK3sInternalIP: "10.8.0.4", // WireGuard address, all k8s knows
+	}
+	node.Status.Addresses = []corev1.NodeAddress{
+		{Type: corev1.NodeInternalIP, Address: "10.8.0.4"},
+	}
+
+	summary := toNodeSummary(node)
+
+	if len(summary.LANIPs) != 1 || summary.LANIPs[0] != "192.168.1.140" {
+		t.Fatalf("LANIPs = %v, want [192.168.1.140]", summary.LANIPs)
+	}
+	if len(summary.TunnelIPs) != 1 || summary.TunnelIPs[0] != "10.8.0.4" {
+		t.Fatalf("TunnelIPs = %v, want [10.8.0.4]", summary.TunnelIPs)
+	}
+	if summary.Labels[labelLANIP] != "192.168.1.140" {
+		t.Fatalf("Labels[%q] = %q, want 192.168.1.140", labelLANIP, summary.Labels[labelLANIP])
+	}
+}
+
 // An AWS node whose only private address is a VPC IP (10.x) must show it as LAN,
 // not tunnel — there is no physical LAN address to distinguish it from.
 func TestClassifyNodeIPsAWSVPCOnly(t *testing.T) {

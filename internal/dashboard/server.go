@@ -137,6 +137,7 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/clusters/pods/{namespace}/{pod}/diagnostics", s.handlePodDiagnostics).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/deployments", s.handleListDeployments).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/nodes", s.handleListNodes).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/nodes/{name}/targeting", s.handleNodeTargeting).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/crashing-pods", s.handleCrashingPods).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/service-graph", s.handleServiceGraph).Methods(http.MethodGet)
 	api.HandleFunc("/events", s.handleListEvents).Methods(http.MethodGet)
@@ -292,6 +293,17 @@ func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, nodes)
+}
+
+func (s *Server) handleNodeTargeting(w http.ResponseWriter, r *http.Request) {
+	k8sClient := s.currentK8sClient()
+	name := mux.Vars(r)["name"]
+	workloads, err := k8sClient.NodeTargeting(r.Context(), name)
+	if err != nil {
+		httpError(w, err, http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, workloads)
 }
 
 func (s *Server) handleCrashingPods(w http.ResponseWriter, r *http.Request) {

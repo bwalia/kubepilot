@@ -48,9 +48,10 @@ type troubleshootingInsight struct {
 type nodeHealthRow struct {
 	Name               string   `json:"name"`
 	Ready              bool     `json:"ready"`
-	Roles              []string `json:"roles,omitempty"`
-	ControlPlane       bool     `json:"control_plane"`
-	IPs                []string `json:"ips,omitempty"`
+	Roles              []string          `json:"roles,omitempty"`
+	ControlPlane       bool              `json:"control_plane"`
+	Labels             map[string]string `json:"labels,omitempty"`
+	IPs                []string          `json:"ips,omitempty"`
 	LANIPs             []string `json:"lan_ips,omitempty"`
 	WANIPs             []string `json:"wan_ips,omitempty"`
 	TunnelIPs          []string `json:"tunnel_ips,omitempty"`
@@ -303,6 +304,7 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 			Ready:          node.Ready,
 			Roles:          node.Roles,
 			ControlPlane:   node.ControlPlane,
+			Labels:         node.Labels,
 			IPs:            node.IPs,
 			LANIPs:         node.LANIPs,
 			WANIPs:         node.WANIPs,

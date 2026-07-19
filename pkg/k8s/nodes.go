@@ -36,6 +36,8 @@ type NodeSummary struct {
 	Roles                    []string
 	// ControlPlane is true when the node runs the control plane (master).
 	ControlPlane             bool
+	// Labels are the node's Kubernetes labels, surfaced verbatim for the UI.
+	Labels                   map[string]string
 	Unschedulable            bool
 }
 
@@ -75,6 +77,7 @@ func toNodeSummary(node corev1.Node) NodeSummary {
 		Name:           node.Name,
 		KubeletVersion: node.Status.NodeInfo.KubeletVersion,
 		Unschedulable:  node.Spec.Unschedulable,
+		Labels:         node.Labels,
 	}
 
 	s.Roles = nodeRoles(node)

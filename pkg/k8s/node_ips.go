@@ -13,6 +13,12 @@ const (
 	annoFlannelPublicIP            = "flannel.alpha.coreos.com/public-ip"
 	annoFlannelPublicIPOverwrite   = "flannel.alpha.coreos.com/public-ip-overwrite"
 	annoFlannelPublicIPv6Overwrite = "flannel.alpha.coreos.com/public-ipv6-overwrite"
+
+	// labelLANIP is the authoritative physical LAN IP stamped on each node by the
+	// node-labeler DaemonSet (manifests/node-labeler). It exists because k3s often
+	// only reports the WireGuard address as a node's internal IP, so the real LAN
+	// address is otherwise absent from the node object.
+	labelLANIP = "kubepilot.io/lan-ip"
 )
 
 type nodeIPBuckets struct {
@@ -100,6 +106,22 @@ func classifyNodeIPs(node corev1.Node) nodeIPBuckets {
 	}
 	for _, ip := range overlay.values() {
 		tunnel.add(ip)
+	}
+
+	// An authoritative LAN IP from the node-labeler DaemonSet overrides the
+	// range-based guessing: it is the real LAN address, and any other non-strong
+	// private address the guesser put in LAN (typically the WireGuard endpoint) is
+	// then an overlay, so demote it to Tunnel.
+	if hint := strings.TrimSpace(node.Labels[labelLANIP]); hint != "" && net.ParseIP(hint) != nil {
+		wan.remove(hint)
+		tunnel.remove(hint)
+		lan.add(hint)
+		for _, ip := range lan.values() {
+			if ip != hint && !isStrongLANIP(ip) {
+				lan.remove(ip)
+				tunnel.add(ip)
+			}
+		}
 	}
 
 	return nodeIPBuckets{
@@ -233,6 +255,10 @@ func (s *ipSet) add(ip string) {
 		return
 	}
 	s.seen[ip] = struct{}{}
+}
+
+func (s *ipSet) remove(ip string) {
+	delete(s.seen, strings.TrimSpace(ip))
 }
 
 func (s *ipSet) values() []string {
