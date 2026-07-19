@@ -47,6 +47,8 @@ export interface NodeSummary {
   LANIPs?: string[];
   WANIPs?: string[];
   TunnelIPs?: string[];
+  Roles?: string[];
+  ControlPlane?: boolean;
   Unschedulable: boolean;
 }
 
@@ -83,6 +85,8 @@ export interface TroubleshootingInsight {
 export interface NodeHealthRow {
   name: string;
   ready: boolean;
+  roles?: string[];
+  control_plane?: boolean;
   cpu_capacity: string;
   memory_capacity: string;
   cpu_usage?: string;

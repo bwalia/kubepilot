@@ -58,6 +58,106 @@ func TestClassifyNodeIPsFromK3sAnnotations(t *testing.T) {
 	}
 }
 
+// A WireGuard-meshed k3s node: k3s reports the WireGuard address (10.x) as its
+// internal IP, but the physical LAN address (192.168.x) must still show as LAN.
+func TestClassifyNodeIPsWireGuardInternalIP(t *testing.T) {
+	node := corev1.Node{}
+	node.Name = "homelab-1"
+	node.Annotations = map[string]string{
+		annoK3sInternalIP: "10.8.0.3", // WireGuard address
+	}
+	node.Status.Addresses = []corev1.NodeAddress{
+		{Type: corev1.NodeInternalIP, Address: "10.8.0.3"},
+		{Type: corev1.NodeInternalIP, Address: "192.168.1.42"},
+	}
+
+	summary := toNodeSummary(node)
+
+	if len(summary.LANIPs) != 1 || summary.LANIPs[0] != "192.168.1.42" {
+		t.Fatalf("LANIPs = %v, want [192.168.1.42]", summary.LANIPs)
+	}
+	if len(summary.TunnelIPs) != 1 || summary.TunnelIPs[0] != "10.8.0.3" {
+		t.Fatalf("TunnelIPs = %v, want [10.8.0.3]", summary.TunnelIPs)
+	}
+}
+
+// An AWS node whose only private address is a VPC IP (10.x) must show it as LAN,
+// not tunnel — there is no physical LAN address to distinguish it from.
+func TestClassifyNodeIPsAWSVPCOnly(t *testing.T) {
+	node := corev1.Node{}
+	node.Name = "aws-worker"
+	node.Status.Addresses = []corev1.NodeAddress{
+		{Type: corev1.NodeInternalIP, Address: "10.0.4.17"},
+		{Type: corev1.NodeExternalIP, Address: "52.14.9.200"},
+	}
+
+	summary := toNodeSummary(node)
+
+	if len(summary.LANIPs) != 1 || summary.LANIPs[0] != "10.0.4.17" {
+		t.Fatalf("LANIPs = %v, want [10.0.4.17]", summary.LANIPs)
+	}
+	if len(summary.WANIPs) != 1 || summary.WANIPs[0] != "52.14.9.200" {
+		t.Fatalf("WANIPs = %v, want [52.14.9.200]", summary.WANIPs)
+	}
+	if len(summary.TunnelIPs) != 0 {
+		t.Fatalf("TunnelIPs = %v, want none", summary.TunnelIPs)
+	}
+}
+
+// An AWS node on a default VPC (172.31.x) plus a WireGuard mesh (10.x): the VPC
+// address is the LAN, the WireGuard address is the tunnel.
+func TestClassifyNodeIPsAWSVPCWithWireGuard(t *testing.T) {
+	node := corev1.Node{}
+	node.Name = "aws-mesh"
+	node.Status.Addresses = []corev1.NodeAddress{
+		{Type: corev1.NodeInternalIP, Address: "172.31.20.5"},
+		{Type: corev1.NodeInternalIP, Address: "10.8.0.9"},
+	}
+
+	summary := toNodeSummary(node)
+
+	if len(summary.LANIPs) != 1 || summary.LANIPs[0] != "172.31.20.5" {
+		t.Fatalf("LANIPs = %v, want [172.31.20.5]", summary.LANIPs)
+	}
+	if len(summary.TunnelIPs) != 1 || summary.TunnelIPs[0] != "10.8.0.9" {
+		t.Fatalf("TunnelIPs = %v, want [10.8.0.9]", summary.TunnelIPs)
+	}
+}
+
+func TestNodeRolesControlPlane(t *testing.T) {
+	node := corev1.Node{}
+	node.Name = "server-1"
+	node.Labels = map[string]string{
+		"node-role.kubernetes.io/control-plane": "true",
+		"node-role.kubernetes.io/master":        "true",
+	}
+
+	summary := toNodeSummary(node)
+
+	if !summary.ControlPlane {
+		t.Fatalf("ControlPlane = false, want true")
+	}
+	want := []string{"control-plane", "master"}
+	if len(summary.Roles) != len(want) || summary.Roles[0] != want[0] || summary.Roles[1] != want[1] {
+		t.Fatalf("Roles = %v, want %v", summary.Roles, want)
+	}
+}
+
+func TestNodeRolesAgentDefaultsToWorker(t *testing.T) {
+	node := corev1.Node{}
+	node.Name = "agent-1"
+	node.Labels = map[string]string{"kubernetes.io/hostname": "agent-1"}
+
+	summary := toNodeSummary(node)
+
+	if summary.ControlPlane {
+		t.Fatalf("ControlPlane = true, want false")
+	}
+	if len(summary.Roles) != 1 || summary.Roles[0] != "worker" {
+		t.Fatalf("Roles = %v, want [worker]", summary.Roles)
+	}
+}
+
 func TestClassifyNodeIPsFlannelExternalOverwrite(t *testing.T) {
 	node := corev1.Node{}
 	node.Annotations = map[string]string{

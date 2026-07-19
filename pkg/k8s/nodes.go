@@ -30,6 +30,12 @@ type NodeSummary struct {
 	WANIPs                   []string
 	// TunnelIPs are WireGuard, flannel, or other overlay endpoint addresses.
 	TunnelIPs                []string
+	// Roles are the node's roles from its node-role.kubernetes.io/* labels,
+	// e.g. ["control-plane", "master"] or ["worker"]. Nodes with no role label
+	// (typical k3s agents) report ["worker"].
+	Roles                    []string
+	// ControlPlane is true when the node runs the control plane (master).
+	ControlPlane             bool
 	Unschedulable            bool
 }
 
@@ -71,6 +77,13 @@ func toNodeSummary(node corev1.Node) NodeSummary {
 		Unschedulable:  node.Spec.Unschedulable,
 	}
 
+	s.Roles = nodeRoles(node)
+	for _, r := range s.Roles {
+		if r == "control-plane" || r == "master" {
+			s.ControlPlane = true
+		}
+	}
+
 	if cpu, ok := node.Status.Capacity[corev1.ResourceCPU]; ok {
 		s.CPUCapacity = cpu.String()
 	}
@@ -106,4 +119,43 @@ func toNodeSummary(node corev1.Node) NodeSummary {
 	}
 
 	return s
+}
+
+// nodeRoles extracts a node's roles from its labels. Roles come from
+// node-role.kubernetes.io/<role> labels (the value is usually empty or "true")
+// and the legacy kubernetes.io/role label. A node with no role label — the
+// normal case for a k3s agent — is reported as ["worker"] so the UI can always
+// show a definite master/worker type.
+func nodeRoles(node corev1.Node) []string {
+	const rolePrefix = "node-role.kubernetes.io/"
+	seen := make(map[string]struct{})
+	roles := make([]string, 0, 2)
+	add := func(role string) {
+		role = strings.TrimSpace(role)
+		if role == "" {
+			return
+		}
+		if _, ok := seen[role]; ok {
+			return
+		}
+		seen[role] = struct{}{}
+		roles = append(roles, role)
+	}
+
+	for label, value := range node.Labels {
+		if strings.HasPrefix(label, rolePrefix) {
+			if role := strings.TrimPrefix(label, rolePrefix); role != "" {
+				add(role)
+			} else {
+				add(value)
+			}
+		}
+	}
+	add(node.Labels["kubernetes.io/role"])
+
+	sortStrings(roles)
+	if len(roles) == 0 {
+		return []string{"worker"}
+	}
+	return roles
 }

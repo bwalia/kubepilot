@@ -63,6 +63,7 @@ struct NodeRow: View {
                     color: node.ready ? Theme.success : Theme.danger
                 )
             }
+            NodeRoleBadge(node: node)
             if !node.allIPs.isEmpty {
                 NodeIPLabels(node: node)
             }
@@ -85,6 +86,9 @@ struct NodeDetailView: View {
         List {
             Section("Status") {
                 LabeledContent("Ready", value: node.ready ? "Yes" : "No")
+                LabeledContent("Role") {
+                    NodeRoleBadge(node: node)
+                }
                 LabeledContent("Kubelet", value: node.kubeletVersion)
                 LabeledContent("Unschedulable", value: node.unschedulable ? "Yes" : "No")
             }

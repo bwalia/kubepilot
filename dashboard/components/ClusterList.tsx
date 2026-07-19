@@ -1,5 +1,6 @@
 import type { NodeSummary } from "@/lib/api";
 import { NodeIPDisplay } from "@/components/NodeIPDisplay";
+import { NodeRoleBadge } from "@/components/NodeRoleBadge";
 import { Server, AlertTriangle, CheckCircle } from "lucide-react";
 
 interface Props {
@@ -51,6 +52,7 @@ export function ClusterList({ nodes, loading }: Props) {
             <thead>
               <tr>
                 <th className="text-left px-5 py-3.5 eyebrow">Node</th>
+                <th className="text-left px-5 py-3.5 eyebrow">Role</th>
                 <th className="text-left px-5 py-3.5 eyebrow">IP Address</th>
                 <th className="text-left px-5 py-3.5 eyebrow">Status</th>
                 <th className="text-left px-5 py-3.5 eyebrow">CPU</th>
@@ -66,6 +68,9 @@ export function ClusterList({ nodes, loading }: Props) {
                   className="hover:bg-pilot-accent/[0.03]"
                 >
                   <td className="px-5 py-3.5 font-mono text-sm font-semibold text-pilot-text-primary">{node.Name}</td>
+                  <td className="px-5 py-3.5">
+                    <NodeRoleBadge node={node} />
+                  </td>
                   <td className="px-5 py-3.5">
                     <NodeIPDisplay node={node} />
                   </td>

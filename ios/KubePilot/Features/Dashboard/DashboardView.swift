@@ -300,6 +300,8 @@ struct DashboardNodeHealthRow: View {
                     )
                 }
 
+                NodeRoleBadge(health: node)
+
                 NodeIPLabels(health: node)
 
                 HStack(spacing: Theme.spacingMD) {

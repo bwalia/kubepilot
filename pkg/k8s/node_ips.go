@@ -21,47 +21,86 @@ type nodeIPBuckets struct {
 	tunnel []string
 }
 
+// classifyNodeIPs sorts a node's addresses into LAN / WAN / Tunnel buckets by IP
+// range rather than by which address k3s happens to report as its internal IP.
+// That distinction matters on WireGuard-meshed clusters, where k3s often sets
+// its internal IP to the WireGuard address (a 10.x tunnel) while the real LAN
+// address (192.168.x) is just another entry — the old "everything that isn't the
+// k3s internal IP is a tunnel" rule buried the physical LAN IP under Tunnel.
+//
+// Rules:
+//   - 192.168.0.0/16 and 172.16.0.0/12 are always LAN (home/office LAN, VPC).
+//   - 10.0.0.0/8 is LAN when it is the node's only private range (AWS VPC), but
+//     Tunnel when a real LAN address coexists (WireGuard / flannel overlay).
+//   - 100.64.0.0/10 (CGNAT / Tailscale) is always Tunnel.
+//   - Public addresses, and k3s/flannel public-IP annotations, are WAN.
 func classifyNodeIPs(node corev1.Node) nodeIPBuckets {
-	lan := newIPSet()
 	wan := newIPSet()
-	tunnel := newIPSet()
+	overlay := newIPSet() // forced tunnel: CGNAT / Tailscale
+	private := newIPSet() // LAN-vs-tunnel decided by range below
 
-	k3sInternal := firstIP(node.Annotations[annoK3sInternalIP])
-	k3sExternal := parseIPList(node.Annotations[annoK3sExternalIP])
-	flannelPublic := firstIP(node.Annotations[annoFlannelPublicIP])
-	flannelOverwrite := firstIP(node.Annotations[annoFlannelPublicIPOverwrite])
-	if flannelOverwrite == "" {
-		flannelOverwrite = firstIP(node.Annotations[annoFlannelPublicIPv6Overwrite])
-	}
-
-	if k3sInternal != "" {
-		lan.add(k3sInternal)
-	}
-	for _, ip := range k3sExternal {
-		wan.add(ip)
-	}
-	if flannelOverwrite != "" {
-		wan.add(flannelOverwrite)
+	// consider routes a single address to WAN, forced-tunnel, or the private pool.
+	consider := func(raw string) {
+		ip := strings.TrimSpace(raw)
+		if ip == "" || net.ParseIP(ip) == nil {
+			return
+		}
+		switch {
+		case isCGNATIP(ip):
+			overlay.add(ip)
+		case isPublicIP(ip):
+			wan.add(ip)
+		case isPrivateIP(ip):
+			private.add(ip)
+		}
 	}
 
 	for _, addr := range node.Status.Addresses {
-		ip := strings.TrimSpace(addr.Address)
-		if ip == "" || net.ParseIP(ip) == nil {
-			continue
-		}
 		switch addr.Type {
-		case corev1.NodeExternalIP:
-			wan.add(ip)
-		case corev1.NodeInternalIP:
-			classifyInternalAddress(ip, k3sInternal, flannelPublic, lan, wan, tunnel)
+		case corev1.NodeExternalIP, corev1.NodeInternalIP:
+			consider(addr.Address)
 		}
 	}
 
-	if flannelPublic != "" {
-		classifyFlannelPublicIP(flannelPublic, k3sInternal, lan, wan, tunnel)
+	// k3s external and flannel public-ip-overwrite are the node's public identity.
+	for _, ip := range parseIPList(node.Annotations[annoK3sExternalIP]) {
+		consider(ip)
+	}
+	if fo := firstIP(node.Annotations[annoFlannelPublicIPOverwrite]); fo != "" {
+		consider(fo)
+	} else if fo := firstIP(node.Annotations[annoFlannelPublicIPv6Overwrite]); fo != "" {
+		consider(fo)
+	}
+	// k3s internal-ip and flannel public-ip are per-node addresses; classify by range.
+	consider(firstIP(node.Annotations[annoK3sInternalIP]))
+	consider(firstIP(node.Annotations[annoFlannelPublicIP]))
+
+	privateIPs := private.values()
+	hasRealLAN := false
+	for _, ip := range privateIPs {
+		if isStrongLANIP(ip) {
+			hasRealLAN = true
+			break
+		}
 	}
 
-	rebalancePrivateInternalIPs(k3sInternal, node.Status.Addresses, lan, tunnel)
+	lan := newIPSet()
+	tunnel := newIPSet()
+	for _, ip := range privateIPs {
+		switch {
+		case isStrongLANIP(ip):
+			lan.add(ip)
+		case hasRealLAN:
+			// A 10.x address alongside a real LAN address is an overlay endpoint.
+			tunnel.add(ip)
+		default:
+			// Only 10.x private addresses present — this is the LAN (e.g. AWS VPC).
+			lan.add(ip)
+		}
+	}
+	for _, ip := range overlay.values() {
+		tunnel.add(ip)
+	}
 
 	return nodeIPBuckets{
 		lan:    lan.values(),
@@ -70,77 +109,30 @@ func classifyNodeIPs(node corev1.Node) nodeIPBuckets {
 	}
 }
 
-func classifyInternalAddress(ip, k3sInternal, flannelPublic string, lan, wan, tunnel *ipSet) {
-	if k3sInternal != "" && ip == k3sInternal {
-		lan.add(ip)
-		return
+// isStrongLANIP reports whether ip is in a range that is unambiguously a physical
+// LAN or cloud VPC (never a WireGuard/overlay endpoint by convention).
+func isStrongLANIP(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
 	}
-	if isPublicIP(ip) {
-		wan.add(ip)
-		return
+	for _, cidr := range []string{"192.168.0.0/16", "172.16.0.0/12"} {
+		if _, network, err := net.ParseCIDR(cidr); err == nil && network.Contains(ip) {
+			return true
+		}
 	}
-	if k3sInternal != "" && ip != k3sInternal {
-		// Extra private internal address while k3s reports a different LAN IP — typical WireGuard / flannel endpoint.
-		tunnel.add(ip)
-		return
-	}
-	if flannelPublic != "" && ip == flannelPublic && k3sInternal != "" && ip != k3sInternal {
-		tunnel.add(ip)
-		return
-	}
-	if isPrivateIP(ip) {
-		lan.add(ip)
-	}
+	return false
 }
 
-func rebalancePrivateInternalIPs(k3sInternal string, addresses []corev1.NodeAddress, lan, tunnel *ipSet) {
-	if k3sInternal != "" {
-		return
+// isCGNATIP reports whether ip is in the 100.64.0.0/10 shared-address range used
+// by carrier-grade NAT and Tailscale — always an overlay/tunnel address here.
+func isCGNATIP(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
 	}
-	var tenDot []string
-	var homeLAN []string
-	for _, addr := range addresses {
-		if addr.Type != corev1.NodeInternalIP {
-			continue
-		}
-		ip := strings.TrimSpace(addr.Address)
-		if !isPrivateIP(ip) {
-			continue
-		}
-		if strings.HasPrefix(ip, "10.") {
-			tenDot = append(tenDot, ip)
-		} else {
-			homeLAN = append(homeLAN, ip)
-		}
-	}
-	if len(tenDot) == 0 || len(homeLAN) == 0 {
-		return
-	}
-	for _, ip := range tenDot {
-		lan.remove(ip)
-		tunnel.add(ip)
-	}
-	for _, ip := range homeLAN {
-		lan.add(ip)
-	}
-}
-
-func classifyFlannelPublicIP(ip, k3sInternal string, lan, wan, tunnel *ipSet) {
-	if k3sInternal != "" && ip == k3sInternal {
-		lan.add(ip)
-		return
-	}
-	if isPublicIP(ip) {
-		wan.add(ip)
-		return
-	}
-	if k3sInternal != "" && ip != k3sInternal {
-		tunnel.add(ip)
-		return
-	}
-	if isPrivateIP(ip) {
-		lan.add(ip)
-	}
+	_, network, err := net.ParseCIDR("100.64.0.0/10")
+	return err == nil && network.Contains(ip)
 }
 
 func mergeNodeIPBuckets(b nodeIPBuckets) []string {
@@ -233,10 +225,6 @@ type ipSet struct {
 
 func newIPSet() *ipSet {
 	return &ipSet{seen: make(map[string]struct{})}
-}
-
-func (s *ipSet) remove(ip string) {
-	delete(s.seen, strings.TrimSpace(ip))
 }
 
 func (s *ipSet) add(ip string) {

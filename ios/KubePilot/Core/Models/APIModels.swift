@@ -75,6 +75,8 @@ struct NodeSummary: Codable, Identifiable, Hashable, Sendable {
     let lanIPs: [String]?
     let wanIPs: [String]?
     let tunnelIPs: [String]?
+    let roles: [String]?
+    let controlPlane: Bool?
     let unschedulable: Bool
 
     enum CodingKeys: String, CodingKey {
@@ -91,7 +93,21 @@ struct NodeSummary: Codable, Identifiable, Hashable, Sendable {
         case lanIPs = "LANIPs"
         case wanIPs = "WANIPs"
         case tunnelIPs = "TunnelIPs"
+        case roles = "Roles"
+        case controlPlane = "ControlPlane"
         case unschedulable = "Unschedulable"
+    }
+
+    /// Node roles for display, defaulting to "worker" so a node always shows a type.
+    var displayRoles: [String] {
+        if let roles, !roles.isEmpty { return roles }
+        return ["worker"]
+    }
+
+    /// True when the node runs the control plane (master).
+    var isControlPlane: Bool {
+        if let controlPlane { return controlPlane }
+        return displayRoles.contains { $0 == "control-plane" || $0 == "master" }
     }
 
     var allIPs: [String] {
@@ -188,9 +204,11 @@ struct NodeHealthRow: Codable, Identifiable, Hashable, Sendable {
     let lanIPs: [String]?
     let wanIPs: [String]?
     let tunnelIPs: [String]?
+    let roles: [String]?
+    let controlPlane: Bool?
 
     enum CodingKeys: String, CodingKey {
-        case name, ready, unschedulable
+        case name, ready, unschedulable, roles
         case cpuCapacity = "cpu_capacity"
         case memoryCapacity = "memory_capacity"
         case cpuUsage = "cpu_usage"
@@ -205,6 +223,19 @@ struct NodeHealthRow: Codable, Identifiable, Hashable, Sendable {
         case lanIPs = "lan_ips"
         case wanIPs = "wan_ips"
         case tunnelIPs = "tunnel_ips"
+        case controlPlane = "control_plane"
+    }
+
+    /// Node roles for display, defaulting to "worker" so a node always shows a type.
+    var displayRoles: [String] {
+        if let roles, !roles.isEmpty { return roles }
+        return ["worker"]
+    }
+
+    /// True when the node runs the control plane (master).
+    var isControlPlane: Bool {
+        if let controlPlane { return controlPlane }
+        return displayRoles.contains { $0 == "control-plane" || $0 == "master" }
     }
 }
 

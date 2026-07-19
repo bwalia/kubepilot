@@ -27,6 +27,7 @@
 		91286E84F26B2F5ECD3E446E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */; };
 		932B03C9135B29347A230757 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD56197EAE085B464CF39AC5 /* APIModels.swift */; };
 		995EE005A8AF4F04320EBDCD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0F4143F1164780374F42C994 /* Assets.xcassets */; };
+		A87599B50C98AC14DE590EC8 /* NodeRoleBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 954FDB6253BD81842533B974 /* NodeRoleBadge.swift */; };
 		B35CFE92D5FA30F48A6C55D6 /* KubePilotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */; };
 		B748CEBB3BB8D078ABE8E5C8 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */; };
 		B92B994F8E9BE45991C4CF69 /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */; };
@@ -87,6 +88,7 @@
 		7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KubePilotWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignComponents.swift; sourceTree = "<group>"; };
+		954FDB6253BD81842533B974 /* NodeRoleBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeRoleBadge.swift; sourceTree = "<group>"; };
 		9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListView.swift; sourceTree = "<group>"; };
 		A52A7423C3B4CAD5EFDA9628 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotIntents.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */,
+				954FDB6253BD81842533B974 /* NodeRoleBadge.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -425,8 +428,8 @@
 			projectRoot = "";
 			targets = (
 				3001FAC7570EFC75761A35C8 /* KubePilot */,
-				1CB9552FBDA8038B79662F78 /* KubePilotWidgets */,
 				E958D0055E34A2388326F8DC /* KubePilotTests */,
+				1CB9552FBDA8038B79662F78 /* KubePilotWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -480,6 +483,7 @@
 				0377A7FDA686FF39010318B9 /* KubePilotLogo.swift in Sources */,
 				5852A6DA686B8892EE9EF2D5 /* LogViewerView.swift in Sources */,
 				7438E7ECE52314E47C11619A /* NodeIPLabels.swift in Sources */,
+				A87599B50C98AC14DE590EC8 /* NodeRoleBadge.swift in Sources */,
 				C73FA654C79B74A8B031D092 /* NodesListView.swift in Sources */,
 				B748CEBB3BB8D078ABE8E5C8 /* OnboardingView.swift in Sources */,
 				219951A2469EB84E4F1996AF /* PersistenceController.swift in Sources */,
