@@ -30,6 +30,10 @@ spec:
     spec:
       serviceAccountName: node-labeler
       hostNetwork: true
+      # With hostNetwork the pod would otherwise use the host's DNS and fail to
+      # resolve in-cluster names; this lets it use cluster DNS. The API address
+      # below is taken from injected env vars (an IP), so DNS isn't relied on.
+      dnsPolicy: ClusterFirstWithHostNet
       # Run on every node, including tainted control-plane nodes.
       tolerations:
         - operator: Exists
@@ -52,7 +56,7 @@ spec:
             - |
               set -eu
               apk add --no-cache iproute2 curl >/dev/null 2>&1 || true
-              API=https://kubernetes.default.svc
+              API="https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}"
               SA=/var/run/secrets/kubernetes.io/serviceaccount
               while true; do
                 IP=$(ip -4 -o route get 1.1.1.1 2>/dev/null | grep -oE 'src [0-9.]+' | awk '{print $2}')
