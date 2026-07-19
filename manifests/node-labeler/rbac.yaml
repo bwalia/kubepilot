@@ -1,0 +1,39 @@
+## RBAC for the node-labeler DaemonSet: it only needs to read nodes and patch
+## their labels. Scoped as tightly as a node-labeler can be — no other verbs,
+## no other resources.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: node-labeler
+  namespace: kubepilot-system
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+    app.kubernetes.io/name: node-labeler
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubepilot-node-labeler
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+    app.kubernetes.io/name: node-labeler
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubepilot-node-labeler
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+    app.kubernetes.io/name: node-labeler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubepilot-node-labeler
+subjects:
+  - kind: ServiceAccount
+    name: node-labeler
+    namespace: kubepilot-system

@@ -111,6 +111,20 @@ struct NodeDetailView: View {
                 pressureRow("PID", node.pidPressure)
             }
             .listRowBackground(Theme.surface)
+
+            if !node.sortedLabels.isEmpty {
+                Section("Labels") {
+                    ForEach(node.sortedLabels, id: \.key) { label in
+                        LabeledContent(label.key) {
+                            Text(label.value)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(Theme.textSecondary)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+                .listRowBackground(Theme.surface)
+            }
         }
         .themedList()
         .navigationTitle(node.name)

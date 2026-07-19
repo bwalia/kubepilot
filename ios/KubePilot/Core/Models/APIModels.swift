@@ -77,6 +77,7 @@ struct NodeSummary: Codable, Identifiable, Hashable, Sendable {
     let tunnelIPs: [String]?
     let roles: [String]?
     let controlPlane: Bool?
+    let labels: [String: String]?
     let unschedulable: Bool
 
     enum CodingKeys: String, CodingKey {
@@ -95,7 +96,13 @@ struct NodeSummary: Codable, Identifiable, Hashable, Sendable {
         case tunnelIPs = "TunnelIPs"
         case roles = "Roles"
         case controlPlane = "ControlPlane"
+        case labels = "Labels"
         case unschedulable = "Unschedulable"
+    }
+
+    /// Node labels sorted by key for stable display.
+    var sortedLabels: [(key: String, value: String)] {
+        (labels ?? [:]).sorted { $0.key < $1.key }
     }
 
     /// Node roles for display, defaulting to "worker" so a node always shows a type.
@@ -206,9 +213,10 @@ struct NodeHealthRow: Codable, Identifiable, Hashable, Sendable {
     let tunnelIPs: [String]?
     let roles: [String]?
     let controlPlane: Bool?
+    let labels: [String: String]?
 
     enum CodingKeys: String, CodingKey {
-        case name, ready, unschedulable, roles
+        case name, ready, unschedulable, roles, labels
         case cpuCapacity = "cpu_capacity"
         case memoryCapacity = "memory_capacity"
         case cpuUsage = "cpu_usage"

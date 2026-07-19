@@ -1,0 +1,8 @@
+## Namespace for KubePilot's in-cluster helpers (node-labeler DaemonSet, etc.).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubepilot-system
+  labels:
+    app.kubernetes.io/managed-by: kubepilot
+    kubepilot.io/role: system

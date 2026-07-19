@@ -49,6 +49,7 @@ export interface NodeSummary {
   TunnelIPs?: string[];
   Roles?: string[];
   ControlPlane?: boolean;
+  Labels?: Record<string, string>;
   Unschedulable: boolean;
 }
 
@@ -87,6 +88,7 @@ export interface NodeHealthRow {
   ready: boolean;
   roles?: string[];
   control_plane?: boolean;
+  labels?: Record<string, string>;
   cpu_capacity: string;
   memory_capacity: string;
   cpu_usage?: string;
@@ -315,6 +317,22 @@ export const listDeployments = (namespace = ""): Promise<DeploymentSummary[]> =>
 
 export const listNodes = (): Promise<NodeSummary[]> =>
   http.get("/clusters/nodes").then((r) => r.data);
+
+// A workload whose nodeSelector pins it to a given node.
+export interface NodeTargetingWorkload {
+  kind: string;
+  name: string;
+  namespace: string;
+  selector: Record<string, string>;
+  pods: number;
+}
+
+export const getNodeTargeting = (
+  node: string
+): Promise<NodeTargetingWorkload[]> =>
+  http
+    .get(`/clusters/nodes/${encodeURIComponent(node)}/targeting`)
+    .then((r) => r.data);
 
 export const listClusterEvents = (params?: {
   namespace?: string;

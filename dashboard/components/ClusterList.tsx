@@ -1,7 +1,10 @@
+import { Fragment, useState } from "react";
 import type { NodeSummary } from "@/lib/api";
 import { NodeIPDisplay } from "@/components/NodeIPDisplay";
 import { NodeRoleBadge } from "@/components/NodeRoleBadge";
-import { Server, AlertTriangle, CheckCircle } from "lucide-react";
+import { NodeLabels } from "@/components/NodeLabels";
+import { NodeTargeting } from "@/components/NodeTargeting";
+import { Server, AlertTriangle, CheckCircle, ChevronRight, ChevronDown } from "lucide-react";
 
 interface Props {
   nodes: NodeSummary[];
@@ -35,7 +38,12 @@ function formatMemoryGB(raw: string): string {
 }
 
 export function ClusterList({ nodes, loading }: Props) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
   if (loading) return <Skeleton />;
+
+  const toggle = (name: string) =>
+    setExpanded((cur) => (cur === name ? null : name));
 
   return (
     <section>
@@ -51,6 +59,7 @@ export function ClusterList({ nodes, loading }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr>
+                <th className="w-8 px-2 py-3.5" aria-label="Expand" />
                 <th className="text-left px-5 py-3.5 eyebrow">Node</th>
                 <th className="text-left px-5 py-3.5 eyebrow">Role</th>
                 <th className="text-left px-5 py-3.5 eyebrow">IP Address</th>
@@ -62,37 +71,65 @@ export function ClusterList({ nodes, loading }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-pilot-border">
-              {nodes.map((node) => (
-                <tr
-                  key={node.Name}
-                  className="hover:bg-pilot-accent/[0.03]"
-                >
-                  <td className="px-5 py-3.5 font-mono text-sm font-semibold text-pilot-text-primary">{node.Name}</td>
-                  <td className="px-5 py-3.5">
-                    <NodeRoleBadge node={node} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <NodeIPDisplay node={node} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {node.Ready ? (
-                      <span className="inline-flex items-center gap-1.5 text-pilot-success text-sm font-medium">
-                        <CheckCircle className="w-4 h-4" /> Ready
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 text-pilot-danger text-sm font-medium">
-                        <AlertTriangle className="w-4 h-4" /> NotReady
-                      </span>
+              {nodes.map((node) => {
+                const isOpen = expanded === node.Name;
+                return (
+                  <Fragment key={node.Name}>
+                    <tr
+                      className="hover:bg-pilot-accent/[0.03] cursor-pointer"
+                      onClick={() => toggle(node.Name)}
+                    >
+                      <td className="px-2 py-3.5 text-pilot-muted">
+                        {isOpen ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-sm font-semibold text-pilot-text-primary">{node.Name}</td>
+                      <td className="px-5 py-3.5">
+                        <NodeRoleBadge node={node} />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <NodeIPDisplay node={node} />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {node.Ready ? (
+                          <span className="inline-flex items-center gap-1.5 text-pilot-success text-sm font-medium">
+                            <CheckCircle className="w-4 h-4" /> Ready
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-pilot-danger text-sm font-medium">
+                            <AlertTriangle className="w-4 h-4" /> NotReady
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{node.CPUCapacity}</td>
+                      <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{formatMemoryGB(node.MemoryCapacity)}</td>
+                      <td className="px-5 py-3.5 text-sm text-pilot-text-secondary font-mono">{node.KubeletVersion}</td>
+                      <td className="px-5 py-3.5">
+                        <PressureBadges node={node} />
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-pilot-accent/[0.02]">
+                        <td colSpan={9} className="px-5 py-4">
+                          <div className="flex flex-col gap-4">
+                            <div>
+                              <p className="eyebrow mb-2">Labels</p>
+                              <NodeLabels node={node} />
+                            </div>
+                            <div>
+                              <p className="eyebrow mb-2">Targeted by (nodeSelector)</p>
+                              <NodeTargeting node={node.Name} />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{node.CPUCapacity}</td>
-                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{formatMemoryGB(node.MemoryCapacity)}</td>
-                  <td className="px-5 py-3.5 text-sm text-pilot-text-secondary font-mono">{node.KubeletVersion}</td>
-                  <td className="px-5 py-3.5">
-                    <PressureBadges node={node} />
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
