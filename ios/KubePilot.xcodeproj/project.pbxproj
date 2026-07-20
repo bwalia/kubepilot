@@ -16,6 +16,7 @@
 		2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */; };
 		40A23F6F8F462CC8217A2B70 /* HelmMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A44B4A207F167F48D6C066 /* HelmMark.swift */; };
 		45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D27256635353D8F6669103 /* BiometricUnlockView.swift */; };
+		4FB041433372998B3391504B /* AIReportCopyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F8A6414EB203EFAEB2904B /* AIReportCopyBar.swift */; };
 		4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */; };
 		5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13FCFADC0A993DA318164 /* DashboardView.swift */; };
 		5852A6DA686B8892EE9EF2D5 /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EABD28677396C8067E479DA /* LogViewerView.swift */; };
@@ -93,6 +94,7 @@
 		A52A7423C3B4CAD5EFDA9628 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotIntents.swift; sourceTree = "<group>"; };
 		B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotApp.swift; sourceTree = "<group>"; };
+		B4F8A6414EB203EFAEB2904B /* AIReportCopyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIReportCopyBar.swift; sourceTree = "<group>"; };
 		BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		BC25EE581B2006F6D7F5C03F /* KubePilotAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotAPI.swift; sourceTree = "<group>"; };
 		C034A8644F934030296CD024 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 		4CD83A91756E0F8574F72753 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				B4F8A6414EB203EFAEB2904B /* AIReportCopyBar.swift */,
 				D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */,
 				954FDB6253BD81842533B974 /* NodeRoleBadge.swift */,
 			);
@@ -467,6 +470,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0412E91B59FDDCADDE8639CB /* AIAssistantView.swift in Sources */,
+				4FB041433372998B3391504B /* AIReportCopyBar.swift in Sources */,
 				2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */,
 				932B03C9135B29347A230757 /* APIModels.swift in Sources */,
 				CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */,

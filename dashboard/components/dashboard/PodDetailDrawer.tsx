@@ -10,6 +10,7 @@ import {
   type SuggestedAction,
 } from "@/lib/api";
 import { LogViewer } from "@/components/LogViewer";
+import { AIReportActions } from "@/components/AIReportActions";
 import { PortForwardButton } from "@/components/PortForwardButton";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
@@ -348,6 +349,9 @@ function AIAnalysisTab({
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <AIReportActions report={report} />
+      </div>
       <Panel title="Root Cause">
         <p className="text-base font-bold text-pilot-danger leading-relaxed">{report.RootCause || "Unknown"}</p>
       </Panel>

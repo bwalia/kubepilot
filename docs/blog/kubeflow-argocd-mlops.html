@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kubeflow + Argo CD: Making MLOps Work Like Charm | KubePilot Blog</title>
+    <meta
+      name="description"
+      content="Why ML in production breaks, what Kubeflow and Argo CD each solve, a reference GitOps architecture, and a step-by-step guide to deploying Kubeflow with Argo CD so your MLOps runs like charm."
+    />
+    <meta name="theme-color" content="#0a0f1c" />
+    <link rel="canonical" href="https://kubepilot.io/blog/kubeflow-argocd-mlops.html" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Kubeflow + Argo CD: Making MLOps Work Like Charm" />
+    <meta property="og:description" content="What Kubeflow and Argo CD each solve, and a step-by-step GitOps guide to deploying Kubeflow with Argo CD." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0a0f1c;
+        --surface: #111827;
+        --surface-2: #1f2937;
+        --surface-3: #283548;
+        --border: rgba(255,255,255,0.08);
+        --border-hover: rgba(255,255,255,0.16);
+        --text: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --muted: #94a3b8;
+        --brand: #3b82f6;
+        --brand-light: #60a5fa;
+        --brand-glow: rgba(59,130,246,0.15);
+        --green: #22c55e;
+        --green-bg: rgba(34,197,94,0.1);
+        --green-border: rgba(34,197,94,0.25);
+        --purple: #a78bfa;
+        --amber: #fbbf24;
+        --radius: 16px;
+        --radius-sm: 10px;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: var(--text); background: var(--bg); line-height: 1.75;
+        overflow-x: hidden; font-size: 18px;
+        -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      }
+      a { color: var(--brand-light); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      img { max-width: 100%; height: auto; }
+
+      .wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+
+      /* Nav */
+      .nav {
+        position: sticky; top: 0; z-index: 50;
+        background: rgba(10,15,28,0.88);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 16px; }
+      .logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; white-space: nowrap; color: var(--text); }
+      .logo span { color: var(--brand); }
+      .nav-links { display: flex; align-items: center; gap: 6px; }
+      .nav-links a {
+        font-size: 1rem; font-weight: 500; color: var(--muted);
+        padding: 8px 16px; border-radius: var(--radius-sm); transition: color 0.2s, background 0.2s;
+      }
+      .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.06); text-decoration: none; }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        font-size: 1rem; font-weight: 600; padding: 12px 24px; border-radius: var(--radius-sm);
+        border: 1px solid var(--border); color: var(--text); background: var(--surface);
+        transition: all 0.2s; cursor: pointer; white-space: nowrap;
+      }
+      .btn:hover { border-color: var(--border-hover); background: var(--surface-2); transform: translateY(-1px); text-decoration: none; }
+      .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: 0 4px 24px var(--brand-glow); }
+      .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
+
+      /* Article */
+      .article { padding: 56px 0 40px; }
+      .article-wrap { max-width: 780px; margin: 0 auto; padding: 0 28px; }
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--brand-light); margin-bottom: 20px;
+      }
+      .eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+      h1.title {
+        font-size: clamp(2.1rem, 5vw, 3.2rem); line-height: 1.1; font-weight: 900;
+        letter-spacing: -0.03em; margin-bottom: 20px;
+      }
+      h1.title .gradient {
+        background: linear-gradient(135deg, var(--brand-light) 0%, var(--purple) 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      }
+      .lede { font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 24px; }
+      .meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; color: var(--muted); font-size: 0.95rem; margin-bottom: 8px; }
+      .tag { font-size: 0.8rem; font-weight: 600; color: var(--purple); background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.25); padding: 4px 12px; border-radius: 999px; }
+      hr.rule { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+      .prose h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; margin: 48px 0 14px; }
+      .prose h3 { font-size: 1.25rem; font-weight: 700; margin: 32px 0 10px; color: var(--text); }
+      .prose p { color: var(--text-secondary); margin-bottom: 18px; }
+      .prose ul, .prose ol { color: var(--text-secondary); margin: 0 0 18px 1.2em; }
+      .prose li { margin-bottom: 8px; }
+      .prose strong { color: var(--text); font-weight: 700; }
+      .prose code {
+        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.86em; background: var(--surface-2); border: 1px solid var(--border);
+        padding: 2px 6px; border-radius: 6px; color: #e2e8f0;
+      }
+      pre {
+        background: #0d1424; border: 1px solid var(--border); border-radius: var(--radius-sm);
+        padding: 18px 20px; overflow-x: auto; margin: 0 0 22px;
+      }
+      pre code {
+        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.82rem; line-height: 1.7; background: none; border: none; padding: 0; color: #cbd5e1;
+      }
+      .code-label {
+        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--muted); margin-bottom: 8px; display: block;
+      }
+
+      /* Callout */
+      .callout {
+        display: flex; gap: 14px; background: var(--brand-glow); border: 1px solid rgba(59,130,246,0.25);
+        border-radius: var(--radius-sm); padding: 18px 20px; margin: 0 0 24px;
+      }
+      .callout.tip { background: var(--green-bg); border-color: var(--green-border); }
+      .callout .ico { flex: 0 0 auto; font-size: 1.2rem; line-height: 1.6; }
+      .callout p { margin: 0; color: var(--text-secondary); font-size: 0.98rem; }
+      .callout strong { color: var(--text); }
+
+      /* Two-column compare */
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 8px 0 24px; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+      .card h3 { margin-top: 0; }
+      .card .pill { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 999px; display: inline-block; margin-bottom: 12px; }
+      .pill.kf { color: var(--brand-light); background: var(--brand-glow); border: 1px solid rgba(59,130,246,0.25); }
+      .pill.argo { color: #fb923c; background: rgba(251,146,60,0.12); border: 1px solid rgba(251,146,60,0.25); }
+      .card ul { margin: 0 0 0 1.1em; }
+
+      /* Video */
+      .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: #000; margin-bottom: 12px; }
+      .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+      .video-cap { color: var(--muted); font-size: 0.9rem; text-align: center; margin-bottom: 24px; }
+
+      /* Steps */
+      .step-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 10px; }
+      .step-num { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: var(--brand); box-shadow: 0 4px 16px var(--brand-glow); }
+      .step-head h3 { margin: 0; }
+
+      /* CTA */
+      .cta { margin: 48px 0 8px; background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(167,139,250,0.10)); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; text-align: center; }
+      .cta h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+      .cta p { color: var(--text-secondary); margin-bottom: 18px; }
+
+      /* Footer */
+      .footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--muted); font-size: 0.95rem; margin-top: 32px; }
+      .footer a { color: var(--muted); }
+      .footer a:hover { color: var(--text); }
+
+      @media (max-width: 720px) {
+        .nav-links a:not(.btn) { display: none; }
+        .grid2 { grid-template-columns: 1fr; }
+        body { font-size: 17px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a href="../landing/index.html" class="logo">Kube<span>Pilot</span></a>
+        <nav class="nav-links">
+          <a href="../landing/index.html#features">Features</a>
+          <a href="./index.html">Blog</a>
+          <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
+          <a href="https://github.com/bwalia/kubepilot" class="btn">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="article">
+      <div class="article-wrap">
+        <span class="eyebrow">MLOps &middot; GitOps</span>
+        <h1 class="title">Kubeflow + Argo CD: Making MLOps Work <span class="gradient">Like Charm</span></h1>
+        <p class="lede">
+          Training a model is the easy part. Getting it to production — reproducibly, safely, and
+          without a human babysitting <code>kubectl</code> — is where most ML projects stall. Here's
+          how Kubeflow and Argo CD divide that problem cleanly, and a step-by-step guide to wiring
+          them together with GitOps.
+        </p>
+        <div class="meta">
+          <span class="tag">Tutorial</span>
+          <span>By the KubePilot team</span>
+          <span>&middot;</span>
+          <span>~12 min read</span>
+        </div>
+
+        <hr class="rule" />
+
+        <div class="prose">
+          <h2>The problem: ML in production is mostly plumbing</h2>
+          <p>
+            A data scientist gets a model to 0.94 F1 in a notebook. Then reality hits. That notebook
+            has to become a repeatable <strong>training pipeline</strong>, the resulting artifact has
+            to be <strong>versioned</strong>, a <strong>serving endpoint</strong> has to be stood up,
+            and the whole thing has to be <strong>re-runnable</strong> when data drifts next month.
+            Along the way you accumulate a pile of bash scripts, hand-run <code>kubectl apply</code>s,
+            and tribal knowledge that lives in one engineer's terminal history.
+          </p>
+          <p>The failure modes are always the same:</p>
+          <ul>
+            <li><strong>Non-reproducibility</strong> — "it worked when I ran it" — no record of what was deployed, when, or from which commit.</li>
+            <li><strong>Configuration drift</strong> — someone hotfixes the cluster live; the next deploy silently reverts it.</li>
+            <li><strong>Fragile handoffs</strong> — the gap between "notebook" and "production" is a manual, error-prone relay race.</li>
+            <li><strong>No easy rollback</strong> — a bad model or config is a scramble, not a one-line revert.</li>
+          </ul>
+          <p>
+            Two CNCF-ecosystem tools solve two halves of this. <strong>Kubeflow</strong> gives you the
+            ML workloads. <strong>Argo CD</strong> gives you a disciplined, Git-driven way to deploy and
+            keep them in sync. Used together, they turn the mess above into a system.
+          </p>
+
+          <h2>What each tool actually solves</h2>
+          <div class="grid2">
+            <div class="card">
+              <span class="pill kf">Kubeflow</span>
+              <h3>The ML platform</h3>
+              <p style="font-size:0.98rem;">Kubernetes-native machine learning. It answers "how do I run ML workloads?"</p>
+              <ul style="font-size:0.95rem;">
+                <li><strong>Pipelines</strong> — DAGs of containerized steps (prep → train → evaluate → register) with lineage.</li>
+                <li><strong>Notebooks</strong> — managed Jupyter environments on the cluster.</li>
+                <li><strong>Training operators</strong> — distributed PyTorch/TensorFlow/XGBoost jobs.</li>
+                <li><strong>Katib</strong> — hyperparameter tuning &amp; AutoML.</li>
+                <li><strong>KServe</strong> — scalable, standardized model serving with canary rollouts.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="pill argo">Argo CD</span>
+              <h3>The delivery engine</h3>
+              <p style="font-size:0.98rem;">Declarative GitOps CD for Kubernetes. It answers "how does anything get deployed — safely?"</p>
+              <ul style="font-size:0.95rem;">
+                <li><strong>Git is the source of truth</strong> — the cluster is reconciled to match a repo.</li>
+                <li><strong>Drift detection</strong> — shows and corrects anything that diverges from Git.</li>
+                <li><strong>Self-healing</strong> — reverts out-of-band changes automatically.</li>
+                <li><strong>Instant rollback</strong> — <code>git revert</code> is your rollback.</li>
+                <li><strong>Audit &amp; approvals</strong> — every change is a reviewed pull request.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <span class="ico">🧩</span>
+            <p><strong>The key insight:</strong> Kubeflow is <em>what</em> you run; Argo CD is <em>how</em> it gets there and stays there. Kubeflow itself is just a large set of Kubernetes manifests — which makes it a perfect thing to manage <em>with</em> Argo CD.</p>
+          </div>
+
+          <h2>Watch: operationalizing ML with Kubeflow + GitOps</h2>
+          <p>
+            Before the hands-on, this KubeCon + CloudNativeCon talk is the best 30-minute overview of the
+            exact journey this post describes — going from ad-hoc bash scripts to Kubeflow pipelines
+            delivered through GitOps, at real scale.
+          </p>
+          <div class="video-frame">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/dwt-MBEUGpQ"
+              title="From Bash Scripts to Kubeflow and GitOps: Our Journey to Operationalizing ML at Scale (KubeCon + CloudNativeCon)"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+          </div>
+          <p class="video-cap">“From Bash Scripts to Kubeflow and GitOps: Our Journey to Operationalizing ML at Scale” — KubeCon + CloudNativeCon (CNCF).</p>
+
+          <h2>Reference architecture</h2>
+          <p>
+            The pattern is a GitOps loop. You never <code>kubectl apply</code> to production by hand.
+            You change YAML in Git; Argo CD notices and reconciles the cluster. Kubeflow and every ML
+            app it hosts are just Applications in that loop.
+          </p>
+          <pre><code>          commit / PR
+   You ─────────────────────▶  Git repo (source of truth)
+                                     │  kubeflow/            (platform manifests)
+                                     │  pipelines/           (your ML pipelines)
+                                     │  serving/             (KServe InferenceServices)
+                                     │  apps/                (app-of-apps root)
+                                     ▼
+                              ┌─────────────┐   watches &amp; reconciles
+                              │   Argo CD   │ ───────────────────────▶  Kubernetes cluster
+                              └─────────────┘   (self-heal + drift)          │
+                                     ▲                                       ▼
+                                     │        Kubeflow: Pipelines · KServe · Katib · Notebooks
+                                     └──────────────  status / health  ──────────────┘</code></pre>
+
+          <h2>Deploy it, step by step</h2>
+          <p>
+            The following gets you from an empty cluster to Kubeflow delivered by Argo CD via GitOps.
+            You'll need a Kubernetes cluster (v1.29+ recommended for current Kubeflow), <code>kubectl</code>,
+            and <code>kustomize</code>.
+          </p>
+
+          <div class="step-head"><span class="step-num">1</span><h3>Install Argo CD</h3></div>
+          <p>Argo CD goes in first — it will deploy everything else.</p>
+          <pre><span class="code-label">bash</span><code>kubectl create namespace argocd
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Wait for it to come up
+kubectl -n argocd rollout status deploy/argocd-server</code></pre>
+          <p>Grab the initial admin password and log in (port-forward for local access):</p>
+          <pre><span class="code-label">bash</span><code>kubectl -n argocd port-forward svc/argocd-server 8080:443 &amp;
+argocd admin initial-password -n argocd            # prints the password
+argocd login localhost:8080 --username admin --insecure</code></pre>
+
+          <div class="step-head"><span class="step-num">2</span><h3>Put Kubeflow's manifests in Git</h3></div>
+          <p>
+            Fork or vendor the official <a href="https://github.com/kubeflow/manifests">kubeflow/manifests</a>
+            repo into your own Git repo. Pin a release tag — never track <code>main</code> for a platform
+            this large. Your repo layout might look like:
+          </p>
+          <pre><span class="code-label">repo layout</span><code>my-mlops-platform/
+├── kubeflow/            # vendored kubeflow/manifests @ v1.9.x (the "example" overlay)
+├── pipelines/           # your compiled KFP pipelines
+├── serving/             # KServe InferenceServices
+└── apps/                # Argo CD Application definitions (app-of-apps)</code></pre>
+          <div class="callout tip">
+            <span class="ico">💡</span>
+            <p><strong>Why vendor it?</strong> GitOps means the repo is the source of truth. Pointing Argo CD at someone else's fast-moving <code>main</code> makes your deploys non-reproducible — the exact thing we're trying to eliminate.</p>
+          </div>
+
+          <div class="step-head"><span class="step-num">3</span><h3>Define Kubeflow as an Argo CD Application</h3></div>
+          <p>Now tell Argo CD to reconcile the cluster to your Kubeflow manifests:</p>
+          <pre><span class="code-label">kubeflow-app.yaml</span><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/&lt;you&gt;/my-mlops-platform.git
+    targetRevision: main
+    path: kubeflow          # the kustomize overlay
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true           # delete what Git no longer declares
+      selfHeal: true        # revert out-of-band changes
+    syncOptions:
+      - ServerSideApply=true # required — Kubeflow CRDs are large
+      - CreateNamespace=true
+    retry:
+      limit: 10             # Kubeflow's CRDs+CRs need a few passes to settle
+      backoff: { duration: 20s, factor: 2, maxDuration: 5m }</code></pre>
+          <pre><span class="code-label">bash</span><code>kubectl apply -f kubeflow-app.yaml
+argocd app sync kubeflow
+argocd app wait kubeflow --health</code></pre>
+          <div class="callout">
+            <span class="ico">⚠️</span>
+            <p><strong>Expect a couple of retries.</strong> Kubeflow installs CRDs and the custom resources that use them in one shot, so the first sync often partially fails until the CRDs register. <code>ServerSideApply=true</code> plus the <code>retry</code> block above (or Argo CD <em>sync waves</em>) handles this — it's normal, not a bug.</p>
+          </div>
+
+          <div class="step-head"><span class="step-num">4</span><h3>Adopt the app-of-apps pattern</h3></div>
+          <p>
+            Rather than manage each piece by hand, create one <strong>root</strong> Application that points
+            at your <code>apps/</code> directory. Every child — Kubeflow, your pipelines, model serving,
+            monitoring — becomes a versioned, self-healing Application. Add a new capability by adding a
+            file and merging a PR.
+          </p>
+          <pre><span class="code-label">apps/root.yaml</span><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlops-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/&lt;you&gt;/my-mlops-platform.git
+    targetRevision: main
+    path: apps              # a directory full of Application manifests
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }</code></pre>
+
+          <div class="step-head"><span class="step-num">5</span><h3>Ship a model the GitOps way</h3></div>
+          <p>
+            With the platform live, deploying a model is a pull request. Compile a Kubeflow pipeline,
+            commit it, and declare a KServe <code>InferenceService</code> that Argo CD will roll out —
+            with canary traffic splitting built in:
+          </p>
+          <pre><span class="code-label">serving/fraud-model.yaml</span><code>apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: fraud-detector
+  namespace: kubeflow-user
+spec:
+  predictor:
+    canaryTrafficPercent: 20        # send 20% to the new model first
+    model:
+      modelFormat: { name: sklearn }
+      storageUri: gs://my-models/fraud/v7/</code></pre>
+          <p>Bump <code>v7</code> to <code>v8</code> in a PR, merge, and Argo CD does the canary rollout. Roll back with <code>git revert</code>. That's the whole point.</p>
+
+          <h2>Making it run like charm</h2>
+          <p>Getting it working is step one. These practices are what keep it boring — in the best way:</p>
+          <ul>
+            <li><strong>Sync waves for ordering.</strong> Annotate resources with <code>argocd.argoproj.io/sync-wave</code> so CRDs, then controllers, then workloads apply in order.</li>
+            <li><strong>Separate environments as overlays.</strong> <code>overlays/dev</code>, <code>overlays/staging</code>, <code>overlays/prod</code> — each its own Application, each promoted by a PR.</li>
+            <li><strong>Never commit secrets.</strong> Use Sealed Secrets, External Secrets Operator, or SOPS. Git is public-by-accident-prone; encrypt what matters.</li>
+            <li><strong>Automate image bumps.</strong> Argo CD Image Updater can open PRs when a new model or component image is published — GitOps all the way down.</li>
+            <li><strong>Watch the pipelines, not just the deploys.</strong> A green Argo CD sync means the manifest applied — not that the training job succeeded or the model is healthy. Monitor pipeline runs and serving latency separately.</li>
+            <li><strong>Make rollback a reflex.</strong> Because Git is the source of truth, a bad model version, a broken CRD upgrade, or a runaway job are all one <code>git revert</code> away.</li>
+          </ul>
+
+          <div class="callout tip">
+            <span class="ico">🚀</span>
+            <p><strong>Where KubePilot fits.</strong> GitOps tells you <em>what</em> is deployed; it doesn't tell you <em>why</em> a Kubeflow pipeline pod is in <code>CrashLoopBackOff</code> at 2am. That's exactly what <a href="../landing/index.html">KubePilot</a> is for — AI root-cause analysis over pod events and logs, cluster-wide health, and safe, dry-run-first remediation for your ML workloads, from the dashboard or your phone.</p>
+          </div>
+
+          <h2>Keep watching</h2>
+          <p>Hands-on follow-ups from the wider community:</p>
+          <ul>
+            <li><a href="https://www.youtube.com/watch?v=5iOQcGfcZe4">KubeFlow Pipelines Zero to Hero — a realtime MLOps project</a></li>
+            <li><a href="https://www.youtube.com/watch?v=OzjjpeoY-LE">Kubeflow MLOps: from notebook development to production inference</a></li>
+            <li><a href="https://www.youtube.com/watch?v=MeU5_k9ssrs">Argo CD Tutorial for Beginners — GitOps CD for Kubernetes</a></li>
+            <li><a href="https://www.youtube.com/watch?v=Vwzp_jTNaZI">CNCF Projects Tour: Mastering GitOps with Argo (Kostis Kapelonis)</a></li>
+          </ul>
+
+          <div class="cta">
+            <h3>Troubleshoot your ML platform with AI</h3>
+            <p>KubePilot brings AI root-cause analysis, dry-run remediation, and Autopilot self-healing to your Kubeflow + Argo CD clusters — on web and iOS.</p>
+            <a href="https://github.com/bwalia/kubepilot" class="btn btn-primary">Get KubePilot on GitHub</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        KubePilot &copy; 2025&ndash;2026 &middot;
+        <a href="./index.html">Blog</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot">GitHub</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot#readme">Documentation</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot/issues">Issues</a>
+      </div>
+    </footer>
+  </body>
+</html>

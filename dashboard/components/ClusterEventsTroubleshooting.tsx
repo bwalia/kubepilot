@@ -25,6 +25,7 @@ import {
   type KubeEvent,
 } from "@/lib/api";
 import { LogViewer } from "@/components/LogViewer";
+import { AIReportActions } from "@/components/AIReportActions";
 import { useNamespaceLock } from "@/lib/useNamespaceLock";
 
 const IMPORTANT_REASONS = new Set([
@@ -729,6 +730,9 @@ function PodDiagnosticsModal({
                   </div>
                 ) : aiReport ? (
                   <div className="space-y-4 animate-fade-in">
+                    <div className="flex justify-end">
+                      <AIReportActions report={aiReport} />
+                    </div>
                     <div className="bg-pilot-bg border border-pilot-border rounded-xl p-5">
                       <p className="eyebrow mb-2">Root Cause</p>
                       <p className="text-base font-bold text-pilot-danger leading-relaxed">{aiReport.RootCause || "Unknown root cause"}</p>

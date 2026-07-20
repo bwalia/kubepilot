@@ -446,6 +446,71 @@ struct TroubleshootReport: Codable, Sendable {
     private enum AltKeys: String, CodingKey { case podName = "PodName" }
 }
 
+extension SuggestedAction {
+    /// One-line, copy-friendly summary of the action.
+    var summaryLine: String {
+        var bits = ["[\(type)]"]
+        if let resource, !resource.isEmpty { bits.append(resource) }
+        if let namespace, !namespace.isEmpty { bits.append("ns=\(namespace)") }
+        if let replicas { bits.append("replicas=\(replicas)") }
+        if let command, !command.isEmpty { bits.append("cmd: \(command)") }
+        let head = bits.joined(separator: " ")
+        return explanation.isEmpty ? "- \(head)" : "- \(head) — \(explanation)"
+    }
+}
+
+extension TroubleshootReport {
+    /// Plain-text rendering of the analysis — a raw copy of what's on screen.
+    var outputText: String {
+        var lines = [
+            "KubePilot AI analysis — pod \(podName) (namespace \(namespace))",
+            "",
+            "Root cause:",
+            rootCause.isEmpty ? "Unknown" : rootCause,
+            "",
+            "Analysis:",
+            analysis.isEmpty ? "(none)" : analysis,
+        ]
+        if !actions.isEmpty {
+            lines.append("")
+            lines.append("Suggested actions:")
+            lines.append(contentsOf: actions.map(\.summaryLine))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// A prompt to paste into a terminal LLM (e.g. Claude) to produce a concrete fix.
+    var fixPrompt: String {
+        var lines = [
+            "I'm troubleshooting a Kubernetes workload. Below is an AI root-cause analysis from KubePilot.",
+            "Please help me fix it: confirm the likely root cause, then give me exact copy-paste kubectl",
+            "commands and/or manifest changes to resolve it, and call out anything risky before I run it.",
+            "",
+            "Pod: \(podName)",
+            "Namespace: \(namespace)",
+            "",
+            "Root cause:",
+            rootCause.isEmpty ? "Unknown" : rootCause,
+            "",
+            "Analysis:",
+            analysis.isEmpty ? "(none)" : analysis,
+        ]
+        if !actions.isEmpty {
+            lines.append("")
+            lines.append("Suggested actions from KubePilot:")
+            lines.append(contentsOf: actions.map(\.summaryLine))
+        }
+        lines.append(contentsOf: [
+            "",
+            "Deliverables:",
+            "1. The most likely root cause in one line.",
+            "2. Exact kubectl commands (and any YAML) to fix it, ready to paste.",
+            "3. A quick verification step to confirm the fix worked.",
+        ])
+        return lines.joined(separator: "\n")
+    }
+}
+
 struct AIInterpretResponse: Codable, Sendable {
     let actions: [SuggestedAction]
 }

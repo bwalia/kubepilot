@@ -230,16 +230,20 @@ struct AIAnalysisCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            AIReportCopyBar(report: report)
+
             Label("Executive Summary", systemImage: "doc.text.magnifyingglass")
                 .font(.headline)
             Text(report.rootCause)
                 .font(.subheadline)
+                .textSelection(.enabled)
 
             Label("Analysis", systemImage: "brain.head.profile")
                 .font(.headline)
             Text(report.analysis)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .textSelection(.enabled)
 
             if !report.actions.isEmpty {
                 Label("Recommended Actions", systemImage: "wrench.and.screwdriver")

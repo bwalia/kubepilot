@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blog | KubePilot</title>
+    <meta name="description" content="Guides and deep-dives on Kubernetes operations, MLOps, GitOps, and AI-assisted troubleshooting from the KubePilot team." />
+    <meta name="theme-color" content="#0a0f1c" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0a0f1c; --surface: #111827; --surface-2: #1f2937;
+        --border: rgba(255,255,255,0.08); --border-hover: rgba(255,255,255,0.16);
+        --text: #f1f5f9; --text-secondary: #cbd5e1; --muted: #94a3b8;
+        --brand: #3b82f6; --brand-light: #60a5fa; --brand-glow: rgba(59,130,246,0.15);
+        --purple: #a78bfa; --radius: 16px; --radius-sm: 10px;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        color: var(--text); background: var(--bg); line-height: 1.7; font-size: 18px;
+        -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow-x: hidden;
+      }
+      a { color: inherit; text-decoration: none; }
+      .wrap { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+
+      .nav { position: sticky; top: 0; z-index: 50; background: rgba(10,15,28,0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
+      .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 16px; }
+      .logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; }
+      .logo span { color: var(--brand); }
+      .nav-links { display: flex; align-items: center; gap: 6px; }
+      .nav-links a { font-size: 1rem; font-weight: 500; color: var(--muted); padding: 8px 16px; border-radius: var(--radius-sm); transition: color 0.2s, background 0.2s; }
+      .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+      .btn { display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600; padding: 12px 24px; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text); background: var(--surface); transition: all 0.2s; }
+      .btn:hover { border-color: var(--border-hover); background: var(--surface-2); }
+
+      .head { padding: 72px 0 32px; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand-light); margin-bottom: 16px; }
+      .eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+      .head h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 14px; }
+      .head p { color: var(--text-secondary); font-size: 1.2rem; max-width: 640px; }
+
+      .posts { padding: 8px 0 64px; display: grid; gap: 20px; }
+      .post {
+        display: block; background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 28px; transition: transform 0.2s, border-color 0.2s;
+      }
+      .post:hover { transform: translateY(-2px); border-color: var(--border-hover); }
+      .post .tags { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+      .post .tag { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; color: var(--purple); background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.25); }
+      .post h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
+      .post:hover h2 { color: var(--brand-light); }
+      .post p { color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 14px; }
+      .post .meta { color: var(--muted); font-size: 0.92rem; display: flex; gap: 10px; align-items: center; }
+      .read { color: var(--brand-light); font-weight: 600; }
+
+      .footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
+      .footer a:hover { color: var(--text); }
+
+      @media (max-width: 720px) { .nav-links a:not(.btn) { display: none; } body { font-size: 17px; } }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a href="../landing/index.html" class="logo">Kube<span>Pilot</span></a>
+        <nav class="nav-links">
+          <a href="../landing/index.html#features">Features</a>
+          <a href="./index.html">Blog</a>
+          <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
+          <a href="https://github.com/bwalia/kubepilot" class="btn">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="head">
+        <div class="wrap">
+          <span class="eyebrow">KubePilot Blog</span>
+          <h1>Kubernetes, MLOps &amp; AI Ops</h1>
+          <p>Practical guides on running Kubernetes and machine learning in production — GitOps, troubleshooting, and AI-assisted operations.</p>
+        </div>
+      </section>
+
+      <section class="wrap posts">
+        <a class="post" href="./kubeflow-argocd-mlops.html">
+          <div class="tags"><span class="tag">MLOps</span><span class="tag">GitOps</span><span class="tag">Tutorial</span></div>
+          <h2>Kubeflow + Argo CD: Making MLOps Work Like Charm</h2>
+          <p>Why ML in production is mostly plumbing, what Kubeflow and Argo CD each solve, a reference GitOps architecture, and a step-by-step guide to deploying Kubeflow with Argo CD — with a great KubeCon walkthrough video.</p>
+          <div class="meta"><span>~12 min read</span><span>&middot;</span><span class="read">Read article &rarr;</span></div>
+        </a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        KubePilot &copy; 2025&ndash;2026 &middot;
+        <a href="https://github.com/bwalia/kubepilot">GitHub</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot#readme">Documentation</a>
+      </div>
+    </footer>
+  </body>
+</html>
