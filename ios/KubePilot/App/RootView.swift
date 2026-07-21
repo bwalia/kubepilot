@@ -38,6 +38,9 @@ struct MainTabView: View {
             Tab(AppTab.ai.title, systemImage: AppTab.ai.systemImage, value: AppTab.ai) {
                 AIAssistantView()
             }
+            Tab(AppTab.autopilot.title, systemImage: AppTab.autopilot.systemImage, value: AppTab.autopilot) {
+                AutopilotView()
+            }
             Tab(AppTab.alerts.title, systemImage: AppTab.alerts.systemImage, value: AppTab.alerts) {
                 AlertsView()
             }

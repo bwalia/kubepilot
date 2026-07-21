@@ -515,6 +515,95 @@ struct AIInterpretResponse: Codable, Sendable {
     let actions: [SuggestedAction]
 }
 
+/// Result of POST /ai/execute-action.
+struct ExecuteActionResult: Codable, Sendable {
+    let status: String   // "executed" | "skipped"
+    let message: String
+
+    var didExecute: Bool { status.lowercased() == "executed" }
+}
+
+// MARK: - Autopilot
+
+enum AutopilotMode: String, Codable, Sendable, CaseIterable {
+    case off, dryRun = "dry-run", active
+
+    var label: String {
+        switch self {
+        case .off: return "Off"
+        case .dryRun: return "Dry-run"
+        case .active: return "Active"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .off: return "No automated remediation."
+        case .dryRun: return "Decides and logs what it would do — no changes applied."
+        case .active: return "Applies safe remediations automatically."
+        }
+    }
+}
+
+struct AutopilotPolicy: Codable, Sendable {
+    let mode: AutopilotMode
+    let minConfidence: Double
+    let allowedActions: [String]
+    let maxRisk: String
+    let allowedNamespaces: [String]?
+    let blockedNamespaces: [String]?
+    let cooldown: Int64            // nanoseconds (Go time.Duration)
+    let maxActionsPerHour: Int
+
+    enum CodingKeys: String, CodingKey {
+        case mode
+        case minConfidence = "min_confidence"
+        case allowedActions = "allowed_actions"
+        case maxRisk = "max_risk"
+        case allowedNamespaces = "allowed_namespaces"
+        case blockedNamespaces = "blocked_namespaces"
+        case cooldown
+        case maxActionsPerHour = "max_actions_per_hour"
+    }
+
+    /// Human-readable cooldown (nanoseconds → minutes/seconds).
+    var cooldownDescription: String {
+        let seconds = Double(cooldown) / 1_000_000_000
+        if seconds >= 60 { return "\(Int(seconds / 60))m" }
+        return "\(Int(seconds))s"
+    }
+}
+
+struct AutopilotDecision: Codable, Identifiable, Sendable {
+    var id: String { "\(time.timeIntervalSince1970)-\(reportID)" }
+    let time: Date
+    let reportID: String
+    let resource: AnomalyResource
+    let severity: String
+    let confidence: Double
+    let rootCause: String
+    let action: String?
+    let verdict: String            // executed | dry-run | skipped | escalated | failed
+    let reason: String
+    let output: String?
+
+    enum CodingKeys: String, CodingKey {
+        case time, resource, severity, confidence, action, verdict, reason, output
+        case reportID = "report_id"
+        case rootCause = "root_cause"
+    }
+}
+
+struct AutopilotStatus: Codable, Sendable {
+    let enabled: Bool
+    let policy: AutopilotPolicy?
+    let decisions: [AutopilotDecision]
+    let stats: [String: Int]
+
+    var mode: AutopilotMode { policy?.mode ?? .off }
+    func stat(_ key: String) -> Int { stats[key] ?? 0 }
+}
+
 struct RCAReport: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let timestamp: Date

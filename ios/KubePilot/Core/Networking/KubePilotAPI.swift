@@ -136,6 +136,37 @@ enum KubePilotAPI {
     static func autopilotStatus(limit: Int = 50) -> APIRequest {
         APIRequest(path: "autopilot", query: ["limit": String(limit)])
     }
+
+    static func autopilotSetMode(_ mode: String) -> APIRequest {
+        struct Payload: Encodable { let mode: String }
+        let body = try? JSONEncoder.kubePilot.encode(Payload(mode: mode))
+        return APIRequest(path: "autopilot/mode", method: .post, body: body)
+    }
+
+    static func autopilotPause() -> APIRequest {
+        APIRequest(path: "autopilot/pause", method: .post)
+    }
+
+    static func autopilotResume() -> APIRequest {
+        APIRequest(path: "autopilot/resume", method: .post)
+    }
+
+    static func executeAction(_ action: SuggestedAction, changeID: String? = nil, crCode: String? = nil) -> APIRequest {
+        struct Payload: Encodable {
+            let action: SuggestedAction
+            let change_id: String?
+            let cr_code: String?
+        }
+        let payload = Payload(action: action, change_id: changeID, cr_code: crCode)
+        let body = try? JSONEncoder.kubePilot.encode(payload)
+        return APIRequest(path: "ai/execute-action", method: .post, body: body, timeout: 180)
+    }
+
+    static func authorizeCRCode(changeID: String, crCode: String) -> APIRequest {
+        struct Payload: Encodable { let change_id: String; let cr_code: String }
+        let body = try? JSONEncoder.kubePilot.encode(Payload(change_id: changeID, cr_code: crCode))
+        return APIRequest(path: "crcode/authorize", method: .post, body: body)
+    }
 }
 
 /// High-level service wrapping APIClient with domain methods.
@@ -221,5 +252,33 @@ actor KubePilotService {
 
     func fetchAIHealth() async throws -> AIHealthResponse {
         try await client.send(KubePilotAPI.aiHealth())
+    }
+
+    // MARK: Autopilot
+
+    func fetchAutopilotStatus(limit: Int = 100) async throws -> AutopilotStatus {
+        try await client.send(KubePilotAPI.autopilotStatus(limit: limit))
+    }
+
+    func setAutopilotMode(_ mode: AutopilotMode) async throws -> AutopilotStatus {
+        try await client.send(KubePilotAPI.autopilotSetMode(mode.rawValue))
+    }
+
+    func pauseAutopilot() async throws -> AutopilotStatus {
+        try await client.send(KubePilotAPI.autopilotPause())
+    }
+
+    func resumeAutopilot() async throws -> AutopilotStatus {
+        try await client.send(KubePilotAPI.autopilotResume())
+    }
+
+    // MARK: Remediation
+
+    func executeAction(_ action: SuggestedAction, changeID: String? = nil, crCode: String? = nil) async throws -> ExecuteActionResult {
+        try await client.send(KubePilotAPI.executeAction(action, changeID: changeID, crCode: crCode))
+    }
+
+    func authorizeCRCode(changeID: String, crCode: String) async throws {
+        try await client.sendVoid(KubePilotAPI.authorizeCRCode(changeID: changeID, crCode: crCode))
     }
 }

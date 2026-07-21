@@ -248,17 +248,7 @@ struct AIAnalysisCard: View {
             if !report.actions.isEmpty {
                 Label("Recommended Actions", systemImage: "wrench.and.screwdriver")
                     .font(.headline)
-                ForEach(report.actions) { action in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(action.type.uppercased())
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(Theme.accent)
-                        Text(action.explanation)
-                            .font(.caption)
-                    }
-                    .padding()
-                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
-                }
+                SuggestedActionsView(actions: report.actions)
             }
         }
     }

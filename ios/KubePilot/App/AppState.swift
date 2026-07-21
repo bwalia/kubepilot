@@ -26,6 +26,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case dashboard
     case pods
     case ai
+    case autopilot
     case alerts
     case settings
 
@@ -36,6 +37,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .dashboard: "Dashboard"
         case .pods: "Pods"
         case .ai: "AI"
+        case .autopilot: "Autopilot"
         case .alerts: "Alerts"
         case .settings: "Settings"
         }
@@ -46,6 +48,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .dashboard: "gauge.with.dots.needle.67percent"
         case .pods: "cube.box"
         case .ai: "sparkles"
+        case .autopilot: "autostartstop"
         case .alerts: "bell.badge"
         case .settings: "gearshape"
         }

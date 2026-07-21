@@ -34,6 +34,8 @@
 		B92B994F8E9BE45991C4CF69 /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */; };
 		C73FA654C79B74A8B031D092 /* NodesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */; };
 		CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F232B0102FDC4B276D6DE6B8 /* AlertsView.swift */; };
+		D06783CAA344C10F235538DC /* AutopilotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A138A133146C4414B53053CF /* AutopilotView.swift */; };
+		E533BAAE5318667DAC2DD1C7 /* SuggestedActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */; };
 		F4A7DEDF8C007794EF27F717 /* APIModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */; };
 		F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B316A2C59A6C1836CA04DB /* KeychainStore.swift */; };
 		FCF0A5D578E9639FE0EAC677 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C034A8644F934030296CD024 /* Theme.swift */; };
@@ -80,6 +82,7 @@
 		223945BA22626F8E81B1B55F /* KubePilotLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotLogo.swift; sourceTree = "<group>"; };
 		3459A1ED312F009A72B9941A /* KubePilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KubePilot.entitlements; sourceTree = "<group>"; };
 		35D13380DC94C7DDF267EA79 /* AIAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAssistantView.swift; sourceTree = "<group>"; };
+		3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestedActionsView.swift; sourceTree = "<group>"; };
 		3F197C1ACB53EA59AEC7621D /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		4082921476E7A5048CD00194 /* KubePilotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KubePilotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -91,6 +94,7 @@
 		8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignComponents.swift; sourceTree = "<group>"; };
 		954FDB6253BD81842533B974 /* NodeRoleBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeRoleBadge.swift; sourceTree = "<group>"; };
 		9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodsListView.swift; sourceTree = "<group>"; };
+		A138A133146C4414B53053CF /* AutopilotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutopilotView.swift; sourceTree = "<group>"; };
 		A52A7423C3B4CAD5EFDA9628 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		ACB02C8AD259DB8E6C5B9A54 /* KubePilotIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotIntents.swift; sourceTree = "<group>"; };
 		B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotApp.swift; sourceTree = "<group>"; };
@@ -176,6 +180,14 @@
 			);
 			sourceTree = "<group>";
 		};
+		4924CCB8D4B0A28AD868BA8A /* Autopilot */ = {
+			isa = PBXGroup;
+			children = (
+				A138A133146C4414B53053CF /* AutopilotView.swift */,
+			);
+			path = Autopilot;
+			sourceTree = "<group>";
+		};
 		4A8C1DA25C81D5F2DB0197FE /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -191,6 +203,7 @@
 				B4F8A6414EB203EFAEB2904B /* AIReportCopyBar.swift */,
 				D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */,
 				954FDB6253BD81842533B974 /* NodeRoleBadge.swift */,
+				3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -290,6 +303,7 @@
 			children = (
 				4D034B7BA35602BF36170CE2 /* AI */,
 				1912628079B65D1FA8070B23 /* Alerts */,
+				4924CCB8D4B0A28AD868BA8A /* Autopilot */,
 				FC103EDF7B994B9A55D9075F /* Dashboard */,
 				2A746D6214360B5F12E1A61D /* Logs */,
 				55B805A9D3EFA2EFF878C679 /* Nodes */,
@@ -476,6 +490,7 @@
 				CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */,
 				1604EE597651D74AB5C1799F /* AppState.swift in Sources */,
 				1E97915AFCE77315B3ED07BA /* AuthManager.swift in Sources */,
+				D06783CAA344C10F235538DC /* AutopilotView.swift in Sources */,
 				45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */,
 				5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */,
 				4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */,
@@ -495,6 +510,7 @@
 				B92B994F8E9BE45991C4CF69 /* PodsListView.swift in Sources */,
 				88020238C6ED24363BF02C9C /* RootView.swift in Sources */,
 				91286E84F26B2F5ECD3E446E /* SettingsView.swift in Sources */,
+				E533BAAE5318667DAC2DD1C7 /* SuggestedActionsView.swift in Sources */,
 				FCF0A5D578E9639FE0EAC677 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
