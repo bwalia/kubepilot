@@ -98,7 +98,7 @@
   <line x1="1005" y1="240" x2="1038" y2="240" stroke="#23C55E" stroke-width="2.5" marker-end="url(#arrow)"/>
 
   <!-- ===== Branch outcomes under DECIDE ===== -->
-  <text x="640" y="372" fill="#6F86B6" font-family="Segoe UI, Arial" font-size="13" text-anchor="middle">otherwise →</text>
+  <text x="654" y="372" fill="#6F86B6" font-family="Segoe UI, Arial" font-size="13" text-anchor="start">otherwise →</text>
   <line x1="640" y1="330" x2="640" y2="386" stroke="#5B73A6" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrowMuted)"/>
 
   <rect x="404" y="396" width="150" height="48" rx="10" fill="#10182B" stroke="#3A4A6B"/>
@@ -114,7 +114,7 @@
   <text x="805" y="436" fill="#5C86B5" font-family="Segoe UI, Arial" font-size="12" text-anchor="middle">log only, never mutate</text>
 
   <!-- ===== Feedback / verify loop ===== -->
-  <path d="M1150 330 C1150 470, 130 470, 130 336" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrowBlue)"/>
+  <path d="M1150 330 C1150 556, 130 556, 130 336" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#arrowBlue)"/>
   <rect x="556" y="452" width="168" height="34" rx="17" fill="#0A1830" stroke="#2B5B8F"/>
   <text x="640" y="474" fill="#5AB0F5" font-family="Segoe UI, Arial" font-size="14" font-weight="600" text-anchor="middle">re-observe &amp; verify</text>
 

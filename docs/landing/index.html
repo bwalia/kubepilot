@@ -206,7 +206,9 @@
         transition: border-color 0.2s, transform 0.2s;
       }
       .screenshot:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-      .screenshot img { width: 100%; display: block; }
+      .screenshot img { width: 100%; display: block; background: #050b18; }
+      .screenshot-wide { grid-column: 1 / -1; }
+      .screenshot-wide img { max-height: 620px; object-fit: contain; }
       .screenshot figcaption {
         padding: 16px 20px; font-size: 0.95rem; color: var(--muted); line-height: 1.6;
       }
@@ -224,19 +226,46 @@
       .video-frame iframe {
         position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
       }
+      /* Click-to-play facade: no YouTube iframe until the user asks for it.
+         Avoids player error 153 on file:// and keeps the page fast. */
+      .video-facade {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        display: block; padding: 0; border: 0; background: #000;
+        cursor: pointer; font: inherit; color: inherit; overflow: hidden;
+      }
+      .video-facade img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+        opacity: 0.78; transition: opacity 0.25s, transform 0.4s;
+      }
+      .video-facade:hover img, .video-facade:focus-visible img { opacity: 1; transform: scale(1.02); }
+      .video-facade:focus-visible { outline: 2px solid var(--brand-light); outline-offset: -4px; }
+      .video-play {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        display: flex; align-items: center; justify-content: center;
+        width: 84px; height: 84px; border-radius: 50%;
+        background: var(--brand); color: #fff;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 0 0 10px rgba(59,130,246,0.18);
+        transition: transform 0.25s, background 0.25s;
+      }
+      .video-facade:hover .video-play, .video-facade:focus-visible .video-play {
+        transform: translate(-50%, -50%) scale(1.08); background: #2563eb;
+      }
+      .video-play svg { display: block; margin-left: 4px; }
       .video-caption {
         padding: 20px 24px; border-top: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap; text-align: left;
       }
       .video-caption p {
-        color: var(--text-secondary); font-size: 1rem; line-height: 1.7; margin-bottom: 10px;
+        color: var(--text-secondary); font-size: 1rem; line-height: 1.7;
       }
-      .video-caption .placeholder-note {
-        font-size: 0.9rem; color: var(--muted);
+      .video-caption .credit { color: var(--muted); font-size: 0.9rem; }
+      .video-caption .credit a { color: var(--brand-light); }
+      .video-caption .credit a:hover { text-decoration: underline; }
+      .watch-link {
+        font-size: 0.95rem; font-weight: 600; color: var(--brand-light); white-space: nowrap;
       }
-      .video-caption code {
-        font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
-        font-size: 0.85rem; color: var(--brand-light);
-      }
+      .watch-link:hover { text-decoration: underline; }
 
       /* ── Steps ── */
       .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
@@ -389,29 +418,37 @@
           </div>
           <div id="video" class="hero-video">
             <div class="hero-video-header">
-              <h2>How to Use KubePilot</h2>
-              <p>Watch a quick walkthrough of installing a Kubernetes dashboard, connecting to a cluster, and navigating workloads from the UI.</p>
+              <h2>Kubernetes Dashboards in Practice</h2>
+              <p>A walkthrough of installing a Kubernetes dashboard, connecting to a cluster, and navigating workloads &mdash; the everyday triage loop KubePilot is built to shorten.</p>
             </div>
+            <!-- To swap in a different video, change data-yt-id below. The thumbnail,
+                 the player, and the "Watch on YouTube" link are all derived from it.
+                 Also update the <noscript> fallback and the caption credit text. -->
             <div class="video-card">
-              <div class="video-frame">
-                <iframe
-                  src="https://www.youtube.com/embed/8J2lN2EJ_Jo?rel=0"
-                  title="Kubernetes Dashboard setup placeholder video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowfullscreen
-                  loading="eager"
-                  referrerpolicy="strict-origin-when-cross-origin"
-                ></iframe>
+              <div
+                class="video-frame"
+                data-yt-id="8J2lN2EJ_Jo"
+                data-yt-title="Kubernetes Dashboard: Installation, Setup, and Access from Local Machine"
+              >
+                <noscript>
+                  <iframe
+                    src="https://www.youtube-nocookie.com/embed/8J2lN2EJ_Jo?rel=0"
+                    title="Kubernetes Dashboard: Installation, Setup, and Access from Local Machine"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    referrerpolicy="strict-origin-when-cross-origin"
+                  ></iframe>
+                </noscript>
               </div>
               <div class="video-caption">
                 <p>
-                  Placeholder demo video: <strong>Kubernetes Dashboard installation and access</strong>.
-                  Replace this embed with your own KubePilot walkthrough when ready.
+                  <strong>Kubernetes Dashboard installation and access</strong>
+                  <span class="credit">
+                    &mdash; community tutorial by
+                    <a href="https://www.youtube.com/@ukartechsolution" rel="noopener">UKAR BigData Solutions</a>
+                  </span>
                 </p>
-                <p class="placeholder-note">
-                  To swap the video later, edit <code>docs/landing/index.html</code> and change the YouTube ID in the iframe
-                  <code>src</code> (currently <code>8J2lN2EJ_Jo</code>).
-                </p>
+                <a class="watch-link" href="https://www.youtube.com/watch?v=8J2lN2EJ_Jo" rel="noopener">Watch on YouTube &rarr;</a>
               </div>
             </div>
           </div>
@@ -608,6 +645,10 @@
               <img src="../screenshots/cluster-events-ai.svg" alt="Cluster events and AI troubleshooting panel" loading="lazy" />
               <figcaption>Cluster Events &mdash; health summary, node pressure, problematic pods, event timeline, and one-click AI analysis.</figcaption>
             </figure>
+            <figure class="screenshot screenshot-wide">
+              <img src="../screenshots/autopilot-workflow.svg" alt="KubePilot Autopilot workflow from anomaly detection through policy gates to audited remediation" loading="lazy" />
+              <figcaption>Autopilot &mdash; how an anomaly travels from detection through AI root-cause analysis, policy gates, and confidence floors to an audited remediation action.</figcaption>
+            </figure>
           </div>
         </div>
       </section>
@@ -684,6 +725,52 @@ open KubePilot.xcodeproj
     </footer>
 
     <script>
+      // Build a click-to-play facade for each video frame. The YouTube iframe is only
+      // created once the user clicks, so the page never loads a player it may not need
+      // (and never surfaces player error 153 when opened straight from the filesystem).
+      document.querySelectorAll('.video-frame[data-yt-id]').forEach(function (frame) {
+        var id = frame.getAttribute('data-yt-id');
+        var title = frame.getAttribute('data-yt-title') || 'Video';
+
+        var watch = document.querySelector('.watch-link');
+        if (watch) { watch.href = 'https://www.youtube.com/watch?v=' + id; }
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'video-facade';
+        button.setAttribute('aria-label', 'Play video: ' + title);
+
+        var thumb = document.createElement('img');
+        thumb.src = 'https://i.ytimg.com/vi/' + id + '/maxresdefault.jpg';
+        thumb.alt = '';
+        thumb.loading = 'lazy';
+        thumb.onerror = function () {
+          // Not every video has a maxres thumbnail; hqdefault always exists.
+          thumb.onerror = null;
+          thumb.src = 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+        };
+
+        var play = document.createElement('span');
+        play.className = 'video-play';
+        play.setAttribute('aria-hidden', 'true');
+        play.innerHTML = '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+
+        button.appendChild(thumb);
+        button.appendChild(play);
+
+        button.addEventListener('click', function () {
+          var iframe = document.createElement('iframe');
+          iframe.src = 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0&autoplay=1';
+          iframe.title = title;
+          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+          iframe.allowFullscreen = true;
+          iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+          frame.replaceChild(iframe, button);
+        });
+
+        frame.appendChild(button);
+      });
+
       function switchTab(name) {
         document.querySelectorAll('.install-tab').forEach(function(t) { t.classList.remove('active'); });
         document.querySelectorAll('.install-content').forEach(function(c) { c.classList.remove('active'); });
