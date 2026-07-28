@@ -53,6 +53,8 @@ struct DashboardView: View {
                     AlertsView()
                 case .pod(let ns, let name):
                     PodDetailView(namespace: ns, podName: name)
+                case .podAI(let ns, let name):
+                    PodDetailView(namespace: ns, podName: name, initialTab: .ai, autoAnalyse: true)
                 }
             }
         }
@@ -133,7 +135,7 @@ struct DashboardView: View {
             SectionHeader(title: "AI Insights")
             ForEach(viewModel.insights.prefix(3)) { insight in
                 SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
-                    VStack(alignment: .leading, spacing: Theme.spacingXS) {
+                    VStack(alignment: .leading, spacing: Theme.spacingSM) {
                         HStack {
                             StatusBadge(
                                 text: insight.severity.uppercased(),
@@ -146,6 +148,14 @@ struct DashboardView: View {
                         Text(insight.summary)
                             .font(.caption)
                             .foregroundStyle(Theme.textSecondary)
+                        if !insight.suggestions.isEmpty {
+                            ForEach(insight.suggestions.prefix(3), id: \.self) { suggestion in
+                                Label(suggestion, systemImage: "arrow.turn.down.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(Theme.muted)
+                            }
+                        }
+                        AIReportCopyBar(outputText: insight.outputText, fixPrompt: insight.fixPrompt)
                     }
                 }
             }
@@ -156,26 +166,38 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: Theme.spacingSM) {
             SectionHeader(title: "Problem Pods")
             ForEach(viewModel.problemPods.prefix(5)) { pod in
-                NavigationLink(value: DashboardDestination.pod(pod.namespace, pod.name)) {
-                    SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: Theme.spacingXS) {
-                                Text(pod.name)
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(Theme.textPrimary)
-                                Text(pod.namespace)
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.muted)
+                SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
+                    VStack(alignment: .leading, spacing: Theme.spacingSM) {
+                        NavigationLink(value: DashboardDestination.pod(pod.namespace, pod.name)) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: Theme.spacingXS) {
+                                    Text(pod.name)
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(Theme.textPrimary)
+                                    Text(pod.namespace)
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.muted)
+                                }
+                                Spacer()
+                                StatusBadge(
+                                    text: pod.reason.isEmpty ? pod.status : pod.reason,
+                                    color: Theme.danger
+                                )
                             }
-                            Spacer()
-                            StatusBadge(
-                                text: pod.reason.isEmpty ? pod.status : pod.reason,
-                                color: Theme.danger
-                            )
                         }
+                        .buttonStyle(.plain)
+
+                        NavigationLink(value: DashboardDestination.podAI(pod.namespace, pod.name)) {
+                            Label("Analyse with AI", systemImage: "sparkles")
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Theme.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: Theme.cornerRadiusSmall, style: .continuous))
+                                .foregroundStyle(Theme.accentLight)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -224,6 +246,7 @@ enum DashboardDestination: Hashable {
     case nodes
     case events
     case pod(String, String)
+    case podAI(String, String)
 }
 
 @MainActor

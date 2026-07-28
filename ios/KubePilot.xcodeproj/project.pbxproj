@@ -20,6 +20,7 @@
 		4FE21D76B48CFD7FDB939081 /* DesignComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EC04B48E734EA323DF4F1B5 /* DesignComponents.swift */; };
 		5028870F20EA478AACB1D19C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AD13FCFADC0A993DA318164 /* DashboardView.swift */; };
 		5852A6DA686B8892EE9EF2D5 /* LogViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EABD28677396C8067E479DA /* LogViewerView.swift */; };
+		6932105F4E0AF9300310BB69 /* AnalyseWithAIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34362A3B0CDB0C40EC4D7909 /* AnalyseWithAIButton.swift */; };
 		6DACA3AA58C5DD2E70344D77 /* KubePilotWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8A09003D8550A2966D5D1B68 /* KubePilotWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7438E7ECE52314E47C11619A /* NodeIPLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */; };
 		7FF4F96E751FE5D3FECCFF79 /* KubePilotWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4C93CEF8D9C15DA0EB705B /* KubePilotWidgets.swift */; };
@@ -80,6 +81,7 @@
 		0F4143F1164780374F42C994 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodesListView.swift; sourceTree = "<group>"; };
 		223945BA22626F8E81B1B55F /* KubePilotLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotLogo.swift; sourceTree = "<group>"; };
+		34362A3B0CDB0C40EC4D7909 /* AnalyseWithAIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyseWithAIButton.swift; sourceTree = "<group>"; };
 		3459A1ED312F009A72B9941A /* KubePilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KubePilot.entitlements; sourceTree = "<group>"; };
 		35D13380DC94C7DDF267EA79 /* AIAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAssistantView.swift; sourceTree = "<group>"; };
 		3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestedActionsView.swift; sourceTree = "<group>"; };
@@ -201,6 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				B4F8A6414EB203EFAEB2904B /* AIReportCopyBar.swift */,
+				34362A3B0CDB0C40EC4D7909 /* AnalyseWithAIButton.swift */,
 				D74812AA0B1AA26A87224FCF /* NodeIPLabels.swift */,
 				954FDB6253BD81842533B974 /* NodeRoleBadge.swift */,
 				3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */,
@@ -488,6 +491,7 @@
 				2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */,
 				932B03C9135B29347A230757 /* APIModels.swift in Sources */,
 				CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */,
+				6932105F4E0AF9300310BB69 /* AnalyseWithAIButton.swift in Sources */,
 				1604EE597651D74AB5C1799F /* AppState.swift in Sources */,
 				1E97915AFCE77315B3ED07BA /* AuthManager.swift in Sources */,
 				D06783CAA344C10F235538DC /* AutopilotView.swift in Sources */,

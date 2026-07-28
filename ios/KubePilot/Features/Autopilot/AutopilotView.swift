@@ -285,6 +285,8 @@ struct AutopilotView: View {
                 }
                 .font(.caption2)
                 .foregroundStyle(Theme.muted)
+
+                AIReportCopyBar(outputText: d.outputText, fixPrompt: d.fixPrompt)
             }
         }
     }
