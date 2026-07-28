@@ -18,6 +18,7 @@ import {
   type Severity,
   type RemediationResult,
 } from "@/lib/api";
+import { RCAReportActions } from "@/components/AIReportActions";
 
 const SEVERITY_COLORS: Record<Severity, string> = {
   critical: "text-pilot-danger bg-pilot-danger/12",
@@ -53,8 +54,8 @@ export function RCADetail({ report }: { report: RCAReport }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${severityClass}`}>
               {report.severity}
@@ -68,11 +69,14 @@ export function RCADetail({ report }: { report: RCAReport }) {
             {report.target_resource.namespace}/{report.target_resource.name} ({report.target_resource.kind})
           </p>
         </div>
-        <div className="text-right text-xs text-pilot-muted">
+        <div className="text-right text-xs text-pilot-muted shrink-0 space-y-2">
           <div>{ts.toLocaleDateString()}</div>
           <div>{ts.toLocaleTimeString()}</div>
           <div className="mt-1">
             Confidence: <span className="text-pilot-text-primary font-bold font-display tabular-nums">{confidence}%</span>
+          </div>
+          <div className="flex justify-end pt-1">
+            <RCAReportActions report={report} />
           </div>
         </div>
       </div>

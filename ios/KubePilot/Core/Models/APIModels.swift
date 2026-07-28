@@ -621,6 +621,60 @@ struct RCAReport: Codable, Identifiable, Hashable, Sendable {
         case rootCause = "root_cause"
         case evidenceChain = "evidence_chain"
     }
+
+    /// Plain-text rendering of the RCA report.
+    var outputText: String {
+        var lines = [
+            "KubePilot RCA — \(targetResource)",
+            "Severity: \(severity) · Confidence: \(Int(confidence * 100))%",
+            "",
+            "Root cause:",
+            rootCause.isEmpty ? "Unknown" : rootCause,
+        ]
+        if !evidenceChain.isEmpty {
+            lines.append("")
+            lines.append("Evidence:")
+            lines.append(contentsOf: evidenceChain.map { "- \($0)" })
+        }
+        if !remediation.isEmpty {
+            lines.append("")
+            lines.append("Remediation:")
+            lines.append(contentsOf: remediation.map { "- \($0)" })
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// Prompt to paste into a terminal LLM to produce a concrete fix.
+    var fixPrompt: String {
+        var lines = [
+            "I'm troubleshooting a Kubernetes workload. Below is an AI root-cause analysis from KubePilot.",
+            "Please help me fix it: confirm the likely root cause, then give me exact copy-paste kubectl",
+            "commands and/or manifest changes to resolve it, and call out anything risky before I run it.",
+            "",
+            "Target: \(targetResource)",
+            "",
+            "Root cause:",
+            rootCause.isEmpty ? "Unknown" : rootCause,
+        ]
+        if !evidenceChain.isEmpty {
+            lines.append("")
+            lines.append("Evidence:")
+            lines.append(contentsOf: evidenceChain.map { "- \($0)" })
+        }
+        if !remediation.isEmpty {
+            lines.append("")
+            lines.append("Suggested remediation from KubePilot:")
+            lines.append(contentsOf: remediation.map { "- \($0)" })
+        }
+        lines.append(contentsOf: [
+            "",
+            "Deliverables:",
+            "1. The most likely root cause in one line.",
+            "2. Exact kubectl commands (and any YAML) to fix it, ready to paste.",
+            "3. A quick verification step to confirm the fix worked.",
+        ])
+        return lines.joined(separator: "\n")
+    }
 }
 
 struct AnomalyResource: Codable, Hashable, Sendable {

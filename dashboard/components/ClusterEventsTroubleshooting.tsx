@@ -25,7 +25,7 @@ import {
   type KubeEvent,
 } from "@/lib/api";
 import { LogViewer } from "@/components/LogViewer";
-import { AIReportActions } from "@/components/AIReportActions";
+import { AIReportActions, InsightActions } from "@/components/AIReportActions";
 import { useNamespaceLock } from "@/lib/useNamespaceLock";
 
 const IMPORTANT_REASONS = new Set([
@@ -531,11 +531,14 @@ function InsightCard({ insight }: { insight: ClusterTroubleshootingSummary["insi
   return (
     <div className={`bg-pilot-bg border ${severityClass} rounded-xl p-4`}>
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-bold font-display text-pilot-text-primary">{insight.title}</p>
           <p className="text-sm text-pilot-muted mt-1.5 leading-relaxed">{insight.summary}</p>
         </div>
-        <span className="text-xs uppercase rounded-md px-2.5 py-1 bg-pilot-surface text-pilot-muted font-medium shrink-0">{insight.category}</span>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <span className="text-xs uppercase rounded-md px-2.5 py-1 bg-pilot-surface text-pilot-muted font-medium">{insight.category}</span>
+          <InsightActions insight={insight} />
+        </div>
       </div>
       {(insight.suggestions || []).length > 0 && (
         <div className="mt-3 space-y-2 text-sm text-pilot-text-primary">

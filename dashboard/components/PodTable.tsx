@@ -4,6 +4,7 @@ import type { PodSummary } from "@/lib/api";
 import { troubleshootPod } from "@/lib/api";
 import { AlertTriangle, CheckCircle, RefreshCw, Search, X } from "lucide-react";
 import { PortForwardButton } from "@/components/PortForwardButton";
+import { AIReportActions } from "@/components/AIReportActions";
 
 interface Props {
   pods: PodSummary[];
@@ -230,6 +231,9 @@ function TroubleshootPanel({
 
         {report && (
           <div className="space-y-5 animate-fade-in">
+            <div className="flex justify-end">
+              <AIReportActions report={report} />
+            </div>
             <div className="bg-pilot-surface border border-pilot-border rounded-xl p-5">
               <p className="eyebrow mb-2">Root Cause</p>
               <p className="text-base font-bold text-pilot-danger leading-relaxed">{report.RootCause || "Unknown"}</p>

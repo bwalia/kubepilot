@@ -27,6 +27,7 @@ import {
   type AutopilotDecision,
   type AutopilotVerdict,
 } from "@/lib/api";
+import { RCAReportActions } from "@/components/AIReportActions";
 
 const VERDICT_META: Record<
   AutopilotVerdict,
@@ -213,9 +214,12 @@ export function AutopilotDecisionDetail({
 
               {/* AI Root Cause Analysis */}
               <section>
-                <h3 className="flex items-center gap-1.5 text-sm font-display font-bold text-pilot-text-primary mb-3">
-                  <Stethoscope className="w-4 h-4 text-pilot-accent" /> AI root cause analysis
-                </h3>
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <h3 className="flex items-center gap-1.5 text-sm font-display font-bold text-pilot-text-primary">
+                    <Stethoscope className="w-4 h-4 text-pilot-accent" /> AI root cause analysis
+                  </h3>
+                  {rca.data ? <RCAReportActions report={rca.data} /> : null}
+                </div>
                 {rca.isLoading ? (
                   <div className="text-pilot-muted text-sm py-8 text-center bg-pilot-surface border border-pilot-border rounded-lg">
                     Loading RCA report…

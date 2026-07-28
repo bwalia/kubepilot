@@ -185,6 +185,8 @@ struct RCADetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.spacingMD) {
+                AIReportCopyBar(outputText: report.outputText, fixPrompt: report.fixPrompt)
+
                 SurfaceCard {
                     VStack(alignment: .leading, spacing: Theme.spacingSM) {
                         SectionHeader(title: "Root Cause")

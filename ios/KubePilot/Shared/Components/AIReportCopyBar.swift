@@ -3,14 +3,25 @@ import UIKit
 
 /// Two developer utilities for an AI analysis result:
 ///  - Copy output: the raw analysis text.
-///  - Copy as prompt: a ready-to-run prompt to paste into a terminal LLM (Claude)
+///  - Copy Prompt: a ready-to-run prompt to paste into a terminal LLM (Claude)
 ///    to analyse further or produce a concrete fix.
 struct AIReportCopyBar: View {
-    let report: TroubleshootReport
+    let outputText: String
+    let fixPrompt: String
 
     @State private var copied: Copied?
 
     private enum Copied { case output, prompt }
+
+    init(report: TroubleshootReport) {
+        self.outputText = report.outputText
+        self.fixPrompt = report.fixPrompt
+    }
+
+    init(outputText: String, fixPrompt: String) {
+        self.outputText = outputText
+        self.fixPrompt = fixPrompt
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -18,13 +29,13 @@ struct AIReportCopyBar: View {
                 title: copied == .output ? "Copied" : "Copy output",
                 systemImage: copied == .output ? "checkmark" : "doc.on.doc",
                 tint: Theme.textSecondary
-            ) { copy(report.outputText, as: .output) }
+            ) { copy(outputText, as: .output) }
 
             button(
-                title: copied == .prompt ? "Copied prompt" : "Copy as prompt",
+                title: copied == .prompt ? "Copied prompt" : "Copy Prompt",
                 systemImage: copied == .prompt ? "checkmark" : "terminal",
                 tint: Theme.accent
-            ) { copy(report.fixPrompt, as: .prompt) }
+            ) { copy(fixPrompt, as: .prompt) }
 
             Spacer(minLength: 0)
         }
