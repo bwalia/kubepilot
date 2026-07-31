@@ -96,6 +96,7 @@ struct ChatBubble: View {
                         RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
                             .stroke(message.role == .user ? Theme.accent.opacity(0.35) : Theme.brandBorder, lineWidth: 1)
                     )
+                    .textSelection(.enabled)
 
                 if !message.actions.isEmpty {
                     ForEach(message.actions) { action in
@@ -103,6 +104,10 @@ struct ChatBubble: View {
                             .font(.caption)
                             .foregroundStyle(Theme.muted)
                     }
+                }
+
+                if message.role == .assistant && !message.content.isEmpty {
+                    AIReportCopyBar(outputText: message.outputText, fixPrompt: message.fixPrompt)
                 }
             }
             if message.role != .user { Spacer(minLength: 48) }

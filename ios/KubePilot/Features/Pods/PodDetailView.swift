@@ -3,14 +3,22 @@ import SwiftUI
 struct PodDetailView: View {
     let namespace: String
     let podName: String
+    var autoAnalyse: Bool = false
 
     @State private var viewModel: PodDetailViewModel
-    @State private var selectedTab: PodDetailTab = .overview
+    @State private var selectedTab: PodDetailTab
 
-    init(namespace: String, podName: String) {
+    init(
+        namespace: String,
+        podName: String,
+        initialTab: PodDetailTab = .overview,
+        autoAnalyse: Bool = false
+    ) {
         self.namespace = namespace
         self.podName = podName
+        self.autoAnalyse = autoAnalyse
         _viewModel = State(initialValue: PodDetailViewModel(namespace: namespace, podName: podName))
+        _selectedTab = State(initialValue: initialTab)
     }
 
     var body: some View {
@@ -36,14 +44,23 @@ struct PodDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Analyse with AI") {
+                Button {
                     selectedTab = .ai
                     Task { await viewModel.runAIAnalysis() }
+                } label: {
+                    Label("Analyse with AI", systemImage: "sparkles")
+                        .labelStyle(.titleAndIcon)
+                        .font(.subheadline.weight(.semibold))
                 }
-                .font(.subheadline.weight(.semibold))
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            if autoAnalyse {
+                selectedTab = .ai
+                await viewModel.runAIAnalysis()
+            }
+        }
         .refreshable { await viewModel.load() }
     }
 
@@ -54,6 +71,11 @@ struct PodDetailView: View {
                 LoadingOverlay(message: "Loading pod details…")
             } else if let diag = viewModel.diagnostics {
                 VStack(alignment: .leading, spacing: 16) {
+                    AnalyseWithAIButton(isLoading: viewModel.isAnalyzing) {
+                        selectedTab = .ai
+                        Task { await viewModel.runAIAnalysis() }
+                    }
+
                     infoRow("Phase", diag.phase)
                     infoRow("Node", diag.nodeName)
                     infoRow("Created", diag.createdAt)
@@ -120,9 +142,19 @@ struct PodDetailView: View {
                 } else if let report = viewModel.aiReport {
                     AIAnalysisCard(report: report)
                 } else {
-                    Text("Tap **Analyse with AI** to investigate this pod with full context including logs, events, and workload metadata.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: Theme.spacingMD) {
+                        Text("Run AI root-cause analysis on this pod using logs, events, and workload metadata.")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                        AnalyseWithAIButton(isLoading: viewModel.isAnalyzing) {
+                            Task { await viewModel.runAIAnalysis() }
+                        }
+                        if let error = viewModel.errorMessage {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(Theme.danger)
+                        }
+                    }
                 }
             }
             .padding()
@@ -204,6 +236,7 @@ final class PodDetailViewModel {
 
     func runAIAnalysis() async {
         isAnalyzing = true
+        errorMessage = nil
         defer { isAnalyzing = false }
         do {
             aiReport = try await KubePilotService.shared.troubleshootPod(namespace: namespace, pod: podName)

@@ -18,6 +18,7 @@ enum PodFilter: String, CaseIterable {
 struct PodsListView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel = PodsListViewModel()
+    @State private var analyseTarget: PodSummary?
     var initialFilter: PodFilter = .all
 
     var body: some View {
@@ -44,6 +45,14 @@ struct PodsListView: View {
             .themedScreen()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { NamespacePicker() }
+            }
+            .navigationDestination(item: $analyseTarget) { pod in
+                PodDetailView(
+                    namespace: pod.namespace,
+                    podName: pod.name,
+                    initialTab: .ai,
+                    autoAnalyse: true
+                )
             }
             .refreshable {
                 await viewModel.load(namespace: appState.clusterManager.selectedNamespace)
@@ -79,6 +88,21 @@ struct PodsListView: View {
                     PodRow(pod: pod)
                 }
                 .listRowBackground(Theme.surface)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button {
+                        analyseTarget = pod
+                    } label: {
+                        Label("Analyse", systemImage: "sparkles")
+                    }
+                    .tint(Theme.accent)
+                }
+                .contextMenu {
+                    Button {
+                        analyseTarget = pod
+                    } label: {
+                        Label("Analyse with AI", systemImage: "sparkles")
+                    }
+                }
             }
             .themedList()
         }

@@ -6,6 +6,7 @@ import { ResourceMeters } from "@/components/dashboard/ResourceMeters";
 import { ResourceTable, type Column } from "./ResourceTable";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, Activity } from "lucide-react";
+import { InsightActions } from "@/components/AIReportActions";
 
 export function ClusterHealthSection({ namespace }: { namespace: string }) {
   const { data, isLoading } = useQuery({
@@ -37,9 +38,12 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
           <div className="space-y-2">
             {data.insights.map((insight) => (
               <div key={insight.id} className="bg-pilot-surface border border-pilot-border rounded-xl p-4 shadow-card">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <SeverityBadge severity={insight.severity} />
-                  <span className="text-sm font-semibold font-display text-pilot-text-primary">{insight.title}</span>
+                <div className="flex items-start justify-between gap-3 mb-1.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <SeverityBadge severity={insight.severity} />
+                    <span className="text-sm font-semibold font-display text-pilot-text-primary">{insight.title}</span>
+                  </div>
+                  <InsightActions insight={insight} />
                 </div>
                 <p className="text-sm text-pilot-text-secondary leading-relaxed">{insight.summary}</p>
                 {insight.suggestions && insight.suggestions.length > 0 && (

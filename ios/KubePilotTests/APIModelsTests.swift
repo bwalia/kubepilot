@@ -38,6 +38,9 @@ final class APIModelsTests: XCTestCase {
             lanIPs: ["192.168.1.10"],
             wanIPs: ["203.0.113.10"],
             tunnelIPs: ["10.8.0.2"],
+            roles: ["worker"],
+            controlPlane: false,
+            labels: ["kubernetes.io/hostname": "n1"],
             unschedulable: false
         )
         XCTAssertEqual(node.lanIPs, ["192.168.1.10"])
