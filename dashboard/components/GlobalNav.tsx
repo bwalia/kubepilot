@@ -1,6 +1,6 @@
 /**
  * GlobalNav — the single primary top bar shared across every page: brand,
- * product navigation (CoPilot / Dashboard / AutoPilot), and the theme toggle.
+ * product navigation (CoPilot / Pilot / AutoPilot), and the theme toggle.
  * It is the one place the product names itself, so page headers below it carry
  * only their own title + context (no duplicated brand).
  */
@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "CoPilot", icon: Sparkles },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Pilot", icon: LayoutDashboard },
   { href: "/autopilot", label: "AutoPilot", icon: Bot },
 ];
 
