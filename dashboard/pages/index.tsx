@@ -136,7 +136,7 @@ export default function DashboardHome() {
       <header className="bg-pilot-surface border-b border-pilot-border px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="min-w-0">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">AI Troubleshooting</h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">Kubernetes CoPilot (AI Troubleshooting Mode)</h1>
             <p className="text-sm text-pilot-muted mt-1">Ask in plain English — KubePilot diagnoses issues and proposes fixes.</p>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
