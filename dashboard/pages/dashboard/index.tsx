@@ -104,7 +104,7 @@ export default function KubernetesDashboard() {
             <Menu className="w-5 h-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">Kubernetes Pilot (Mode)</h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">Kubernetes Pilot (SRE Troubleshooting)</h1>
             <p className="text-sm text-pilot-muted mt-0.5">Read-only cluster resource browser</p>
           </div>
         </div>
