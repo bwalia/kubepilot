@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KubePilot | AI-Powered Kubernetes Troubleshooting & Observability</title>
+    <title>KubePilot | AI CoPilot, Pilot &amp; AutoPilot for Faster Kubernetes Incidents</title>
     <meta
       name="description"
-      content="KubePilot is an open-source, AI-assisted Kubernetes operations platform. Get cluster health, events, logs, topology, mobile troubleshooting, automated RCA, and safer remediation from one dashboard."
+      content="KubePilot helps SRE and platform teams resolve Kubernetes cluster incidents faster with AI CoPilot, SRE Pilot browsing, and AutoPilot self-healing — from diagnosis to safe fix in one open-source cockpit."
     />
     <meta name="theme-color" content="#0a0f1c" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -198,6 +198,66 @@
       .feature h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; }
       .feature p { font-size: 1.05rem; color: var(--muted); line-height: 1.7; }
 
+      /* ── Product modes (CoPilot / Pilot / AutoPilot) ── */
+      .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .mode {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 32px 28px;
+        display: flex; flex-direction: column; gap: 16px;
+        transition: border-color 0.2s, transform 0.2s;
+      }
+      .mode:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .mode-eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em;
+        text-transform: uppercase; color: var(--brand-light);
+      }
+      .mode-eyebrow::before {
+        content: ''; width: 8px; height: 8px; border-radius: 50%;
+        background: var(--brand);
+      }
+      .mode h3 {
+        font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em;
+        line-height: 1.25;
+      }
+      .mode .mode-tagline {
+        color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6;
+      }
+      .mode-benefit {
+        margin-top: 4px; padding: 14px 16px;
+        background: var(--brand-glow); border: 1px solid rgba(59,130,246,0.22);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary); font-size: 0.98rem; line-height: 1.55;
+      }
+      .mode-benefit strong { color: var(--text); font-weight: 700; }
+      .mode ul {
+        list-style: none; display: flex; flex-direction: column; gap: 10px;
+        margin-top: auto;
+      }
+      .mode li {
+        position: relative; padding-left: 22px;
+        color: var(--muted); font-size: 0.98rem; line-height: 1.55;
+      }
+      .mode li::before {
+        content: ''; position: absolute; left: 0; top: 0.55em;
+        width: 8px; height: 8px; border-radius: 2px;
+        background: var(--brand);
+      }
+
+      .benefits {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+        margin-top: 28px;
+      }
+      .benefit {
+        text-align: left; padding: 22px 20px;
+        background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+      }
+      .benefit h4 {
+        font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;
+      }
+      .benefit p { font-size: 0.98rem; color: var(--muted); line-height: 1.55; }
+
       /* ── Screenshots ── */
       .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       .screenshot {
@@ -345,6 +405,8 @@
       @media (max-width: 1024px) {
         .highlights { grid-template-columns: repeat(2, 1fr); }
         .steps { grid-template-columns: repeat(2, 1fr); }
+        .modes { grid-template-columns: 1fr; }
+        .benefits { grid-template-columns: 1fr; }
       }
       @media (max-width: 768px) {
         body { font-size: 17px; }
@@ -388,9 +450,10 @@
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
         <nav class="nav-links">
+          <a href="#modes">Modes</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
-          <a href="#video">How to Use</a>
+          <a href="#video">What is KubePilot</a>
           <a href="#screenshots">Screenshots</a>
           <a href="#install">Install</a>
           <a href="../blog/index.html">Blog</a>
@@ -406,20 +469,22 @@
         <div class="hero-bg"></div>
         <div class="wrap">
           <span class="badge">Open Source &middot; Built for SRE, DevOps, and Platform Teams</span>
-          <h1>Kubernetes Incidents,<br><span class="gradient">Explained by AI</span></h1>
+          <h1>Resolve Cluster Incidents<br><span class="gradient">Faster with AI</span></h1>
           <p class="subtitle">
-            A troubleshooting cockpit for cluster health, pod diagnostics, logs, events,
-            service topology, node LAN/WAN visibility, and AI-driven root-cause analysis.
-            Resolve incidents from the web dashboard or the native iOS companion.
+            KubePilot is a troubleshooting cockpit with three modes:
+            <strong>CoPilot</strong> for AI-assisted diagnosis,
+            <strong>Pilot</strong> for SRE-style cluster browsing, and
+            <strong>AutoPilot</strong> for policy-gated AI fixes &mdash;
+            so teams move from noisy signals to safe action without juggling kubectl tabs.
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Get Started Free</a>
-            <a class="btn btn-lg" href="#install">Quick Install</a>
+            <a class="btn btn-lg" href="#modes">Explore Modes</a>
           </div>
           <div id="video" class="hero-video">
             <div class="hero-video-header">
-              <h2>Kubernetes Dashboards in Practice</h2>
-              <p>A walkthrough of installing a Kubernetes dashboard, connecting to a cluster, and navigating workloads &mdash; the everyday triage loop KubePilot is built to shorten.</p>
+              <h2>What is KubePilot?</h2>
+              <p>A short intro for newcomers &mdash; what KubePilot is, how CoPilot, Pilot, and AutoPilot work together, and why that loop resolves cluster incidents faster.</p>
             </div>
             <!-- To swap in a different video, change data-yt-id below. The thumbnail,
                  the player, and the "Watch on YouTube" link are all derived from it.
@@ -427,13 +492,13 @@
             <div class="video-card">
               <div
                 class="video-frame"
-                data-yt-id="8J2lN2EJ_Jo"
-                data-yt-title="Kubernetes Dashboard: Installation, Setup, and Access from Local Machine"
+                data-yt-id="CsiJWpfncqA"
+                data-yt-title="KubePilot - Troubleshooting Kubernetes using AI"
               >
                 <noscript>
                   <iframe
-                    src="https://www.youtube-nocookie.com/embed/8J2lN2EJ_Jo?rel=0"
-                    title="Kubernetes Dashboard: Installation, Setup, and Access from Local Machine"
+                    src="https://www.youtube-nocookie.com/embed/CsiJWpfncqA?rel=0"
+                    title="KubePilot - Troubleshooting Kubernetes using AI"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowfullscreen
                     referrerpolicy="strict-origin-when-cross-origin"
@@ -442,13 +507,13 @@
               </div>
               <div class="video-caption">
                 <p>
-                  <strong>Kubernetes Dashboard installation and access</strong>
+                  <strong>KubePilot — Troubleshooting Kubernetes using AI</strong>
                   <span class="credit">
-                    &mdash; community tutorial by
-                    <a href="https://www.youtube.com/@ukartechsolution" rel="noopener">UKAR BigData Solutions</a>
+                    &mdash;
+                    <a href="https://www.youtube.com/@BalinderWalia" rel="noopener">Balinder Walia</a>
                   </span>
                 </p>
-                <a class="watch-link" href="https://www.youtube.com/watch?v=8J2lN2EJ_Jo" rel="noopener">Watch on YouTube &rarr;</a>
+                <a class="watch-link" href="https://www.youtube.com/watch?v=CsiJWpfncqA" rel="noopener">Watch on YouTube &rarr;</a>
               </div>
             </div>
           </div>
@@ -457,31 +522,100 @@
 
       <!-- Trust bar -->
       <div class="trust-bar wrap">
-        <p><strong>Single binary, production-minded defaults.</strong> Connects to any kubeconfig. Works with Ollama, Llama 3, Mistral, and more. Durable RCA history. Optional Slack alerts. Hot-reloadable YAML runbooks. Native iOS app, widgets, App Intents, and Face ID-ready mobile access.</p>
+        <p><strong>One cockpit from signal to fix.</strong> Ask CoPilot in plain English, browse like an SRE in Pilot, and let AutoPilot preview or apply safe remediations — with local LLMs, durable RCA history, optional Slack alerts, and a native iOS companion.</p>
       </div>
+
+      <!-- Modes -->
+      <section id="modes" class="section">
+        <div class="wrap">
+          <div class="section-header">
+            <div class="section-divider"></div>
+            <h2>Three Modes. One Faster Incident Loop.</h2>
+            <p>Use AI CoPilot, Pilot, and AutoPilot together to diagnose, inspect, and remediate Kubernetes cluster incidents in minutes instead of hours.</p>
+          </div>
+          <div class="modes">
+            <article class="mode">
+              <span class="mode-eyebrow">AI CoPilot</span>
+              <h3>Kubernetes CoPilot<br>(AI-Assisted Troubleshooting)</h3>
+              <p class="mode-tagline">Ask what is broken in plain English. Get root-cause analysis, evidence, and next steps without writing kubectl scripts first.</p>
+              <div class="mode-benefit"><strong>Benefit:</strong> Cut triage time when the cluster is noisy — jump straight from symptoms to a confident diagnosis.</div>
+              <ul>
+                <li>Natural-language AI assistant for cluster questions</li>
+                <li>One-click AI Analyze on problem pods and events</li>
+                <li>Automated RCA with evidence chains and confidence</li>
+                <li>Copy Prompt to reuse diagnoses with your preferred LLM</li>
+                <li>Anomaly detection for CrashLoop, OOM, ImagePull, node pressure</li>
+                <li>Works with Ollama and local models — data stays yours</li>
+              </ul>
+            </article>
+            <article class="mode">
+              <span class="mode-eyebrow">Pilot</span>
+              <h3>Kubernetes Pilot<br>(SRE Troubleshooting)</h3>
+              <p class="mode-tagline">A Lens/Rancher-style read-only browser for workloads, nodes, logs, YAML, topology, and LAN/WAN visibility when you need to verify the AI.</p>
+              <div class="mode-benefit"><strong>Benefit:</strong> Keep SRE muscle memory in one place — inspect before you act, without switching tools mid-incident.</div>
+              <ul>
+                <li>Browse Deployments, StatefulSets, Jobs, Services, Ingresses, ConfigMaps, Secrets, PVCs</li>
+                <li>Pod workbench: overview, containers, events, logs, sanitized YAML</li>
+                <li>Live cluster resource gauges (CPU, memory, disk)</li>
+                <li>Service topology from Ingress &rarr; Service &rarr; Workload &rarr; Pod</li>
+                <li>Node LAN, WAN, and tunnel IP classification</li>
+                <li>Port-forward tunnels and multi-cluster kubeconfig switching</li>
+              </ul>
+            </article>
+            <article class="mode">
+              <span class="mode-eyebrow">AutoPilot</span>
+              <h3>Kubernetes AutoPilot<br>(AI Fixer)</h3>
+              <p class="mode-tagline">Closed-loop self-healing with dry-run, confidence floors, rate limits, cooldowns, and a kill switch — so automation stays auditable.</p>
+              <div class="mode-benefit"><strong>Benefit:</strong> Fix recurring issues faster after hours — with human-grade safety rails and a full decision ledger.</div>
+              <ul>
+                <li>Modes: off, dry-run (preview), or active (apply)</li>
+                <li>Policy gates: namespace blocklists, action allow-lists, confidence floors</li>
+                <li>Cooldowns and hourly caps to prevent remediation storms</li>
+                <li>One-click pause kill switch for operators</li>
+                <li>Decision ledger of executed, skipped, escalated, and failed actions</li>
+                <li>Pairs with CoPilot RCA so fixes follow diagnosed root cause</li>
+              </ul>
+            </article>
+          </div>
+          <div class="benefits">
+            <div class="benefit">
+              <h4>Faster mean-time-to-resolution</h4>
+              <p>CoPilot explains, Pilot verifies, AutoPilot remediates — less context switching across dashboards, logs, and runbooks.</p>
+            </div>
+            <div class="benefit">
+              <h4>Safer AI operations</h4>
+              <p>Read-only Pilot defaults, mutation gates, dry-run Autopilot, and CR-code approval for risky actions keep production safer.</p>
+            </div>
+            <div class="benefit">
+              <h4>Works where you work</h4>
+              <p>Web cockpit plus native iOS companion, widgets, and App Intents — respond to cluster incidents from the desk or on the go.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- Highlights -->
       <div class="wrap">
         <div class="highlights">
           <div class="highlight">
             <span class="highlight-icon">&#129504;</span>
-            <h3>AI Root-Cause Analysis</h3>
-            <p>Continuous anomaly detection with automated RCA, evidence chains, and remediation steps from local LLMs</p>
+            <h3>AI CoPilot RCA</h3>
+            <p>Ask in plain English, run AI Analyze, and get evidence-backed root cause plus remediation steps</p>
+          </div>
+          <div class="highlight">
+            <span class="highlight-icon">&#128202;</span>
+            <h3>Pilot SRE Browser</h3>
+            <p>Workloads, nodes, logs, YAML, topology, and resource gauges for hands-on verification</p>
+          </div>
+          <div class="highlight">
+            <span class="highlight-icon">&#129302;</span>
+            <h3>AutoPilot AI Fixer</h3>
+            <p>Dry-run or active self-healing with confidence floors, rate limits, cooldowns, and kill switch</p>
           </div>
           <div class="highlight">
             <span class="highlight-icon">&#128203;</span>
             <h3>Pre-Built Runbooks</h3>
             <p>7 opinionated diagnostic workflows out of the box, plus custom YAML runbooks with live hot-reload</p>
-          </div>
-          <div class="highlight">
-            <span class="highlight-icon">&#128202;</span>
-            <h3>Live Resource Gauges</h3>
-            <p>Cluster-wide CPU, memory, and real disk usage (Longhorn-aware) updated every 15 seconds</p>
-          </div>
-          <div class="highlight">
-            <span class="highlight-icon">&#128268;</span>
-            <h3>Service Topology</h3>
-            <p>Visual map from Ingress to Service to Workload to Pod, with health and dependency edges</p>
           </div>
           <div class="highlight">
             <span class="highlight-icon">&#128241;</span>
@@ -494,14 +628,14 @@
             <p>See real LAN, WAN, and WireGuard tunnel addresses instead of only the k3s overlay IP</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#129302;</span>
-            <h3>Autopilot Safety</h3>
-            <p>Dry-run or active self-healing with confidence floors, rate limits, cooldowns, and kill switch</p>
-          </div>
-          <div class="highlight">
             <span class="highlight-icon">&#128225;</span>
             <h3>Live Logs &amp; Events</h3>
             <p>Fast pod log access, cluster event timelines, anomaly detection, and RCA drill-downs</p>
+          </div>
+          <div class="highlight">
+            <span class="highlight-icon">&#128274;</span>
+            <h3>Security-First Defaults</h3>
+            <p>Optional auth, read-only browsing, mutation gates, and CORS policies for production use</p>
           </div>
         </div>
       </div>
@@ -511,10 +645,25 @@
         <div class="wrap">
           <div class="section-header">
             <div class="section-divider"></div>
-            <h2>Everything Your Team Needs</h2>
-            <p>A practical incident workflow that blends observability with AI-powered recommendations.</p>
+            <h2>Full Feature Set for Faster Incidents</h2>
+            <p>Everything behind CoPilot, Pilot, and AutoPilot — observability, AI diagnosis, and safer remediation in one open-source platform.</p>
           </div>
           <div class="features">
+            <article class="feature">
+              <div class="feature-icon">&#10024;</div>
+              <h3>CoPilot — AI-Assisted Troubleshooting</h3>
+              <p>Ask operational questions, run AI Analyze on problem pods, and get root cause, evidence, confidence, risk, commands, YAML fixes, and next steps from your local LLM.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#128269;</div>
+              <h3>Pilot — SRE Troubleshooting Browser</h3>
+              <p>Browse Deployments, StatefulSets, DaemonSets, Jobs, Services, Ingresses, ConfigMaps, Secrets, and PVCs across namespaces with live YAML and log viewers.</p>
+            </article>
+            <article class="feature">
+              <div class="feature-icon">&#129302;</div>
+              <h3>AutoPilot — AI Fixer Self-Healing</h3>
+              <p>Policy-gated remediation in off, dry-run, or active mode. Confidence floors, namespace blocklists, action allow-lists, cooldowns, hourly caps, and a pause kill switch keep automation auditable.</p>
+            </article>
             <article class="feature">
               <div class="feature-icon">&#128202;</div>
               <h3>Cluster Resource Gauges</h3>
@@ -526,24 +675,9 @@
               <p>A SwiftUI mobile app connects to the same KubePilot APIs for health cards, pod search, pod detail tabs, live logs, events, RCA reports, Face ID, widgets, and Siri/App Intents.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#10024;</div>
-              <h3>AI Root-Cause Analysis</h3>
-              <p>Continuous watcher detects CrashLoopBackOff, OOM, ImagePull and node-pressure anomalies, runs RCA through your local LLM, and stores reports with evidence chains.</p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon">&#129302;</div>
-              <h3>Autopilot Self-Healing</h3>
-              <p>Policy-gated remediation can run in off, dry-run, or active mode. Confidence floors, namespace blocklists, action allow-lists, cooldowns, hourly caps, and a pause kill switch keep automation auditable.</p>
-            </article>
-            <article class="feature">
               <div class="feature-icon">&#128203;</div>
               <h3>Runbooks &amp; YAML Workflows</h3>
               <p>7 pre-built diagnostic workflows ship in the box. Drop YAML runbooks into a directory for fsnotify-driven hot reload — user runbooks override builtins by ID.</p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon">&#128269;</div>
-              <h3>Kubernetes Dashboard Browser</h3>
-              <p>Browse Deployments, StatefulSets, DaemonSets, Jobs, Services, Ingresses, ConfigMaps, Secrets, and PVCs across all namespaces with live YAML and log viewers.</p>
             </article>
             <article class="feature">
               <div class="feature-icon">&#127760;</div>
@@ -577,8 +711,8 @@
             </article>
             <article class="feature">
               <div class="feature-icon">&#129305;</div>
-              <h3>AI Assistant &amp; Health Indicator</h3>
-              <p>Ask operational questions like "why are pods restarting?" or "summarise cluster health". The AI health chip shows Ollama connectivity before an incident analysis depends on it.</p>
+              <h3>Copy Prompt &amp; AI Health</h3>
+              <p>Copy the exact CoPilot prompt from any analysis surface, and check the AI health chip so you know Ollama is ready before an incident depends on it.</p>
             </article>
             <article class="feature">
               <div class="feature-icon">&#9729;&#65039;</div>
@@ -604,25 +738,25 @@
         <div class="wrap">
           <div class="section-header">
             <div class="section-divider"></div>
-            <h2>Resolve Incidents in Four Steps</h2>
-            <p>A clear workflow that reduces mean-time-to-resolution.</p>
+            <h2>From Signal to Fix in Four Steps</h2>
+            <p>CoPilot diagnoses, Pilot verifies, AutoPilot remediates — a clear loop that reduces mean-time-to-resolution.</p>
           </div>
           <div class="steps">
             <div class="step">
               <h4>Spot Issues</h4>
-              <p>Use web, iOS, widgets, or alerts to identify warnings, resource pressure, not-ready nodes, and failing pods at a glance.</p>
+              <p>Use Pilot gauges, events, iOS widgets, or alerts to identify warnings, resource pressure, not-ready nodes, and failing pods at a glance.</p>
             </div>
             <div class="step">
-              <h4>Inspect</h4>
-              <p>Drill into a problematic pod to view logs, event history, YAML, uptime, container state, restart reasons, and node LAN/WAN/tunnel details.</p>
+              <h4>Ask CoPilot</h4>
+              <p>Run AI Analyze or ask in plain English for root cause, evidence, confidence, risk, commands, YAML fixes, and next steps.</p>
             </div>
             <div class="step">
-              <h4>Analyze</h4>
-              <p>Run AI Analyze or ask the assistant for root cause, evidence, confidence, risk, commands, YAML fixes, and next steps.</p>
+              <h4>Verify in Pilot</h4>
+              <p>Drill into pods, logs, YAML, topology, and node LAN/WAN details to confirm the diagnosis before you change anything.</p>
             </div>
             <div class="step">
-              <h4>Act Safely</h4>
-              <p>Validate impact through topology and health views, then use runbooks, gated actions, or Autopilot dry-run/active modes when policy allows.</p>
+              <h4>Fix with AutoPilot</h4>
+              <p>Preview in dry-run or apply in active mode when policy allows — with kill switch, cooldowns, and a full decision ledger.</p>
             </div>
           </div>
         </div>
@@ -639,15 +773,15 @@
           <div class="screenshots">
             <figure class="screenshot">
               <img src="../screenshots/dashboard-overview.svg" alt="KubePilot dashboard overview showing cluster KPIs, node readiness, and deployment health" loading="lazy" />
-              <figcaption>Overview &mdash; cluster KPIs, resource gauges, node readiness, deployment health, LAN/WAN node IP visibility, and quick navigation tabs.</figcaption>
+              <figcaption>Pilot overview &mdash; cluster KPIs, resource gauges, node readiness, deployment health, LAN/WAN node IP visibility, and quick navigation.</figcaption>
             </figure>
             <figure class="screenshot">
               <img src="../screenshots/cluster-events-ai.svg" alt="Cluster events and AI troubleshooting panel" loading="lazy" />
-              <figcaption>Cluster Events &mdash; health summary, node pressure, problematic pods, event timeline, and one-click AI analysis.</figcaption>
+              <figcaption>CoPilot &mdash; cluster events, health summary, problematic pods, and one-click AI-assisted troubleshooting.</figcaption>
             </figure>
             <figure class="screenshot screenshot-wide">
               <img src="../screenshots/autopilot-workflow.svg" alt="KubePilot Autopilot workflow from anomaly detection through policy gates to audited remediation" loading="lazy" />
-              <figcaption>Autopilot &mdash; how an anomaly travels from detection through AI root-cause analysis, policy gates, and confidence floors to an audited remediation action.</figcaption>
+              <figcaption>AutoPilot (AI Fixer) &mdash; how an anomaly travels from detection through AI root-cause analysis, policy gates, and confidence floors to an audited remediation action.</figcaption>
             </figure>
           </div>
         </div>
@@ -705,7 +839,7 @@ open KubePilot.xcodeproj
         <div class="wrap">
           <div class="cta-card">
             <h2>Ready to Troubleshoot Kubernetes Faster?</h2>
-            <p>KubePilot is free, open source, and built for teams that want AI-assisted incident response across web, mobile, runbooks, and safe automation without vendor lock-in.</p>
+            <p>Use AI CoPilot, Pilot, and AutoPilot to resolve cluster incidents faster — open source, local-LLM friendly, and built for teams that want diagnosis and safe automation without vendor lock-in.</p>
             <div class="hero-actions">
               <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Star on GitHub</a>
               <a class="btn btn-lg" href="https://github.com/bwalia/kubepilot/issues/new">Request a Feature</a>
