@@ -149,6 +149,13 @@ resources:
     memory: 1Gi
 
 # ── Security ─────────────────────────────────────────────────────────────────
+rbac:
+  # Namespace holding CR code Secrets. KubePilot's write access to Secrets is a
+  # namespaced Role here rather than a cluster-wide grant, so the pod cannot
+  # create or delete a Secret anywhere else. Must match security.CRCodeNamespace
+  # in the Go code, and the namespace must already exist.
+  crCodeNamespace: kubepilot-security
+
 serviceAccount:
   create: true
   annotations: {}

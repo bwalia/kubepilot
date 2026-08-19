@@ -49,11 +49,17 @@ rules:
   - apiGroups: [storage.k8s.io]
     resources: [storageclasses]
     verbs: [get, list, watch]
-  # Secrets — restricted to kubepilot-security namespace for CR code management.
+  # Secrets — metadata only, for the dashboard's Secrets browser. That view
+  # surfaces name, type, and key count and never reads Secret values (see the
+  # SECURITY note on k8s.Client.ListSecrets), so read access is all it needs.
+  #
+  # Creating and deleting Secrets is CR code management, which only ever touches
+  # the kubepilot-security namespace. Those verbs are granted by a namespaced
+  # Role below rather than here, so a KubePilot pod cannot write a Secret
+  # anywhere else in the cluster.
   - apiGroups: [""]
     resources: [secrets]
-    verbs: [get, list, watch, create, update, delete]
-    # Note: Restrict this to kubepilot-security namespace via RoleBinding, not ClusterRoleBinding.
+    verbs: [get, list, watch]
   # KubePilot CRDs.
   - apiGroups: [kubepilot.io]
     resources: ["*"]
@@ -66,6 +72,37 @@ rules:
   - apiGroups: [coordination.k8s.io]
     resources: [leases]
     verbs: [get, list, watch, create, update, patch, delete]
+---
+# CR code management, scoped to the one namespace that stores them
+# (security.CRCodeNamespace). Kept as a Role + RoleBinding so the write verbs
+# never apply cluster-wide.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kubepilot.fullname" . }}-crcode
+  namespace: {{ .Values.rbac.crCodeNamespace }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch, create, update, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kubepilot.fullname" . }}-crcode
+  namespace: {{ .Values.rbac.crCodeNamespace }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kubepilot.fullname" . }}-crcode
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kubepilot.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
