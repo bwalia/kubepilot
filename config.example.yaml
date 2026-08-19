@@ -15,6 +15,9 @@
 ##   KUBEPILOT_ENABLE_KUBECONFIG_MUTATIONS=false
 ##   KUBEPILOT_ENABLE_ACTION_MUTATIONS=false
 ##   KUBEPILOT_CORS_ALLOWED_ORIGINS=http://localhost:8383,http://127.0.0.1:8383
+##   KUBEPILOT_OTEL_ENDPOINT=otel-collector.observability:4317
+##   KUBEPILOT_OTEL_ENVIRONMENT=int
+##   KUBEPILOT_METRICS_ENABLED=true
 ## ─────────────────────────────────────────────────────────────────────────────
 
 # Path to kubeconfig. Leave empty to use in-cluster config when running inside a pod.
@@ -90,3 +93,50 @@ operator:
 agent:
   mcp_server: ""      # host:port of the central MCP server
   cluster_name: ""    # Unique name for this cluster
+
+# ── OpenTelemetry ────────────────────────────────────────────────────────────
+# Traces and metrics for KubePilot itself: inbound dashboard/API requests, every
+# call to the Kubernetes API server, every call to the AI backend, anomaly
+# detection, and autopilot decisions.
+#
+# Export is opt-in. Leave otel_endpoint empty and KubePilot opens no outbound
+# telemetry connection at all — tracing becomes a no-op and metrics stay local
+# to the /metrics endpoint below. Set it to an OTLP collector to ship data out.
+otel_endpoint: ""
+
+# OTLP wire protocol: grpc (port 4317) | http/protobuf (port 4318).
+otel_protocol: grpc
+
+# Send OTLP without TLS. Appropriate for a collector on a trusted LAN or a
+# cluster-internal service; turn off when crossing an untrusted network.
+otel_insecure: true
+
+# Extra OTLP headers as comma-separated key=value pairs, e.g. the API key a
+# hosted backend expects. Treat as a secret — prefer the environment variable.
+otel_headers: ""
+
+# Head-sampling probability for root spans, 0.0-1.0. Requests arriving with an
+# already-sampled parent are always kept, so distributed traces stay whole.
+# 1.0 is fine at home-lab request volumes; lower it if a busy install
+# overwhelms the collector.
+otel_sample_ratio: 1.0
+
+# How often metrics are pushed over OTLP. Does not affect Prometheus scraping.
+otel_metric_interval: 60s
+
+# Resource identity reported to the backend. environment is what tells the
+# int, test, and workstation instances apart in a shared view.
+otel_service_name: kubepilot
+otel_service_namespace: ""
+otel_environment: ""
+
+# ── Prometheus ───────────────────────────────────────────────────────────────
+# Serve metrics on the dashboard's /metrics route. Independent of OTLP: this
+# works with no collector anywhere.
+#
+# /metrics is exempt from dashboard auth by default, matching what scrapers
+# expect. Its labels are route templates, verbs, and status codes — never
+# namespace, pod, or object names — so it carries no cluster detail. Set
+# metrics_require_auth to close it behind the dashboard credentials anyway.
+metrics_enabled: true
+metrics_require_auth: false

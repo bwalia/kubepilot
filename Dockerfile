@@ -20,7 +20,7 @@ RUN npm run build
 # ─────────────────────────────────────────────────────────────────────────────
 # Build natively and cross-compile for the target arch (Go cross-compiles
 # cheaply), rather than emulating the whole toolchain under QEMU.
-FROM --platform=$BUILDPLATFORM golang:1.22-alpine AS go-builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS go-builder
 
 # buildx provides the target platform; default to amd64 for plain `docker build`.
 ARG TARGETOS=linux

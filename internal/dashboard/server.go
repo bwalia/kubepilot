@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,6 +31,7 @@ import (
 	"github.com/kubepilot/kubepilot/pkg/observability"
 	"github.com/kubepilot/kubepilot/pkg/runbooks"
 	"github.com/kubepilot/kubepilot/pkg/security"
+	"github.com/kubepilot/kubepilot/pkg/telemetry"
 )
 
 // Config holds dashboard server configuration.
@@ -46,6 +48,9 @@ type Config struct {
 	EnableKubeconfigMutationEndpoints bool
 	EnableActionMutationEndpoints     bool
 	AllowedCORSOrigins                []string
+	// Telemetry instruments the HTTP surface and serves /metrics. A nil
+	// provider disables both; it is never dereferenced without a guard.
+	Telemetry *telemetry.Provider
 }
 
 // Server serves the KubePilot dashboard ("Kubernetes Troubleshooting powered by AI") and REST API.
@@ -222,10 +227,24 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/crcode/register", s.handleCRCodeRegister).Methods(http.MethodPost)
 	api.HandleFunc("/crcode/revoke", s.handleCRCodeRevoke).Methods(http.MethodPost)
 
+	// Report the matched route template back to the telemetry middleware, so
+	// spans and metrics are labelled "/clusters/pods/{namespace}/{pod}" rather
+	// than by each concrete pod path.
+	if s.cfg.Telemetry != nil {
+		router.Use(s.cfg.Telemetry.MuxRouteNamer())
+	}
+
 	// Health
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+
+	// Prometheus scrape endpoint. Registered unconditionally — it answers 404
+	// when metrics are disabled — so probing it never depends on how the
+	// server was configured.
+	if s.cfg.Telemetry != nil {
+		router.Handle("/metrics", s.cfg.Telemetry.MetricsHandler()).Methods(http.MethodGet)
+	}
 
 	// ── Static Next.js dashboard ─────────────────────────────────────────────
 	// In production the dashboard is built to ./dashboard/out and served here.
@@ -235,6 +254,12 @@ func (s *Server) Start(ctx context.Context) error {
 	handler := withCORS(router, s.cfg.AllowedCORSOrigins)
 	if s.cfg.Auth.Enabled {
 		handler = withAuth(handler, s.cfg.Auth)
+	}
+	// Telemetry goes outermost so it also sees the requests auth rejects and
+	// the CORS preflights — precisely the traffic worth inspecting when the
+	// dashboard stops loading for someone.
+	if s.cfg.Telemetry != nil {
+		handler = s.cfg.Telemetry.HTTPMiddleware(handler)
 	}
 
 	srv := &http.Server{
@@ -1186,7 +1211,7 @@ func (s *Server) executeSuggestedCommand(ctx context.Context, command string) (s
 		if trimmed == "" {
 			trimmed = err.Error()
 		}
-		return "", fmt.Errorf(trimmed)
+		return "", errors.New(trimmed)
 	}
 	trimmed := strings.TrimSpace(string(out))
 	if trimmed == "" {
@@ -1233,7 +1258,7 @@ func httpError(w http.ResponseWriter, err error, code int) {
 
 func (s *Server) handleMutationDisabled(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		httpError(w, fmt.Errorf(msg), http.StatusForbidden)
+		httpError(w, errors.New(msg), http.StatusForbidden)
 	}
 }
 

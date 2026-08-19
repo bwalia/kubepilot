@@ -223,7 +223,7 @@ func (ce *CorrelationEngine) llmCorrelate(ctx context.Context, topology *Service
 Identify which service is the root cause, which services are affected downstream, and suggest remediation.
 Be concise and specific.`
 
-	resp, err := ce.engine.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	resp, err := ce.engine.chatCompletion(ctx, "correlation", openai.ChatCompletionRequest{
 		Model: ce.engine.cfg.Model,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},

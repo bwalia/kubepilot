@@ -12,12 +12,21 @@ import (
 //  1. Authorization: Bearer <Token> (if Token configured)
 //  2. Basic auth username/password (if Username and Password configured)
 //
-// This middleware intentionally allows /healthz without auth for liveness checks.
+// This middleware intentionally allows /healthz without auth for liveness
+// checks, and /metrics without auth for Prometheus scraping.
+//
+// Exempting /metrics is the standard convention — most scrapers are configured
+// without credentials — and the endpoint is built to carry no secrets: its
+// labels are route templates and verbs, never namespace, pod, or object names.
+// Operators who still want it closed can set MetricsRequireAuth.
 type AuthConfig struct {
 	Enabled  bool
 	Token    string
 	Username string
 	Password string
+	// MetricsRequireAuth closes /metrics behind the same credentials as the
+	// rest of the API. Scrapers then need matching credentials configured.
+	MetricsRequireAuth bool
 }
 
 func withAuth(next http.Handler, cfg AuthConfig) http.Handler {
@@ -27,6 +36,10 @@ func withAuth(next http.Handler, cfg AuthConfig) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if r.URL.Path == "/metrics" && !cfg.MetricsRequireAuth {
 			next.ServeHTTP(w, r)
 			return
 		}

@@ -218,7 +218,7 @@ Format your response as:
 SUMMARY: <your summary>
 SUGGESTIONS: ["suggestion 1", "suggestion 2", ...]`
 
-	resp, err := la.engine.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	resp, err := la.engine.chatCompletion(ctx, "log_analysis", openai.ChatCompletionRequest{
 		Model: la.engine.cfg.Model,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},

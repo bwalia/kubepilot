@@ -23,6 +23,21 @@ kubepilot_auth_token: "{{ lookup('env', 'KUBEPILOT_AUTH_TOKEN') | default('', tr
 kubepilot_ollama_base_url: "{{ lookup('env', 'KUBEPILOT_OLLAMA_BASE_URL') | default('http://localhost:11434/v1', true) }}"
 kubepilot_ollama_model: "{{ lookup('env', 'KUBEPILOT_OLLAMA_MODEL') | default('llama3', true) }}"
 kubepilot_cors_allowed_origins: "{{ lookup('env', 'KUBEPILOT_CORS_ALLOWED_ORIGINS') | default('', true) }}"
+
+# ── Telemetry ────────────────────────────────────────────────────────────────
+# Empty endpoint means no OTLP export: tracing is a no-op and metrics stay local
+# to /metrics, which is the right default for a host with no collector on its
+# network. kubepilot_otel_environment names the host in a shared backend and
+# defaults to the inventory group (int / test), so the two boxes are
+# distinguishable without any extra configuration.
+kubepilot_otel_endpoint: "{{ lookup('env', 'KUBEPILOT_OTEL_ENDPOINT') | default('', true) }}"
+kubepilot_otel_protocol: "{{ lookup('env', 'KUBEPILOT_OTEL_PROTOCOL') | default('grpc', true) }}"
+kubepilot_otel_insecure: "{{ lookup('env', 'KUBEPILOT_OTEL_INSECURE') | default('true', true) }}"
+kubepilot_otel_sample_ratio: "{{ lookup('env', 'KUBEPILOT_OTEL_SAMPLE_RATIO') | default('1.0', true) }}"
+kubepilot_otel_service_namespace: "{{ lookup('env', 'KUBEPILOT_OTEL_SERVICE_NAMESPACE') | default('home-lab', true) }}"
+kubepilot_otel_environment: "{{ lookup('env', 'KUBEPILOT_OTEL_ENVIRONMENT') | default(group_names | first | default('unknown'), true) }}"
+kubepilot_metrics_enabled: "{{ lookup('env', 'KUBEPILOT_METRICS_ENABLED') | default('true', true) }}"
+kubepilot_metrics_require_auth: "{{ lookup('env', 'KUBEPILOT_METRICS_REQUIRE_AUTH') | default('false', true) }}"
 # Kubeconfig KubePilot itself uses to reach a cluster (the app's own access,
 # unrelated to how it is deployed). `kubepilot serve` reads the standard
 # KUBECONFIG env var and fails to start without a readable kubeconfig, so the
