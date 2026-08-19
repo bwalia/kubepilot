@@ -57,6 +57,15 @@ COPY --from=go-builder /kubepilot /kubepilot
 # Copy the dashboard out/ directory so the binary can serve it at runtime.
 COPY --from=go-builder /build/dashboard/out /dashboard/out
 
+# The server resolves the dashboard as the relative path ./dashboard/out, so the
+# working directory has to be the one the files were copied under.
+#
+# This is not redundant: the distroless nonroot base sets WORKDIR=/home/nonroot,
+# which made every dashboard URL resolve to a path that does not exist and
+# return 404 while /healthz and the API kept working — so the image looked
+# healthy to probes while serving no UI at all.
+WORKDIR /
+
 USER nonroot:nonroot
 
 EXPOSE 8080 9090

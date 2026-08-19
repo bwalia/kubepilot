@@ -72,10 +72,15 @@ rules:
   - apiGroups: [coordination.k8s.io]
     resources: [leases]
     verbs: [get, list, watch, create, update, patch, delete]
+{{- if .Values.rbac.crCodeNamespace }}
 ---
 # CR code management, scoped to the one namespace that stores them
 # (security.CRCodeNamespace). Kept as a Role + RoleBinding so the write verbs
 # never apply cluster-wide.
+#
+# Skipped entirely when rbac.crCodeNamespace is empty, so the chart still
+# installs on a cluster that has no CR code namespace. KubePilot then serves
+# normally and only the /crcode endpoints are unavailable.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -103,6 +108,7 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kubepilot.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

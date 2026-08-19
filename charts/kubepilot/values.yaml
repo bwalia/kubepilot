@@ -152,8 +152,12 @@ resources:
 rbac:
   # Namespace holding CR code Secrets. KubePilot's write access to Secrets is a
   # namespaced Role here rather than a cluster-wide grant, so the pod cannot
-  # create or delete a Secret anywhere else. Must match security.CRCodeNamespace
-  # in the Go code, and the namespace must already exist.
+  # create or delete a Secret anywhere else.
+  #
+  # Must match security.CRCodeNamespace in the Go code, and the namespace must
+  # already exist — Helm will not create it. Set to "" to skip the Role and
+  # RoleBinding altogether, which installs cleanly on a cluster without that
+  # namespace at the cost of the /crcode endpoints.
   crCodeNamespace: kubepilot-security
 
 serviceAccount:
