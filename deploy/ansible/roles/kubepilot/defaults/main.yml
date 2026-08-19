@@ -35,7 +35,10 @@ kubepilot_otel_protocol: "{{ lookup('env', 'KUBEPILOT_OTEL_PROTOCOL') | default(
 kubepilot_otel_insecure: "{{ lookup('env', 'KUBEPILOT_OTEL_INSECURE') | default('true', true) }}"
 kubepilot_otel_sample_ratio: "{{ lookup('env', 'KUBEPILOT_OTEL_SAMPLE_RATIO') | default('1.0', true) }}"
 kubepilot_otel_service_namespace: "{{ lookup('env', 'KUBEPILOT_OTEL_SERVICE_NAMESPACE') | default('home-lab', true) }}"
-kubepilot_otel_environment: "{{ lookup('env', 'KUBEPILOT_OTEL_ENVIRONMENT') | default(group_names | first | default('unknown'), true) }}"
+# group_names is alphabetical and every host is also in the parent "kubepilot"
+# group, so taking the first entry would label 192.168.1.140 as "kubepilot"
+# rather than "test". Drop the parent group before picking.
+kubepilot_otel_environment: "{{ lookup('env', 'KUBEPILOT_OTEL_ENVIRONMENT') | default((group_names | difference(['kubepilot']) | first) | default('unknown', true), true) }}"
 kubepilot_metrics_enabled: "{{ lookup('env', 'KUBEPILOT_METRICS_ENABLED') | default('true', true) }}"
 kubepilot_metrics_require_auth: "{{ lookup('env', 'KUBEPILOT_METRICS_REQUIRE_AUTH') | default('false', true) }}"
 # Kubeconfig KubePilot itself uses to reach a cluster (the app's own access,
