@@ -4,6 +4,8 @@ package k8s
 
 import (
 	"fmt"
+	"net/http"
+	"sync"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -22,6 +24,35 @@ type Client struct {
 	Metrics metricsv1beta1.Interface
 	// RestConfig is the underlying rest config, exposed for operator-sdk use.
 	RestConfig *rest.Config
+}
+
+// transportWrapper decorates the HTTP transport of every client this package
+// builds. The telemetry bootstrap installs it once at startup, before any
+// client exists.
+//
+// It is a package-level hook rather than a constructor argument because the
+// dashboard builds fresh clients at runtime whenever the operator switches
+// cluster or context. Those clients must be instrumented too, and threading a
+// telemetry provider through every call site to achieve that would couple this
+// package to one it has no other reason to know about.
+var (
+	transportMu      sync.RWMutex
+	transportWrapper func(http.RoundTripper) http.RoundTripper
+)
+
+// SetTransportWrapper installs the decorator applied to every client built from
+// this point on. Passing nil clears it. Clients that already exist are
+// unaffected, so call it before constructing the first client.
+func SetTransportWrapper(wrap func(http.RoundTripper) http.RoundTripper) {
+	transportMu.Lock()
+	defer transportMu.Unlock()
+	transportWrapper = wrap
+}
+
+func currentTransportWrapper() func(http.RoundTripper) http.RoundTripper {
+	transportMu.RLock()
+	defer transportMu.RUnlock()
+	return transportWrapper
 }
 
 // NewClient builds a Client from a kubeconfig path.
@@ -57,6 +88,11 @@ func NewClientWithContext(kubeconfigPath, contextName string) (*Client, error) {
 	// and requires higher throughput than the conservative client-go defaults.
 	cfg.QPS = 200
 	cfg.Burst = 400
+
+	// Instrument every API-server call this client makes, when telemetry is on.
+	if wrap := currentTransportWrapper(); wrap != nil {
+		cfg.Wrap(wrap)
+	}
 
 	coreClient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {

@@ -22,6 +22,7 @@ import (
 	"github.com/kubepilot/kubepilot/pkg/mcp/server"
 	"github.com/kubepilot/kubepilot/pkg/observability"
 	"github.com/kubepilot/kubepilot/pkg/runbooks"
+	"github.com/kubepilot/kubepilot/pkg/telemetry"
 )
 
 // newServeCmd returns the 'serve' subcommand which starts the full
@@ -58,6 +59,21 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("slack-min-severity", "high", "Minimum severity to notify on (critical|high|medium|low|info)")
 	cmd.Flags().String("notifier-dashboard-url", "", "Public dashboard URL included in Slack messages (e.g. https://kubepilot.example.com)")
 
+	// OpenTelemetry — traces and metrics. Export is off until an endpoint is
+	// set; the local Prometheus endpoint is on by default and costs nothing
+	// until something scrapes it.
+	cmd.Flags().String("otel-endpoint", "", "OTLP collector endpoint, e.g. otel-collector:4317 (empty disables trace/metric export)")
+	cmd.Flags().String("otel-protocol", "grpc", "OTLP protocol: grpc | http/protobuf")
+	cmd.Flags().Bool("otel-insecure", true, "Send OTLP without TLS (typical for a collector on a trusted LAN or in-cluster)")
+	cmd.Flags().String("otel-headers", "", "Extra OTLP headers as comma-separated key=value pairs (e.g. auth tokens)")
+	cmd.Flags().Float64("otel-sample-ratio", 1.0, "Head-sampling probability for root spans (0.0-1.0)")
+	cmd.Flags().Duration("otel-metric-interval", 60*time.Second, "How often metrics are pushed over OTLP")
+	cmd.Flags().String("otel-service-name", "kubepilot", "Value reported as service.name")
+	cmd.Flags().String("otel-service-namespace", "", "Value reported as service.namespace, e.g. home-lab")
+	cmd.Flags().String("otel-environment", "", "Value reported as deployment.environment, e.g. int | test | prod")
+	cmd.Flags().Bool("metrics-enabled", true, "Expose Prometheus metrics on the dashboard's /metrics route")
+	cmd.Flags().Bool("metrics-require-auth", false, "Require dashboard credentials to scrape /metrics")
+
 	// Autopilot — closed-loop AI self-healing.
 	cmd.Flags().String("autopilot-mode", "off", "Autopilot self-healing mode: off | dry-run | active (active mutates the cluster)")
 	cmd.Flags().Float64("autopilot-min-confidence", 0.80, "Minimum RCA confidence (0.0-1.0) before autopilot may act")
@@ -88,6 +104,17 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("slack_webhook_url", cmd.Flags().Lookup("slack-webhook-url"))
 	_ = viper.BindPFlag("slack_min_severity", cmd.Flags().Lookup("slack-min-severity"))
 	_ = viper.BindPFlag("notifier_dashboard_url", cmd.Flags().Lookup("notifier-dashboard-url"))
+	_ = viper.BindPFlag("otel_endpoint", cmd.Flags().Lookup("otel-endpoint"))
+	_ = viper.BindPFlag("otel_protocol", cmd.Flags().Lookup("otel-protocol"))
+	_ = viper.BindPFlag("otel_insecure", cmd.Flags().Lookup("otel-insecure"))
+	_ = viper.BindPFlag("otel_headers", cmd.Flags().Lookup("otel-headers"))
+	_ = viper.BindPFlag("otel_sample_ratio", cmd.Flags().Lookup("otel-sample-ratio"))
+	_ = viper.BindPFlag("otel_metric_interval", cmd.Flags().Lookup("otel-metric-interval"))
+	_ = viper.BindPFlag("otel_service_name", cmd.Flags().Lookup("otel-service-name"))
+	_ = viper.BindPFlag("otel_service_namespace", cmd.Flags().Lookup("otel-service-namespace"))
+	_ = viper.BindPFlag("otel_environment", cmd.Flags().Lookup("otel-environment"))
+	_ = viper.BindPFlag("metrics_enabled", cmd.Flags().Lookup("metrics-enabled"))
+	_ = viper.BindPFlag("metrics_require_auth", cmd.Flags().Lookup("metrics-require-auth"))
 	_ = viper.BindPFlag("autopilot_mode", cmd.Flags().Lookup("autopilot-mode"))
 	_ = viper.BindPFlag("autopilot_min_confidence", cmd.Flags().Lookup("autopilot-min-confidence"))
 	_ = viper.BindPFlag("autopilot_allowed_actions", cmd.Flags().Lookup("autopilot-allowed-actions"))
@@ -109,6 +136,26 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		zap.String("build", version.BuildTime),
 		zap.String("commit", version.Commit),
 	)
+
+	// Telemetry comes up before anything else so that every later subsystem —
+	// the Kubernetes client, the AI engine, the watcher — is instrumented from
+	// its first call.
+	tel, err := telemetry.Init(ctx, telemetryConfig(), log)
+	if err != nil {
+		// Never let a telemetry misconfiguration stop the server from serving.
+		// An unreachable collector is an observability problem, not an outage.
+		log.Warn("Telemetry disabled: initialisation failed", zap.Error(err))
+		tel = telemetry.Default()
+	}
+	defer func() {
+		if err := tel.Shutdown(context.Background()); err != nil {
+			log.Warn("Telemetry shutdown error", zap.Error(err))
+		}
+	}()
+
+	// Instrument every Kubernetes client built from here on, including the ones
+	// the dashboard creates later when the operator switches cluster.
+	k8s.SetTransportWrapper(tel.WrapKubernetesTransport)
 
 	// Resolve kubeconfig from this command's own flag. We can't use
 	// viper.GetString("kubeconfig") here: the serve/agent/operator subcommands
@@ -249,14 +296,16 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		Autopilot:      autopilotCtl,
 		KubeconfigPath: kubeconfigPath,
 		Auth: dashboard.AuthConfig{
-			Enabled:  authEnabled,
-			Token:    authToken,
-			Username: authUsername,
-			Password: authPassword,
+			Enabled:            authEnabled,
+			Token:              authToken,
+			Username:           authUsername,
+			Password:           authPassword,
+			MetricsRequireAuth: viper.GetBool("metrics_require_auth"),
 		},
 		EnableKubeconfigMutationEndpoints: viper.GetBool("enable_kubeconfig_mutations"),
 		EnableActionMutationEndpoints:     viper.GetBool("enable_action_mutations"),
 		AllowedCORSOrigins:                parseCSV(viper.GetString("cors_allowed_origins")),
+		Telemetry:                         tel,
 	}, log)
 
 	go func() {
@@ -282,6 +331,65 @@ func parseCSV(raw string) []string {
 			continue
 		}
 		out = append(out, v)
+	}
+	return out
+}
+
+// telemetryConfig assembles the telemetry settings from viper.
+//
+// KubePilot's own KUBEPILOT_OTEL_* settings take precedence, falling back to
+// the standard OTEL_* environment variables. Honouring both matters because
+// sidecars and operators inject the standard names automatically, while the
+// systemd and launchd units here configure everything through KUBEPILOT_*.
+func telemetryConfig() telemetry.Config {
+	endpoint := strings.TrimSpace(viper.GetString("otel_endpoint"))
+	if endpoint == "" {
+		endpoint = strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+	}
+
+	protocol := strings.TrimSpace(viper.GetString("otel_protocol"))
+	if env := strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")); env != "" && !viper.IsSet("otel_protocol") {
+		protocol = env
+	}
+
+	serviceName := strings.TrimSpace(viper.GetString("otel_service_name"))
+	if env := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME")); env != "" {
+		serviceName = env
+	}
+
+	return telemetry.Config{
+		ServiceName:       serviceName,
+		ServiceNamespace:  strings.TrimSpace(viper.GetString("otel_service_namespace")),
+		Environment:       strings.TrimSpace(viper.GetString("otel_environment")),
+		Endpoint:          endpoint,
+		Protocol:          protocol,
+		Insecure:          viper.GetBool("otel_insecure"),
+		Headers:           parseKeyValues(viper.GetString("otel_headers")),
+		SampleRatio:       viper.GetFloat64("otel_sample_ratio"),
+		MetricInterval:    viper.GetDuration("otel_metric_interval"),
+		PrometheusEnabled: viper.GetBool("metrics_enabled"),
+	}
+}
+
+// parseKeyValues parses "k1=v1,k2=v2" into a map. Malformed pairs are skipped
+// rather than rejected: a stray comma in a header list should not prevent the
+// server from starting.
+func parseKeyValues(raw string) map[string]string {
+	pairs := parseCSV(raw)
+	if len(pairs) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(pairs))
+	for _, pair := range pairs {
+		k, v, ok := strings.Cut(pair, "=")
+		k = strings.TrimSpace(k)
+		if !ok || k == "" {
+			continue
+		}
+		out[k] = strings.TrimSpace(v)
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }

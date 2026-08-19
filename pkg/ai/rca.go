@@ -8,9 +8,15 @@ import (
 	"time"
 
 	openai "github.com/sashabaranov/go-openai"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/pkg/k8s"
+	"github.com/kubepilot/kubepilot/pkg/telemetry"
 )
 
 // RCAEngine orchestrates Kubernetes root cause analysis using the AI engine
@@ -34,7 +40,44 @@ func NewRCAEngine(engine *Engine, k8sClient *k8s.Client, log *zap.Logger) *RCAEn
 // AnalyzePod performs deep root cause analysis on a specific pod.
 // It collects diagnostics, events, logs, resource metrics, and sends everything
 // to the LLM for structured analysis.
-func (r *RCAEngine) AnalyzePod(ctx context.Context, namespace, podName string) (*RCAReport, error) {
+func (r *RCAEngine) AnalyzePod(ctx context.Context, namespace, podName string) (report *RCAReport, err error) {
+	tel := telemetry.Default()
+	start := time.Now()
+
+	// This span is the parent of the whole analysis: the diagnostics and log
+	// fetches against the API server, and the LLM call. Seeing them nested is
+	// what tells you whether a slow RCA was the cluster or the model.
+	ctx, span := tel.Tracer.Start(ctx, "rca.AnalyzePod",
+		trace.WithAttributes(
+			semconv.K8SNamespaceName(namespace),
+			semconv.K8SPodName(podName),
+		),
+	)
+	defer span.End()
+
+	defer func() {
+		outcome := "success"
+		if err != nil {
+			outcome = "error"
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "RCA failed")
+		}
+
+		attrs := []attribute.KeyValue{attribute.String("outcome", outcome)}
+		if err == nil && report != nil {
+			// Severity is a small closed set, so it is safe as a metric label.
+			attrs = append(attrs, attribute.String("severity", string(report.Severity)))
+			span.SetAttributes(
+				attribute.String("kubepilot.rca.severity", string(report.Severity)),
+				attribute.String("kubepilot.rca.root_cause", report.RootCause.Category),
+				attribute.Float64("kubepilot.rca.confidence", report.Confidence),
+			)
+		}
+		tel.Metrics.RCADuration.Record(ctx, time.Since(start).Seconds(),
+			metric.WithAttributes(attribute.String("outcome", outcome)))
+		tel.Metrics.RCAReports.Add(ctx, 1, metric.WithAttributes(attrs...))
+	}()
+
 	r.log.Info("Starting RCA analysis",
 		zap.String("namespace", namespace),
 		zap.String("pod", podName),
@@ -79,7 +122,7 @@ func (r *RCAEngine) AnalyzePod(ctx context.Context, namespace, podName string) (
 	}
 
 	// Call the LLM.
-	resp, err := r.engine.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	resp, err := r.engine.chatCompletion(ctx, "rca", openai.ChatCompletionRequest{
 		Model: r.engine.cfg.Model,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},

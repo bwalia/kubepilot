@@ -42,7 +42,41 @@ spec:
             {{- if .Values.kubepilot.auth.enabled }}
             - --dashboard-auth-enabled
             {{- end }}
+            - --metrics-enabled={{ .Values.metrics.enabled }}
+            - --metrics-require-auth={{ .Values.metrics.requireAuth }}
+            {{- with .Values.kubepilot.otel }}
+            {{- if .endpoint }}
+            - --otel-endpoint={{ .endpoint }}
+            - --otel-protocol={{ .protocol }}
+            - --otel-insecure={{ .insecure }}
+            - --otel-sample-ratio={{ .sampleRatio }}
+            - --otel-metric-interval={{ .metricInterval }}
+            {{- end }}
+            - --otel-service-name={{ .serviceName }}
+            {{- if .serviceNamespace }}
+            - --otel-service-namespace={{ .serviceNamespace }}
+            {{- end }}
+            - --otel-environment={{ .environment | default $.Release.Namespace }}
+            {{- end }}
           env:
+            # Pod identity for the telemetry resource, read via WithFromEnv.
+            # Supplying it here rather than in the chart's values means a span
+            # always names the exact pod that produced it, across restarts and
+            # rescheduling.
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "k8s.pod.name=$(POD_NAME),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME)"
             {{- if .Values.kubepilot.ollamaAPIKeySecret.name }}
             - name: KUBEPILOT_OLLAMA_API_KEY
               valueFrom:

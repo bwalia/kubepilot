@@ -20,7 +20,7 @@ RUN npm run build
 # ─────────────────────────────────────────────────────────────────────────────
 # Build natively and cross-compile for the target arch (Go cross-compiles
 # cheaply), rather than emulating the whole toolchain under QEMU.
-FROM --platform=$BUILDPLATFORM golang:1.22-alpine AS go-builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS go-builder
 
 # buildx provides the target platform; default to amd64 for plain `docker build`.
 ARG TARGETOS=linux
@@ -56,6 +56,15 @@ LABEL org.opencontainers.image.title="KubePilot" \
 COPY --from=go-builder /kubepilot /kubepilot
 # Copy the dashboard out/ directory so the binary can serve it at runtime.
 COPY --from=go-builder /build/dashboard/out /dashboard/out
+
+# The server resolves the dashboard as the relative path ./dashboard/out, so the
+# working directory has to be the one the files were copied under.
+#
+# This is not redundant: the distroless nonroot base sets WORKDIR=/home/nonroot,
+# which made every dashboard URL resolve to a path that does not exist and
+# return 404 while /healthz and the API kept working — so the image looked
+# healthy to probes while serving no UI at all.
+WORKDIR /
 
 USER nonroot:nonroot
 

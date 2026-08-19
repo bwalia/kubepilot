@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -78,7 +79,7 @@ func (r *RemediationExecutor) ExecuteStep(ctx context.Context, step RemediationS
 	if step.RequiresCR {
 		if r.guard == nil {
 			result.Error = "CR code validation required but no security guard configured"
-			return result, fmt.Errorf(result.Error)
+			return result, errors.New(result.Error)
 		}
 		if err := r.guard.Authorize(ctx, changeID, crCode); err != nil {
 			result.Error = fmt.Sprintf("CR code authorization failed: %v", err)

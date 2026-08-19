@@ -100,6 +100,38 @@ kubepilot:
   # Namespaces to monitor for AI-driven troubleshooting. Empty = all namespaces.
   watchNamespaces: []
 
+  # ── OpenTelemetry ───────────────────────────────────────────────────────────
+  # Traces and metrics for KubePilot itself: inbound API requests, every call to
+  # the Kubernetes API server, every call to the AI backend, anomaly detection,
+  # and autopilot decisions.
+  #
+  # Export is opt-in. With an empty endpoint the pod opens no outbound telemetry
+  # connection — tracing is a no-op and metrics stay local to /metrics, which
+  # Prometheus can still scrape.
+  otel:
+    # OTLP collector endpoint, e.g. otel-collector.observability.svc:4317
+    # (gRPC) or :4318 (http/protobuf).
+    endpoint: ""
+
+    # Wire protocol: grpc | http/protobuf
+    protocol: grpc
+
+    # Send OTLP without TLS. Normal for a collector inside the same cluster.
+    insecure: true
+
+    # Head-sampling probability for root spans (0.0-1.0). Spans arriving with a
+    # sampled parent are always kept, so distributed traces stay whole.
+    sampleRatio: 1.0
+
+    # How often metrics are pushed over OTLP. Prometheus scraping is unaffected.
+    metricInterval: 60s
+
+    # Resource identity reported to the backend. Pod, namespace, and node names
+    # are added automatically from the Downward API.
+    serviceName: kubepilot
+    serviceNamespace: ""
+    environment: ""
+
 # ── Operator ─────────────────────────────────────────────────────────────────
 operator:
   enabled: true
@@ -117,6 +149,17 @@ resources:
     memory: 1Gi
 
 # ── Security ─────────────────────────────────────────────────────────────────
+rbac:
+  # Namespace holding CR code Secrets. KubePilot's write access to Secrets is a
+  # namespaced Role here rather than a cluster-wide grant, so the pod cannot
+  # create or delete a Secret anywhere else.
+  #
+  # Must match security.CRCodeNamespace in the Go code, and the namespace must
+  # already exist — Helm will not create it. Set to "" to skip the Role and
+  # RoleBinding altogether, which installs cleanly on a cluster without that
+  # namespace at the cost of the /crcode endpoints.
+  crCodeNamespace: kubepilot-security
+
 serviceAccount:
   create: true
   annotations: {}
@@ -134,8 +177,17 @@ securityContext:
       - ALL
 
 # ── Observability ─────────────────────────────────────────────────────────────
+# KubePilot serves Prometheus metrics from /metrics on the dashboard port — the
+# same process that serves the UI — so there is no separate metrics listener to
+# expose. The ServiceMonitor below therefore scrapes the dashboard port.
 metrics:
   enabled: true
+
+  # Require dashboard credentials to scrape /metrics. Off by default because
+  # scrapers are usually configured without them, and the endpoint's labels are
+  # route templates and status codes — never namespace, pod, or object names.
+  requireAuth: false
+
   serviceMonitor:
     enabled: false  # Set to true if Prometheus Operator is installed.
     namespace: monitoring

@@ -18,7 +18,10 @@ spec:
     matchNames:
       - {{ .Release.Namespace }}
   endpoints:
-    - port: metrics
+    # The dashboard port, not the operator's metrics port: `kubepilot serve`
+    # serves /metrics from the same listener as the UI, and nothing binds the
+    # operator port in this deployment.
+    - port: dashboard
       interval: {{ .Values.metrics.serviceMonitor.interval | default "30s" }}
       path: /metrics
 {{- end }}

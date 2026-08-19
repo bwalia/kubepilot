@@ -31,9 +31,13 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/pkg/ai"
+	"github.com/kubepilot/kubepilot/pkg/telemetry"
 )
 
 // Mode controls how aggressively the controller acts.
@@ -241,6 +245,20 @@ func (c *Controller) HandleReport(ctx context.Context, report *ai.RCAReport) {
 		return
 	}
 
+	tel := telemetry.Default()
+
+	// Autopilot is the one subsystem that mutates a cluster without a human in
+	// the loop, so every evaluation gets a span — including the ones that
+	// decline to act. "Why did nothing happen?" is asked at least as often as
+	// "why did that happen?".
+	ctx, span := tel.Tracer.Start(ctx, "autopilot.HandleReport",
+		trace.WithAttributes(
+			attribute.String("kubepilot.rca.report_id", report.ID),
+			attribute.String("kubepilot.autopilot.mode", string(c.Policy().Mode)),
+		),
+	)
+	defer span.End()
+
 	decision := c.evaluate(report)
 
 	// Execute only when the evaluation says we may act in active mode.
@@ -249,6 +267,22 @@ func (c *Controller) HandleReport(ctx context.Context, report *ai.RCAReport) {
 	}
 
 	c.record(decision)
+
+	// Verdict, action, and mode are all closed sets, so they are safe labels.
+	// The reason string is not, and is deliberately left on the span only.
+	tel.Metrics.AutopilotActions.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("verdict", string(decision.Verdict)),
+		attribute.String("action", decision.Action),
+		attribute.String("mode", string(c.Policy().Mode)),
+		attribute.String("severity", decision.Severity),
+	))
+	span.SetAttributes(
+		attribute.String("kubepilot.autopilot.verdict", string(decision.Verdict)),
+		attribute.String("kubepilot.autopilot.action", decision.Action),
+		attribute.String("kubepilot.autopilot.reason", decision.Reason),
+		attribute.Float64("kubepilot.rca.confidence", decision.Confidence),
+	)
+
 	c.log.Info("autopilot decision",
 		zap.String("report_id", decision.ReportID),
 		zap.String("resource", decision.Resource.Namespace+"/"+decision.Resource.Name),

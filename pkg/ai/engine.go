@@ -185,7 +185,7 @@ Respond ONLY with valid JSON array. No prose, no markdown fences.`
 
 	userPrompt := fmt.Sprintf("Command: %s\n\nCluster state:\n%s", command, clusterCtx)
 
-	resp, err := e.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	resp, err := e.chatCompletion(ctx, "interpret", openai.ChatCompletionRequest{
 		Model: e.cfg.Model,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},

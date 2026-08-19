@@ -5,10 +5,14 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/kubepilot/kubepilot/pkg/ai"
 	"github.com/kubepilot/kubepilot/pkg/k8s"
+	"github.com/kubepilot/kubepilot/pkg/telemetry"
 )
 
 // ClusterWatcher continuously monitors the cluster, detects anomalies,
@@ -112,16 +116,28 @@ func (w *ClusterWatcher) Start(ctx context.Context) {
 
 // poll takes a cluster snapshot, evaluates all rules, and triggers RCA for new anomalies.
 func (w *ClusterWatcher) poll(ctx context.Context) {
-	snapshot, err := w.k8s.TakeClusterSnapshot(ctx)
+	tel := telemetry.Default()
+
+	// pollCtx scopes the snapshot and rule evaluation. The detached RCA
+	// goroutines below deliberately keep the caller's ctx instead, so each
+	// background analysis starts its own trace rather than hanging off a poll
+	// span that has already ended.
+	pollCtx, span := tel.Tracer.Start(ctx, "watcher.poll")
+	defer span.End()
+
+	snapshot, err := w.k8s.TakeClusterSnapshot(pollCtx)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cluster snapshot failed")
 		w.log.Error("Failed to take cluster snapshot", zap.Error(err))
 		return
 	}
 
 	var allAnomalies []Anomaly
 	for _, rule := range w.rules {
-		detected, err := rule.Evaluate(ctx, snapshot)
+		detected, err := rule.Evaluate(pollCtx, snapshot)
 		if err != nil {
+			span.RecordError(err)
 			w.log.Warn("Anomaly rule evaluation failed",
 				zap.String("rule", rule.Name()),
 				zap.Error(err),
@@ -130,6 +146,7 @@ func (w *ClusterWatcher) poll(ctx context.Context) {
 		}
 		allAnomalies = append(allAnomalies, detected...)
 	}
+	span.SetAttributes(attribute.Int("kubepilot.anomalies.total", len(allAnomalies)))
 
 	if len(allAnomalies) > 0 {
 		w.log.Info("Anomalies detected",
@@ -147,6 +164,14 @@ func (w *ClusterWatcher) poll(ctx context.Context) {
 
 		if w.isNew(anomaly) {
 			w.markSeen(anomaly)
+			// Counted here rather than at detection: an unresolved anomaly is
+			// re-detected on every poll, and counting those would measure the
+			// poll interval instead of the cluster.
+			tel.Metrics.AnomaliesDetected.Add(pollCtx, 1, metric.WithAttributes(
+				attribute.String("rule", anomaly.Rule),
+				attribute.String("severity", string(anomaly.Severity)),
+				attribute.String("kind", anomaly.Resource.Kind),
+			))
 			if w.notifier != nil {
 				go w.notifier.NotifyAnomaly(ctx, anomaly)
 			}
