@@ -36,7 +36,17 @@
   MCP Server port: {{ .Values.service.mcpPort }}
 
 {{- if .Values.metrics.enabled }}
-  Metrics endpoint: :{{ .Values.operator.metricsPort }}/metrics
+  Metrics endpoint: :{{ .Values.service.dashboardPort }}/metrics (Prometheus)
+{{- if not .Values.metrics.requireAuth }}
+    Served without auth, so scrapers work out of the box. Set
+    metrics.requireAuth=true to close it behind the dashboard credentials.
+{{- end }}
+{{- if .Values.kubepilot.otel.endpoint }}
+  OTLP export: {{ .Values.kubepilot.otel.endpoint }} ({{ .Values.kubepilot.otel.protocol }})
+{{- else }}
+  OTLP export is off. Set kubepilot.otel.endpoint to ship traces and metrics
+  to a collector; until then no outbound telemetry connection is made.
+{{- end }}
 {{- end }}
 
   Documentation: https://github.com/kubepilot/kubepilot
