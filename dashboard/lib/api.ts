@@ -42,6 +42,18 @@ export interface NodeSummary {
   CPUCapacity: string;
   MemoryCapacity: string;
   KubeletVersion: string;
+  OSImage?: string;
+  KernelVersion?: string;
+  Architecture?: string;
+  ContainerRuntime?: string;
+  // Vendor + model, e.g. "HP ProLiant DL380 Gen9" (node agent annotation or
+  // cloud instance type); empty when the node was never annotated.
+  Hardware?: string;
+  Serial?: string;
+  // Every kubepilot.io/hw.* annotation the node agent published, keyed without
+  // the prefix ("cpu", "memory", "disks", ...). Untyped on purpose: the agent
+  // can publish a new fact without a change here.
+  HardwareInfo?: Record<string, string>;
   InternalIP: string;
   IPs?: string[];
   LANIPs?: string[];
@@ -100,6 +112,12 @@ export interface NodeHealthRow {
   pid_pressure: boolean;
   unschedulable: boolean;
   kubelet_version: string;
+  hardware?: string;
+  serial?: string;
+  os_image?: string;
+  kernel_version?: string;
+  architecture?: string;
+  container_runtime?: string;
   ips?: string[];
   lan_ips?: string[];
   wan_ips?: string[];

@@ -274,6 +274,10 @@ default** in that env file — edit `KUBEPILOT_DASHBOARD_AUTH_PASSWORD`, then
 `sudo systemctl restart kubepilot`. With auth on, the browser shows its native
 sign-in dialog and loads the dashboard once the credentials match.
 
+See [docs/NODE_AGENT.md](docs/NODE_AGENT.md) for the node agent, which puts each
+machine's real hardware (vendor, model, serial, CPU, disks) on its Node object
+so the dashboard can tell your boxes apart.
+
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full walkthrough, including
 how to verify auth is enforced.
 

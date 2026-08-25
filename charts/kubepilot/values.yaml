@@ -193,6 +193,28 @@ metrics:
     namespace: monitoring
     interval: 30s
 
+# ── Node agent ───────────────────────────────────────────────────────────────
+# One tiny pod per node that publishes what Kubernetes cannot see: the vendor,
+# model, serial, BIOS, chassis, CPU, memory, disks and NICs of the machine, plus
+# its real LAN IP. Without it the dashboard can only show node names, which on a
+# home lab or a rack of identical boxes tells you nothing about which machine
+# you are looking at.
+nodeAgent:
+  enabled: true
+  # Hardware does not change, so this only needs to be often enough to pick up
+  # a node that was re-imaged or had its annotations wiped.
+  interval: 15m
+  # Rollouts are not availability-sensitive; a bigger number also stops one
+  # NotReady node from blocking the whole rollout.
+  maxUnavailable: 5
+  resources:
+    requests:
+      cpu: 5m
+      memory: 24Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
 # ── Network Policy ───────────────────────────────────────────────────────────
 networkPolicy:
   enabled: false  # Enable to restrict traffic to/from kubepilot pods.

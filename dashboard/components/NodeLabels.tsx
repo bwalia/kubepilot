@@ -3,7 +3,7 @@ interface NodeLabelFields {
   labels?: Record<string, string>;
 }
 
-// The authoritative LAN-IP label stamped by the node-labeler DaemonSet — worth
+// The authoritative LAN-IP label stamped by the KubePilot node agent — worth
 // highlighting since it drives the LAN address shown for the node.
 const LAN_IP_LABEL = "kubepilot.io/lan-ip";
 

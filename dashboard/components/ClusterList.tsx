@@ -4,7 +4,8 @@ import { NodeIPDisplay } from "@/components/NodeIPDisplay";
 import { NodeRoleBadge } from "@/components/NodeRoleBadge";
 import { NodeLabels } from "@/components/NodeLabels";
 import { NodeTargeting } from "@/components/NodeTargeting";
-import { Server, AlertTriangle, CheckCircle, ChevronRight, ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Server, AlertTriangle, CheckCircle, ChevronRight, ChevronDown, Cpu, Boxes, Crosshair } from "lucide-react";
 
 interface Props {
   nodes: NodeSummary[];
@@ -86,7 +87,12 @@ export function ClusterList({ nodes, loading }: Props) {
                           <ChevronRight className="w-4 h-4" />
                         )}
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-sm font-semibold text-pilot-text-primary">{node.Name}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="font-mono text-sm font-semibold text-pilot-text-primary">{node.Name}</div>
+                        {node.Hardware && (
+                          <div className="text-xs text-pilot-muted mt-0.5">{node.Hardware}</div>
+                        )}
+                      </td>
                       <td className="px-5 py-3.5">
                         <NodeRoleBadge node={node} />
                       </td>
@@ -114,16 +120,7 @@ export function ClusterList({ nodes, loading }: Props) {
                     {isOpen && (
                       <tr className="bg-pilot-accent/[0.02]">
                         <td colSpan={9} className="px-5 py-4">
-                          <div className="flex flex-col gap-4">
-                            <div>
-                              <p className="eyebrow mb-2">Labels</p>
-                              <NodeLabels node={node} />
-                            </div>
-                            <div>
-                              <p className="eyebrow mb-2">Targeted by (nodeSelector)</p>
-                              <NodeTargeting node={node.Name} />
-                            </div>
-                          </div>
+                          <NodeDetailTabs node={node} />
                         </td>
                       </tr>
                     )}
@@ -135,6 +132,115 @@ export function ClusterList({ nodes, loading }: Props) {
         </div>
       </div>
     </section>
+  );
+}
+
+// The node detail splits into what the machine is (physical facts the node
+// agent reads off the hardware) and what Kubernetes made of it (nodeInfo,
+// labels, scheduling). Keeping them in separate tabs is the difference between
+// "which of my boxes is this?" and "why did this pod land here?".
+function NodeDetailTabs({ node }: { node: NodeSummary }) {
+  return (
+    <Tabs defaultValue="hardware">
+      <TabsList>
+        <TabsTrigger value="hardware">
+          <Cpu className="w-3.5 h-3.5" /> Hardware
+        </TabsTrigger>
+        <TabsTrigger value="kubernetes">
+          <Boxes className="w-3.5 h-3.5" /> Kubernetes
+        </TabsTrigger>
+        <TabsTrigger value="workloads">
+          <Crosshair className="w-3.5 h-3.5" /> Workloads
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="hardware">
+        <InfoGrid rows={hardwareRows(node)} />
+        {!node.Hardware && (
+          <p className="mt-3 text-xs text-pilot-muted max-w-3xl">
+            No hardware facts for this node. Kubernetes never reads them — the
+            KubePilot node agent does. Install it with the chart
+            (<code className="font-mono">nodeAgent.enabled=true</code>), or set them by hand:{" "}
+            <code className="font-mono break-all">
+              kubectl annotate node {node.Name} kubepilot.io/hardware=&quot;HP ProLiant DL380 Gen9&quot;
+            </code>
+          </p>
+        )}
+      </TabsContent>
+
+      <TabsContent value="kubernetes">
+        <InfoGrid rows={kubernetesRows(node)} />
+        <p className="eyebrow mt-4 mb-2">Labels</p>
+        <NodeLabels node={node} />
+      </TabsContent>
+
+      <TabsContent value="workloads">
+        <p className="eyebrow mb-2">Targeted by (nodeSelector)</p>
+        <NodeTargeting node={node.Name} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+type Row = [label: string, value: string];
+
+// Display order and naming for the facts the node agent publishes as
+// kubepilot.io/hw.* annotations.
+const HARDWARE_FIELDS: Row[] = [
+  ["cpu", "CPU"],
+  ["cores", "Cores"],
+  ["memory", "Memory"],
+  ["disks", "Disks"],
+  ["nics", "Network"],
+  ["chassis", "Chassis"],
+  ["board", "Motherboard"],
+  ["bios", "BIOS"],
+  ["virtualization", "Virtualisation"],
+];
+
+function hardwareRows(node: NodeSummary): Row[] {
+  const info = node.HardwareInfo ?? {};
+  const named = new Set(HARDWARE_FIELDS.map(([key]) => key));
+  return [
+    ...(node.Hardware ? ([["Model", node.Hardware]] as Row[]) : []),
+    ...(node.Serial ? ([["Serial", node.Serial]] as Row[]) : []),
+    ...HARDWARE_FIELDS.filter(([key]) => info[key]).map(([key, label]) => [label, info[key]] as Row),
+    // Anything the agent starts publishing later appears without a UI change.
+    ...Object.keys(info)
+      .filter((key) => !named.has(key))
+      .sort()
+      .map((key) => [key, info[key]] as Row),
+  ];
+}
+
+function kubernetesRows(node: NodeSummary): Row[] {
+  return (
+    [
+      ["OS", node.OSImage],
+      ["Kernel", node.KernelVersion],
+      ["Architecture", node.Architecture],
+      ["Container runtime", node.ContainerRuntime],
+      ["Kubelet", node.KubeletVersion],
+      ["CPU capacity", node.CPUCapacity],
+      ["Memory capacity", formatMemoryGB(node.MemoryCapacity)],
+      ["Roles", node.Roles?.join(", ")],
+      ["Scheduling", node.Unschedulable ? "Cordoned (unschedulable)" : "Schedulable"],
+    ] as Array<[string, string | undefined]>
+  ).filter((row): row is Row => Boolean(row[1]));
+}
+
+function InfoGrid({ rows }: { rows: Row[] }) {
+  if (rows.length === 0) return <p className="text-sm text-pilot-muted">No data.</p>;
+
+  return (
+    <dl className="grid grid-cols-[8rem_1fr] lg:grid-cols-[8rem_1fr_8rem_1fr] gap-x-6 gap-y-1.5 text-sm">
+      {rows.map(([label, value]) => (
+        <Fragment key={label}>
+          <dt className="text-pilot-muted">{label}</dt>
+          <dd className="font-mono text-pilot-text-secondary break-all">{value}</dd>
+        </Fragment>
+      ))}
+    </dl>
   );
 }
 

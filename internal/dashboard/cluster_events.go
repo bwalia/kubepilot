@@ -46,39 +46,48 @@ type troubleshootingInsight struct {
 }
 
 type nodeHealthRow struct {
-	Name               string   `json:"name"`
-	Ready              bool     `json:"ready"`
+	Name               string            `json:"name"`
+	Ready              bool              `json:"ready"`
 	Roles              []string          `json:"roles,omitempty"`
 	ControlPlane       bool              `json:"control_plane"`
 	Labels             map[string]string `json:"labels,omitempty"`
 	IPs                []string          `json:"ips,omitempty"`
-	LANIPs             []string `json:"lan_ips,omitempty"`
-	WANIPs             []string `json:"wan_ips,omitempty"`
-	TunnelIPs          []string `json:"tunnel_ips,omitempty"`
-	CPUCapacity        string `json:"cpu_capacity"`
-	MemoryCapacity     string `json:"memory_capacity"`
-	CPUUsage           string `json:"cpu_usage,omitempty"`
-	MemoryUsage        string `json:"memory_usage,omitempty"`
-	CPUUsagePercent    int    `json:"cpu_usage_percent,omitempty"`
-	MemoryUsagePercent int    `json:"memory_usage_percent,omitempty"`
-	DiskPressure       bool   `json:"disk_pressure"`
-	MemoryPressure     bool   `json:"memory_pressure"`
-	PIDPressure        bool   `json:"pid_pressure"`
-	Unschedulable      bool   `json:"unschedulable"`
-	KubeletVersion     string `json:"kubelet_version"`
+	LANIPs             []string          `json:"lan_ips,omitempty"`
+	WANIPs             []string          `json:"wan_ips,omitempty"`
+	TunnelIPs          []string          `json:"tunnel_ips,omitempty"`
+	CPUCapacity        string            `json:"cpu_capacity"`
+	MemoryCapacity     string            `json:"memory_capacity"`
+	CPUUsage           string            `json:"cpu_usage,omitempty"`
+	MemoryUsage        string            `json:"memory_usage,omitempty"`
+	CPUUsagePercent    int               `json:"cpu_usage_percent,omitempty"`
+	MemoryUsagePercent int               `json:"memory_usage_percent,omitempty"`
+	DiskPressure       bool              `json:"disk_pressure"`
+	MemoryPressure     bool              `json:"memory_pressure"`
+	PIDPressure        bool              `json:"pid_pressure"`
+	Unschedulable      bool              `json:"unschedulable"`
+	KubeletVersion     string            `json:"kubelet_version"`
+	// Machine identity: Hardware/Serial only exist when the node agent has run
+	// on that node (it writes the kubepilot.io annotations); the rest is free
+	// from status.nodeInfo.
+	Hardware         string `json:"hardware,omitempty"`
+	Serial           string `json:"serial,omitempty"`
+	OSImage          string `json:"os_image,omitempty"`
+	KernelVersion    string `json:"kernel_version,omitempty"`
+	Architecture     string `json:"architecture,omitempty"`
+	ContainerRuntime string `json:"container_runtime,omitempty"`
 }
 
 type resourcePressureSummary struct {
-	MetricsAvailable     bool  `json:"metrics_available"`
-	CPUUsagePercent      int   `json:"cpu_usage_percent,omitempty"`
-	MemoryUsagePercent   int   `json:"memory_usage_percent,omitempty"`
-	MemoryPressureNodes  int   `json:"memory_pressure_nodes"`
-	DiskPressureNodes    int   `json:"disk_pressure_nodes"`
-	PIDPressureNodes     int   `json:"pid_pressure_nodes"`
-	CPUUsageMilli        int64 `json:"cpu_usage_milli,omitempty"`
-	CPUCapacityMilli     int64 `json:"cpu_capacity_milli,omitempty"`
-	MemoryUsageBytes     int64 `json:"memory_usage_bytes,omitempty"`
-	MemoryCapacityBytes  int64 `json:"memory_capacity_bytes,omitempty"`
+	MetricsAvailable    bool  `json:"metrics_available"`
+	CPUUsagePercent     int   `json:"cpu_usage_percent,omitempty"`
+	MemoryUsagePercent  int   `json:"memory_usage_percent,omitempty"`
+	MemoryPressureNodes int   `json:"memory_pressure_nodes"`
+	DiskPressureNodes   int   `json:"disk_pressure_nodes"`
+	PIDPressureNodes    int   `json:"pid_pressure_nodes"`
+	CPUUsageMilli       int64 `json:"cpu_usage_milli,omitempty"`
+	CPUCapacityMilli    int64 `json:"cpu_capacity_milli,omitempty"`
+	MemoryUsageBytes    int64 `json:"memory_usage_bytes,omitempty"`
+	MemoryCapacityBytes int64 `json:"memory_capacity_bytes,omitempty"`
 
 	// Storage: real physical disk usage sourced from Longhorn node CRDs
 	// when available, otherwise from node.status.capacity ephemeral-storage
@@ -93,12 +102,12 @@ type resourcePressureSummary struct {
 }
 
 type storageClassSummary struct {
-	Name               string `json:"name"`
-	Provisioner        string `json:"provisioner"`
-	ProvisionedBytes   int64  `json:"provisioned_bytes"`
-	BoundBytes         int64  `json:"bound_bytes"`
-	PVCount            int    `json:"pv_count"`
-	PVBoundCount       int    `json:"pv_bound_count"`
+	Name             string `json:"name"`
+	Provisioner      string `json:"provisioner"`
+	ProvisionedBytes int64  `json:"provisioned_bytes"`
+	BoundBytes       int64  `json:"bound_bytes"`
+	PVCount          int    `json:"pv_count"`
+	PVBoundCount     int    `json:"pv_bound_count"`
 }
 
 type problemPod struct {
@@ -316,6 +325,13 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 			PIDPressure:    node.PIDPressure,
 			Unschedulable:  node.Unschedulable,
 			KubeletVersion: node.KubeletVersion,
+
+			Hardware:         node.Hardware,
+			Serial:           node.Serial,
+			OSImage:          node.OSImage,
+			KernelVersion:    node.KernelVersion,
+			Architecture:     node.Architecture,
+			ContainerRuntime: node.ContainerRuntime,
 		}
 		if node.MemoryPressure {
 			pressure.MemoryPressureNodes++
@@ -384,6 +400,7 @@ func buildNodeHealthRows(nodes []k8s.NodeSummary, metrics []k8s.NodeResourceMetr
 //     100% bound). Ephemeral-storage fallback gives capacity but no usage.
 //   - Per-StorageClass breakdown: how much each class has provisioned,
 //     independent of physical disk usage.
+//
 // All failures are non-fatal — missing fields cause the UI to render a
 // best-effort view.
 func enrichStorageSummary(ctx context.Context, k8sClient *k8s.Client, nodes []k8s.NodeSummary, pressure *resourcePressureSummary) {
