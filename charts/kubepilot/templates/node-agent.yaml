@@ -1,0 +1,131 @@
+{{- if .Values.nodeAgent.enabled }}
+{{- $name := printf "%s-node-agent" (include "kubepilot.fullname" .) }}
+# The node agent publishes the physical facts about each machine — vendor,
+# model, serial, BIOS, chassis, CPU, memory, disks, NICs — onto its own Node
+# object as kubepilot.io annotations, and stamps the node's real LAN IP as a
+# label. Kubernetes itself knows none of this: status.nodeInfo stops at the OS
+# and kernel, which is why a cluster of look-alike workers is impossible to map
+# back to the boxes on the shelf.
+#
+# It runs the same image as KubePilot itself (`kubepilot node-agent`), so there
+# is nothing to install on the hosts and no second image to keep in step.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-agent
+---
+# As tight as a node annotator can be: read nodes, patch nodes, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-agent
+rules:
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [get, list, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $name }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubepilot.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-agent
+spec:
+  # Nothing depends on this DaemonSet being available, and with the default
+  # maxUnavailable of 1 a single NotReady node stalls the entire rollout.
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: {{ .Values.nodeAgent.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "kubepilot.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: node-agent
+  template:
+    metadata:
+      labels:
+        {{- include "kubepilot.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: node-agent
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ $name }}
+      # The LAN IP is read from the host's routing table, which the pod only
+      # sees with the host's network namespace. Cluster DNS is not used — the
+      # API server is reached by the IP in the injected env vars.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # Every node means every node, control-plane taints included.
+      tolerations:
+        - operator: Exists
+      securityContext:
+        # DMI serial numbers are root-readable only (mode 0400). Everything else
+        # this pod does is reading two read-only mounts.
+        runAsUser: 0
+        runAsNonRoot: false
+      containers:
+        - name: node-agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # The image's ENTRYPOINT is `/kubepilot serve`; override it outright
+          # rather than appending args to it.
+          command: ["/kubepilot"]
+          args:
+            - node-agent
+            - --interval={{ .Values.nodeAgent.interval }}
+            - --log-level={{ .Values.kubepilot.logLevel }}
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: host-sys
+              mountPath: /host/sys
+              readOnly: true
+            - name: host-proc
+              mountPath: /host/proc
+              readOnly: true
+          resources:
+            {{- toYaml .Values.nodeAgent.resources | nindent 12 }}
+      volumes:
+        - name: host-sys
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: host-proc
+          hostPath:
+            path: /proc
+            type: Directory
+{{- end }}

@@ -110,7 +110,17 @@ function ProblemPodsTable({ pods, loading }: { pods: ProblemPod[]; loading: bool
 
 function NodeHealthTable({ nodes, loading }: { nodes: NodeHealthRow[]; loading: boolean }) {
   const columns: Column<NodeHealthRow>[] = [
-    { header: "Node", cell: (n) => <span className="text-pilot-text-primary font-mono">{n.name}</span> },
+    {
+      header: "Node",
+      // Hardware (vendor + model) only shows when the node carries the
+      // kubepilot.io/hardware annotation; OS details ride along in the tooltip.
+      cell: (n) => (
+        <div title={[n.os_image, n.kernel_version, n.architecture, n.serial && `S/N ${n.serial}`].filter(Boolean).join(" · ")}>
+          <span className="text-pilot-text-primary font-mono">{n.name}</span>
+          {n.hardware && <div className="text-xs text-pilot-muted mt-0.5">{n.hardware}</div>}
+        </div>
+      ),
+    },
     {
       header: "Role",
       cell: (n) => <NodeRoleBadge node={n} />,

@@ -63,6 +63,7 @@ func init() {
 	rootCmd.AddCommand(newTroubleshootCmd())
 	rootCmd.AddCommand(newRCACmd())
 	rootCmd.AddCommand(newWatchCmd())
+	rootCmd.AddCommand(newNodeAgentCmd())
 	rootCmd.AddCommand(newVersionCmd())
 }
 

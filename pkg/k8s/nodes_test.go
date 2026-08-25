@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestToNodeSummaryCollectsAllIPs(t *testing.T) {
@@ -82,7 +83,7 @@ func TestClassifyNodeIPsWireGuardInternalIP(t *testing.T) {
 }
 
 // A WireGuard-only node where k3s reports just the WireGuard 10.x as internal IP:
-// the node-labeler DaemonSet's kubepilot.io/lan-ip label is authoritative, so the
+// the node agent's kubepilot.io/lan-ip label is authoritative, so the
 // labeled address shows as LAN and the WireGuard address is demoted to Tunnel.
 func TestClassifyNodeIPsLANIPLabelOverride(t *testing.T) {
 	node := corev1.Node{}
@@ -189,8 +190,8 @@ func TestClassifyNodeIPsFlannelExternalOverwrite(t *testing.T) {
 	node := corev1.Node{}
 	node.Annotations = map[string]string{
 		annoK3sInternalIP:            "10.128.15.197",
-		annoK3sExternalIP:           "34.171.97.10",
-		annoFlannelPublicIP:         "10.128.15.197",
+		annoK3sExternalIP:            "34.171.97.10",
+		annoFlannelPublicIP:          "10.128.15.197",
 		annoFlannelPublicIPOverwrite: "34.171.97.10",
 	}
 	node.Status.Addresses = []corev1.NodeAddress{
@@ -208,5 +209,74 @@ func TestClassifyNodeIPsFlannelExternalOverwrite(t *testing.T) {
 	}
 	if len(summary.TunnelIPs) != 0 {
 		t.Fatalf("TunnelIPs = %v, want none", summary.TunnelIPs)
+	}
+}
+
+func TestNodeHardwareSources(t *testing.T) {
+	cases := []struct {
+		name string
+		node corev1.Node
+		want string
+	}{
+		{
+			name: "annotation wins",
+			node: corev1.Node{ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{AnnotationHardware: "HP ProLiant DL380 Gen9"},
+				Labels:      map[string]string{"node.kubernetes.io/instance-type": "k3s"},
+			}},
+			want: "HP ProLiant DL380 Gen9",
+		},
+		{
+			name: "falls back to instance type",
+			node: corev1.Node{ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"node.kubernetes.io/instance-type": "t3.medium"},
+			}},
+			want: "t3.medium",
+		},
+		{name: "unknown hardware", node: corev1.Node{}, want: ""},
+	}
+
+	for _, tc := range cases {
+		if got := nodeHardware(tc.node); got != tc.want {
+			t.Errorf("%s: nodeHardware() = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestToNodeSummaryCarriesSystemInfo(t *testing.T) {
+	node := corev1.Node{ObjectMeta: metav1.ObjectMeta{
+		Name:        "worker-1",
+		Annotations: map[string]string{AnnotationHardware: "Dell Inc. OptiPlex 7050", AnnotationSerial: "ABC123"},
+	}}
+	node.Status.NodeInfo.OSImage = "Ubuntu 22.04.4 LTS"
+	node.Status.NodeInfo.KernelVersion = "5.15.0-100-generic"
+	node.Status.NodeInfo.Architecture = "amd64"
+	node.Status.NodeInfo.ContainerRuntimeVersion = "containerd://1.7.11"
+
+	s := toNodeSummary(node)
+
+	if s.Hardware != "Dell Inc. OptiPlex 7050" || s.Serial != "ABC123" {
+		t.Fatalf("hardware = %q / serial = %q", s.Hardware, s.Serial)
+	}
+	if s.OSImage == "" || s.KernelVersion == "" || s.Architecture == "" || s.ContainerRuntime == "" {
+		t.Fatalf("system info missing: %+v", s)
+	}
+}
+
+func TestNodeHardwareInfoStripsPrefix(t *testing.T) {
+	node := corev1.Node{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{
+		AnnotationHWPrefix + "cpu":    "Intel(R) Xeon(R) E-2176M CPU @ 2.70GHz",
+		AnnotationHWPrefix + "memory": "15.5 GB",
+		AnnotationHWPrefix + "blank":  "  ",
+		"k3s.io/node-args":            "[\"agent\"]",
+	}}}
+
+	info := toNodeSummary(node).HardwareInfo
+
+	if len(info) != 2 || info["cpu"] == "" || info["memory"] != "15.5 GB" {
+		t.Fatalf("HardwareInfo = %v, want only the two non-blank hw.* keys", info)
+	}
+	if toNodeSummary(corev1.Node{}).HardwareInfo != nil {
+		t.Error("HardwareInfo should be nil when the node agent has never run")
 	}
 }

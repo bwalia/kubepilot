@@ -1,0 +1,82 @@
+---
+# Roll out KubePilot's in-cluster components (dashboard + node agent).
+#
+# site.yml installs KubePilot as a systemd service on a host; this playbook is
+# the other half — what runs *inside* a cluster. It is deliberately a separate
+# playbook so the systemd deploy in CI never needs a kubeconfig.
+#
+# Run it from the controller (your laptop or a runner with cluster access):
+#
+#   cd deploy/ansible
+#   KUBECONFIG=~/.kube/k3s1.yaml ansible-playbook cluster.yml
+#
+# It is idempotent: re-run it after every image build to pick up the new
+# version, or after adding nodes (the DaemonSet schedules onto them by itself).
+- name: Deploy KubePilot into a Kubernetes cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    kubepilot_kubeconfig: "{{ lookup('env', 'KUBECONFIG') | default(ansible_env.HOME ~ '/.kube/config', true) }}"
+    kubepilot_release: kubepilot
+    kubepilot_namespace: kubepilot-system
+    kubepilot_chart: "{{ playbook_dir }}/../../charts/kubepilot"
+    # --reuse-values keeps the credentials and settings of an existing release,
+    # so this playbook can be run without knowing them. Drop it (pass -e
+    # kubepilot_helm_args="") for a first install with an explicit values file.
+    kubepilot_helm_args: "--reuse-values"
+    # The node agent is what publishes each machine's hardware onto its Node
+    # object. Nothing else in KubePilot can discover that.
+    kubepilot_node_agent_enabled: true
+    # The shell DaemonSet the node agent replaces. Removed once, on cutover.
+    kubepilot_legacy_node_labeler: node-labeler
+
+  environment:
+    KUBECONFIG: "{{ kubepilot_kubeconfig }}"
+
+  tasks:
+    - name: Check helm and kubectl are on PATH
+      ansible.builtin.command: "{{ item }} version --client=true"
+      changed_when: false
+      loop:
+        - helm
+        - kubectl
+
+    - name: Deploy the KubePilot chart
+      ansible.builtin.command: >-
+        helm upgrade --install {{ kubepilot_release }} {{ kubepilot_chart }}
+        --namespace {{ kubepilot_namespace }} --create-namespace
+        --set nodeAgent.enabled={{ kubepilot_node_agent_enabled | bool | lower }}
+        {{ kubepilot_helm_args }}
+      register: kubepilot_helm
+      changed_when: "'STATUS: deployed' in kubepilot_helm.stdout"
+
+    # The node agent supersedes the alpine/curl DaemonSet that used to write
+    # these annotations. Leaving both running means two writers for the same
+    # keys, so remove the old one — no-op on clusters that never had it.
+    - name: Remove the legacy node-labeler DaemonSet
+      ansible.builtin.command: >-
+        kubectl -n {{ kubepilot_namespace }} delete daemonset
+        {{ kubepilot_legacy_node_labeler }} --ignore-not-found
+      register: kubepilot_legacy_removed
+      changed_when: "'deleted' in kubepilot_legacy_removed.stdout"
+
+    - name: Wait for the node agent to roll out
+      ansible.builtin.command: >-
+        kubectl -n {{ kubepilot_namespace }} rollout status
+        daemonset/{{ kubepilot_release }}-node-agent --timeout=300s
+      changed_when: false
+      when: kubepilot_node_agent_enabled | bool
+      # A NotReady node can never report ready, and that must not fail the play.
+      failed_when: false
+
+    - name: Show what each node reports as its hardware
+      ansible.builtin.command: >-
+        kubectl get nodes -o custom-columns=NODE:.metadata.name,HARDWARE:.metadata.annotations.kubepilot\.io/hardware,SERIAL:.metadata.annotations.kubepilot\.io/serial
+      register: kubepilot_node_hardware
+      changed_when: false
+
+    - name: Node hardware inventory
+      ansible.builtin.debug:
+        msg: "{{ kubepilot_node_hardware.stdout_lines }}"
