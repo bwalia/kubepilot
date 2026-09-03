@@ -22,9 +22,15 @@ RUN npm run build
 # cheaply), rather than emulating the whole toolchain under QEMU.
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS go-builder
 
-# buildx provides the target platform; default to amd64 for plain `docker build`.
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+# Redeclared with NO default on purpose. TARGETOS/TARGETARCH are automatic
+# platform args: a stage only sees them if it redeclares them, and a default
+# value shadows the value BuildKit injects. `ARG TARGETARCH=amd64` therefore
+# pinned every target to amd64 — the linux/arm64 image shipped an x86-64 binary
+# that died with `exec /kubepilot: no such file or directory` on arm64 nodes.
+# Left empty (a plain non-BuildKit `docker build`), go builds for the host arch,
+# which is the right answer there anyway.
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN apk add --no-cache git
 
