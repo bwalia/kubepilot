@@ -84,21 +84,15 @@ jobs:
           set -euo pipefail
           DEST="$HOME/.kubepilot"
           mkdir -p "$DEST/bin" "$DEST/dashboard"
-          # Back up the currently deployed binary (keep last one).
-          if [ -f "$DEST/bin/kubepilot" ]; then
-            cp -p "$DEST/bin/kubepilot" "$DEST/bin/kubepilot.bak"
-          fi
+          # Nothing is backed up here on purpose. The .bak pair is the last build
+          # that PASSED its health check, promoted below once this one does — not
+          # merely the previous one. Backing up on the way in would overwrite a
+          # known-good binary with whatever the last deploy left behind, which is
+          # exactly the binary you need when the incoming one will not start.
           cp dist/kubepilot "$DEST/bin/kubepilot"
           chmod +x "$DEST/bin/kubepilot"
-          # Refresh the static dashboard the binary serves from ./dashboard/out,
-          # keeping the previous export alongside the previous binary. The two
-          # roll back together or not at all: new UI on an old API renders tabs
-          # and panels the old API has no fields for, which reads as a broken
-          # feature rather than a failed deploy.
-          rm -rf "$DEST/dashboard/out.bak"
-          if [ -d "$DEST/dashboard/out" ]; then
-            mv "$DEST/dashboard/out" "$DEST/dashboard/out.bak"
-          fi
+          # Refresh the static dashboard the binary serves from ./dashboard/out.
+          rm -rf "$DEST/dashboard/out"
           cp -R dashboard/out "$DEST/dashboard/out"
 
       - name: Restart launchd service
@@ -136,14 +130,16 @@ jobs:
           if [ -z "$ok" ]; then
             echo "::error::Dashboard on :8383 did not come up after restart."
             tail -20 "$HOME/.kubepilot/logs/stderr.log" 2>/dev/null || true
-            # Put the previous binary back rather than leaving the box serving
-            # nothing. A build that will not start is a failed deploy, not an
-            # outage: the last one was known good, and the job still fails so
-            # the cause gets fixed.
+            # Put the last known-good build back rather than leaving the box
+            # serving nothing. A build that will not start is a failed deploy,
+            # not an outage — and the job still fails, so the cause still gets
+            # fixed. Note this cannot rescue a failure that is not the binary's
+            # fault: if the launchd plist passes a flag the build rejects, every
+            # future build fails the same way and only the plist can fix it.
             BAK="$HOME/.kubepilot/bin/kubepilot.bak"
             OUT_BAK="$HOME/.kubepilot/dashboard/out.bak"
             if [ -f "$BAK" ]; then
-              echo "Rolling back to the previous binary and dashboard."
+              echo "Rolling back to the last known-good binary and dashboard."
               cp -p "$BAK" "$HOME/.kubepilot/bin/kubepilot"
               if [ -d "$OUT_BAK" ]; then
                 rm -rf "$HOME/.kubepilot/dashboard/out"
@@ -161,4 +157,10 @@ jobs:
             fi
             exit 1
           fi
+          # Promote what just proved itself to be the rollback target. Only a
+          # build that answered on :8383 ever becomes .bak.
+          DEST="$HOME/.kubepilot"
+          cp -p "$DEST/bin/kubepilot" "$DEST/bin/kubepilot.bak"
+          rm -rf "$DEST/dashboard/out.bak"
+          cp -R "$DEST/dashboard/out" "$DEST/dashboard/out.bak"
           echo "Dashboard is up on :8383 (HTTP $code). Deploy complete."
