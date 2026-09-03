@@ -64,7 +64,12 @@ func Collect(sysRoot, procRoot string) Facts {
 
 	cpu, cores := cpuInfo(filepath.Join(procRoot, "cpuinfo"))
 	if cpu == "" {
-		cpu = hardware // ARM cpuinfo has no model name; the board name is the best we have.
+		// Only x86 puts a "model name" in /proc/cpuinfo. ARM and RISC-V machines
+		// describe the core in the device tree instead.
+		cpu = deviceTreeCPU(filepath.Join(sysRoot, "devices/system/cpu/cpu0/of_node/compatible"))
+	}
+	if cpu == "" {
+		cpu = hardware // Neither source: the board name is the best we have.
 	}
 	f.set("cpu", cpu)
 	if cores > 0 {
@@ -349,4 +354,32 @@ func humanBytes(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTP"[exp])
+}
+
+// deviceTreeCPU names the CPU on any machine whose /proc/cpuinfo carries no
+// "model name" — every ARM and RISC-V board, where the kernel describes the
+// core in the device tree instead. The property is a NUL-separated list of
+// vendor-prefixed strings, most specific first ("arm,cortex-a76"); the vendor
+// is dropped and the rest title-cased so it reads like an x86 model name.
+//
+// Reading the tree rather than mapping the CPU implementer/part IDs from
+// cpuinfo keeps this working on parts that did not exist when this was written.
+func deviceTreeCPU(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	first, _, _ := strings.Cut(string(data), "\x00")
+	core := strings.TrimSpace(first)
+	if _, after, ok := strings.Cut(core, ","); ok {
+		core = after
+	}
+
+	parts := strings.Split(core, "-")
+	for i, part := range parts {
+		if part != "" {
+			parts[i] = strings.ToUpper(part[:1]) + part[1:]
+		}
+	}
+	return strings.Join(parts, "-")
 }

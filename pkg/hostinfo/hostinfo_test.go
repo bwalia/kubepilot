@@ -98,13 +98,22 @@ func TestCollectDropsPlaceholdersAndKeepsPartialData(t *testing.T) {
 func TestCollectRaspberryPiAndVM(t *testing.T) {
 	pi := writeTree(t, map[string]string{
 		"firmware/devicetree/base/model": "Raspberry Pi 5 Model B Rev 1.0\x00",
+		// arm64 /proc/cpuinfo has no "model name" — only implementer/part IDs —
+		// so the core has to come from the device tree.
+		"devices/system/cpu/cpu0/of_node/compatible": "arm,cortex-a76\x00",
 	})
 	f := Collect(pi, t.TempDir())
 	if f[KeyHardware] != "Raspberry Pi 5 Model B Rev 1.0" {
 		t.Errorf("pi hardware = %q", f[KeyHardware])
 	}
-	if f["cpu"] != f[KeyHardware] {
-		t.Errorf("pi cpu = %q, want the board name as fallback", f["cpu"])
+	if f["cpu"] != "Cortex-A76" {
+		t.Errorf("pi cpu = %q, want Cortex-A76 from the device tree", f["cpu"])
+	}
+
+	// No device tree either: the board name is the last resort.
+	bare := writeTree(t, map[string]string{"class/dmi/id/product_name": "OptiPlex 3050"})
+	if f := Collect(bare, t.TempDir()); f["cpu"] != f[KeyHardware] {
+		t.Errorf("cpu = %q, want the board name %q", f["cpu"], f[KeyHardware])
 	}
 
 	vm := writeTree(t, map[string]string{

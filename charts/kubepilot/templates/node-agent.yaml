@@ -81,7 +81,11 @@ spec:
       # API server is reached by the IP in the injected env vars.
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      # Every node means every node, control-plane taints included.
+      # The agent reads sysfs and procfs, so it only makes sense on Linux nodes;
+      # without this a Windows node added later would crashloop on every retry.
+      nodeSelector:
+        kubernetes.io/os: linux
+      # Every Linux node means every node, control-plane taints included.
       tolerations:
         - operator: Exists
       securityContext:
