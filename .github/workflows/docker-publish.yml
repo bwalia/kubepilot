@@ -103,7 +103,11 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          # Every architecture a node might run. Nothing in the Dockerfile or the
+          # code is arch-specific, so widening this list is all it takes to add
+          # one — but a missing arch fails at runtime, not at build time, with a
+          # bare `exec /kubepilot: no such file or directory`.
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

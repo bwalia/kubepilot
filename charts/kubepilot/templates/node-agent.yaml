@@ -60,7 +60,7 @@ spec:
   # maxUnavailable of 1 a single NotReady node stalls the entire rollout.
   updateStrategy:
     rollingUpdate:
-      maxUnavailable: {{ .Values.nodeAgent.maxUnavailable }}
+      maxUnavailable: {{ .Values.nodeAgent.maxUnavailable | default 5 }}
   selector:
     matchLabels:
       {{- include "kubepilot.selectorLabels" . | nindent 6 }}
@@ -81,7 +81,11 @@ spec:
       # API server is reached by the IP in the injected env vars.
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      # Every node means every node, control-plane taints included.
+      # The agent reads sysfs and procfs, so it only makes sense on Linux nodes;
+      # without this a Windows node added later would crashloop on every retry.
+      nodeSelector:
+        kubernetes.io/os: linux
+      # Every Linux node means every node, control-plane taints included.
       tolerations:
         - operator: Exists
       securityContext:
@@ -98,7 +102,10 @@ spec:
           command: ["/kubepilot"]
           args:
             - node-agent
-            - --interval={{ .Values.nodeAgent.interval }}
+            # Defaulted here as well as in values.yaml: `helm upgrade --reuse-values`
+            # carries an existing release's values over and never merges in defaults
+            # for keys the chart only just grew, which renders an empty flag.
+            - --interval={{ .Values.nodeAgent.interval | default "15m" }}
             - --log-level={{ .Values.kubepilot.logLevel }}
           env:
             - name: NODE_NAME

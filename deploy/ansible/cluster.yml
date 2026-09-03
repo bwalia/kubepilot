@@ -22,10 +22,12 @@
     kubepilot_release: kubepilot
     kubepilot_namespace: kubepilot-system
     kubepilot_chart: "{{ playbook_dir }}/../../charts/kubepilot"
-    # --reuse-values keeps the credentials and settings of an existing release,
-    # so this playbook can be run without knowing them. Drop it (pass -e
-    # kubepilot_helm_args="") for a first install with an explicit values file.
-    kubepilot_helm_args: "--reuse-values"
+    # --reset-then-reuse-values keeps the credentials and settings of an existing
+    # release, so this playbook runs without knowing them, while still merging in
+    # the chart's defaults for keys it has grown since that release. Plain
+    # --reuse-values drops those and renders new flags empty. Pass
+    # -e kubepilot_helm_args="" for a first install with an explicit values file.
+    kubepilot_helm_args: "--reset-then-reuse-values"
     # The node agent is what publishes each machine's hardware onto its Node
     # object. Nothing else in KubePilot can discover that.
     kubepilot_node_agent_enabled: true
@@ -72,8 +74,11 @@
       failed_when: false
 
     - name: Show what each node reports as its hardware
+      # Single-quoted: the backslashes escaping the dots belong to kubectl, and
+      # an unquoted folded scalar hands it the keys unescaped (every column then
+      # prints <none>).
       ansible.builtin.command: >-
-        kubectl get nodes -o custom-columns=NODE:.metadata.name,HARDWARE:.metadata.annotations.kubepilot\.io/hardware,SERIAL:.metadata.annotations.kubepilot\.io/serial
+        kubectl get nodes -o 'custom-columns=NODE:.metadata.name,HARDWARE:.metadata.annotations.kubepilot\.io/hardware,SERIAL:.metadata.annotations.kubepilot\.io/serial'
       register: kubepilot_node_hardware
       changed_when: false
 
