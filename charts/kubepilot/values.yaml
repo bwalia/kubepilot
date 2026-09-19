@@ -215,6 +215,40 @@ nodeAgent:
       cpu: 100m
       memory: 64Mi
 
+# ── OTLP Autopilot (automatic observability engine) ───────────────────────────
+# Deploy anything. Get observability automatically.
+# Hybrid: KubePilot-managed store powers the built-in UI; optional export
+# dual-writes to Prometheus/Thanos/Cortex and external OTLP sinks.
+otelAutopilot:
+  enabled: false
+  mode: "observe"   # off | observe | enable
+  managedStore:
+    enabled: true
+  supportedRuntimes:
+    - java
+    - nodejs
+    - python
+    - dotnet
+    - go
+  blockedNamespaces:
+    - kube-system
+    - kube-public
+    - kube-node-lease
+    - kubepilot-system
+  allowedNamespaces: []
+  collector:
+    enabled: true
+    image: otel/opentelemetry-collector-contrib:0.111.0
+  ebpf:
+    enabled: false
+  export:
+    metrics:
+      remoteWrite:
+        url: ""   # e.g. http://thanos-receive.monitoring:19291/api/v1/receive
+    otlp:
+      endpoint: ""
+      insecure: false
+
 # ── Network Policy ───────────────────────────────────────────────────────────
 networkPolicy:
   enabled: false  # Enable to restrict traffic to/from kubepilot pods.

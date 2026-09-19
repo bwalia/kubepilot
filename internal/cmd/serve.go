@@ -21,6 +21,7 @@ import (
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/mcp/server"
 	"github.com/kubepilot/kubepilot/pkg/observability"
+	"github.com/kubepilot/kubepilot/pkg/otelautopilot"
 	"github.com/kubepilot/kubepilot/pkg/runbooks"
 	"github.com/kubepilot/kubepilot/pkg/telemetry"
 )
@@ -84,6 +85,17 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().Duration("autopilot-cooldown", 10*time.Minute, "Minimum time between autopilot actions on the same resource")
 	cmd.Flags().Int("autopilot-max-actions-per-hour", 10, "Maximum autopilot actions in any rolling hour (blast-radius cap)")
 
+	// OTLP Autopilot — automatic observability engine (separate from remediation Autopilot).
+	cmd.Flags().String("otel-autopilot-mode", "off", "OTLP Autopilot mode: off | observe | enable")
+	cmd.Flags().Bool("otel-autopilot-managed-store", true, "Keep KubePilot-managed short-retention Metrics/Logs/Traces store (Hybrid default)")
+	cmd.Flags().String("otel-autopilot-allowed-namespaces", "", "Comma-separated namespaces OTLP Autopilot may cover (empty = all except blocked)")
+	cmd.Flags().String("otel-autopilot-blocked-namespaces", "kube-system,kube-public,kube-node-lease,kubepilot-system", "Comma-separated namespaces OTLP Autopilot must never touch")
+	cmd.Flags().String("otel-autopilot-supported-runtimes", "java,nodejs,python,dotnet,go", "Runtimes eligible for auto-instrumentation")
+	cmd.Flags().Duration("otel-autopilot-retention", 24*time.Hour, "Retention for KubePilot-managed OTEL store")
+	cmd.Flags().String("otel-export-metrics-remote-write-url", "", "Optional Prometheus/Thanos/Cortex remote_write URL (Hybrid export)")
+	cmd.Flags().String("otel-export-otlp-endpoint", "", "Optional external OTLP endpoint for dual-write export")
+	cmd.Flags().Bool("otel-export-otlp-insecure", false, "Disable TLS for optional OTLP export endpoint")
+
 	_ = viper.BindPFlag("mcp_port", cmd.Flags().Lookup("mcp-port"))
 	_ = viper.BindPFlag("dashboard_port", cmd.Flags().Lookup("dashboard-port"))
 	_ = viper.BindPFlag("kubeconfig", cmd.Flags().Lookup("kubeconfig"))
@@ -123,6 +135,15 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("autopilot_blocked_namespaces", cmd.Flags().Lookup("autopilot-blocked-namespaces"))
 	_ = viper.BindPFlag("autopilot_cooldown", cmd.Flags().Lookup("autopilot-cooldown"))
 	_ = viper.BindPFlag("autopilot_max_actions_per_hour", cmd.Flags().Lookup("autopilot-max-actions-per-hour"))
+	_ = viper.BindPFlag("otel_autopilot_mode", cmd.Flags().Lookup("otel-autopilot-mode"))
+	_ = viper.BindPFlag("otel_autopilot_managed_store", cmd.Flags().Lookup("otel-autopilot-managed-store"))
+	_ = viper.BindPFlag("otel_autopilot_allowed_namespaces", cmd.Flags().Lookup("otel-autopilot-allowed-namespaces"))
+	_ = viper.BindPFlag("otel_autopilot_blocked_namespaces", cmd.Flags().Lookup("otel-autopilot-blocked-namespaces"))
+	_ = viper.BindPFlag("otel_autopilot_supported_runtimes", cmd.Flags().Lookup("otel-autopilot-supported-runtimes"))
+	_ = viper.BindPFlag("otel_autopilot_retention", cmd.Flags().Lookup("otel-autopilot-retention"))
+	_ = viper.BindPFlag("otel_export_metrics_remote_write_url", cmd.Flags().Lookup("otel-export-metrics-remote-write-url"))
+	_ = viper.BindPFlag("otel_export_otlp_endpoint", cmd.Flags().Lookup("otel-export-otlp-endpoint"))
+	_ = viper.BindPFlag("otel_export_otlp_insecure", cmd.Flags().Lookup("otel-export-otlp-insecure"))
 
 	return cmd
 }
@@ -243,6 +264,51 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
+	// OTLP Autopilot — automatic observability engine (Hybrid managed store + optional export).
+	otelMode := otelautopilot.Mode(strings.TrimSpace(viper.GetString("otel_autopilot_mode")))
+	if otelMode == "" {
+		otelMode = otelautopilot.ModeOff
+	}
+	otelPolicy := otelautopilot.Policy{
+		Mode:                otelMode,
+		ManagedStoreEnabled: viper.GetBool("otel_autopilot_managed_store"),
+		AllowedNamespaces:   parseCSV(viper.GetString("otel_autopilot_allowed_namespaces")),
+		BlockedNamespaces:   parseCSV(viper.GetString("otel_autopilot_blocked_namespaces")),
+		SupportedRuntimes:   parseCSV(viper.GetString("otel_autopilot_supported_runtimes")),
+		Retention:           viper.GetDuration("otel_autopilot_retention"),
+		Export: otelautopilot.ExportConfig{
+			MetricsRemoteWriteURL: strings.TrimSpace(viper.GetString("otel_export_metrics_remote_write_url")),
+			OTLPEndpoint:          strings.TrimSpace(viper.GetString("otel_export_otlp_endpoint")),
+			OTLPInsecure:          viper.GetBool("otel_export_otlp_insecure"),
+		},
+	}
+	otelCtl := otelautopilot.New(otelautopilot.Config{
+		Policy: otelPolicy,
+		K8s:    k8sClient,
+	}, log)
+	aiEngine.RCA().SetEvidenceContributor(otelCtl)
+	if otelPolicy.Mode != otelautopilot.ModeOff {
+		log.Info("OTLP Autopilot enabled",
+			zap.String("mode", string(otelPolicy.Mode)),
+			zap.Bool("managed_store", otelPolicy.ManagedStoreEnabled),
+			zap.Bool("export_active", otelCtl.ExportActive()),
+		)
+		go func() {
+			ticker := time.NewTicker(60 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					if err := otelCtl.Refresh(ctx); err != nil {
+						log.Debug("OTLP Autopilot refresh failed", zap.Error(err))
+					}
+				}
+			}
+		}()
+	}
+
 	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{
 		Persistence: persistence,
 		Notifier:    notifier,
@@ -294,6 +360,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		RCAStore:       rcaStore,
 		RunbookEngine:  runbookEngine,
 		Autopilot:      autopilotCtl,
+		OTELAutopilot:  otelCtl,
 		KubeconfigPath: kubeconfigPath,
 		Auth: dashboard.AuthConfig{
 			Enabled:            authEnabled,

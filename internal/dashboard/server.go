@@ -29,6 +29,7 @@ import (
 	"github.com/kubepilot/kubepilot/pkg/jobs"
 	"github.com/kubepilot/kubepilot/pkg/k8s"
 	"github.com/kubepilot/kubepilot/pkg/observability"
+	"github.com/kubepilot/kubepilot/pkg/otelautopilot"
 	"github.com/kubepilot/kubepilot/pkg/runbooks"
 	"github.com/kubepilot/kubepilot/pkg/security"
 	"github.com/kubepilot/kubepilot/pkg/telemetry"
@@ -43,6 +44,7 @@ type Config struct {
 	RCAStore                          *observability.RCAStore
 	RunbookEngine                     *runbooks.Engine
 	Autopilot                         *autopilot.Controller
+	OTELAutopilot                     *otelautopilot.Controller
 	KubeconfigPath                    string
 	Auth                              AuthConfig
 	EnableKubeconfigMutationEndpoints bool
@@ -202,6 +204,19 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/autopilot/resume", s.handleAutopilotResume).Methods(http.MethodPost)
 	// Live mode switch (off | dry-run | active) — applied in-memory, no restart.
 	api.HandleFunc("/autopilot/mode", s.handleAutopilotSetMode).Methods(http.MethodPost)
+
+	// OTLP Autopilot — automatic observability engine (separate from remediation Autopilot).
+	api.HandleFunc("/otel/autopilot", s.handleOTELAutopilotStatus).Methods(http.MethodGet)
+	api.HandleFunc("/otel/autopilot/mode", s.handleOTELAutopilotSetMode).Methods(http.MethodPost)
+	api.HandleFunc("/otel/autopilot/pause", s.handleOTELAutopilotPause).Methods(http.MethodPost)
+	api.HandleFunc("/otel/autopilot/resume", s.handleOTELAutopilotResume).Methods(http.MethodPost)
+	api.HandleFunc("/otel/apps", s.handleOTELApps).Methods(http.MethodGet)
+	api.HandleFunc("/otel/metrics", s.handleOTELMetrics).Methods(http.MethodGet)
+	api.HandleFunc("/otel/logs", s.handleOTELLogs).Methods(http.MethodGet)
+	api.HandleFunc("/otel/traces", s.handleOTELTraces).Methods(http.MethodGet)
+	api.HandleFunc("/otel/services/{id}", s.handleOTELService).Methods(http.MethodGet)
+	api.HandleFunc("/otel/ingest", s.handleOTELIngest).Methods(http.MethodPost)
+
 	if s.cfg.EnableActionMutationEndpoints {
 		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)
 	} else {
