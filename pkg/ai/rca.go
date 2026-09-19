@@ -22,10 +22,22 @@ import (
 // RCAEngine orchestrates Kubernetes root cause analysis using the AI engine
 // and the rich data layer from pkg/k8s.
 type RCAEngine struct {
-	engine *Engine
-	k8s    *k8s.Client
-	log    *zap.Logger
-	idSeq  int64
+	engine               *Engine
+	k8s                  *k8s.Client
+	log                  *zap.Logger
+	idSeq                int64
+	evidenceContributor  EvidenceContributor
+}
+
+// EvidenceContributor optionally enriches RCA reports with external signals
+// (for example OTLP Autopilot metrics/logs/traces) without coupling AI to OTEL.
+type EvidenceContributor interface {
+	ContributeEvidence(ctx context.Context, namespace, name string) []Evidence
+}
+
+// SetEvidenceContributor wires an optional evidence source (e.g. OTLP Autopilot).
+func (r *RCAEngine) SetEvidenceContributor(c EvidenceContributor) {
+	r.evidenceContributor = c
 }
 
 // NewRCAEngine creates an RCAEngine backed by the provided Engine and k8s client.
@@ -149,6 +161,10 @@ func (r *RCAEngine) AnalyzePod(ctx context.Context, namespace, podName string) (
 		report = r.buildFallbackReport(namespace, podName, raw, diag)
 	}
 
+	if r.evidenceContributor != nil {
+		report.EvidenceChain = append(report.EvidenceChain, r.evidenceContributor.ContributeEvidence(ctx, namespace, podName)...)
+	}
+
 	r.log.Info("RCA analysis complete",
 		zap.String("pod", podName),
 		zap.String("severity", string(report.Severity)),
@@ -227,7 +243,7 @@ func (r *RCAEngine) buildFallbackReport(namespace, podName, rawResponse string, 
 		severity = SeverityHigh
 	}
 
-	return &RCAReport{
+	report := &RCAReport{
 		ID:        fmt.Sprintf("rca-%s-%s-%d", namespace, podName, time.Now().Unix()),
 		Timestamp: time.Now().UTC(),
 		TargetResource: ResourceRef{
@@ -262,6 +278,7 @@ func (r *RCAEngine) buildFallbackReport(namespace, podName, rawResponse string, 
 		Confidence: 0.3,
 		Status:     RCAStatusComplete,
 	}
+	return report
 }
 
 // identifyScenario determines the primary failure mode from pod diagnostics.

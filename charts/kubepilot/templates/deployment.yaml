@@ -58,6 +58,19 @@ spec:
             {{- end }}
             - --otel-environment={{ .environment | default $.Release.Namespace }}
             {{- end }}
+            {{- if .Values.otelAutopilot.enabled }}
+            - --otel-autopilot-mode={{ .Values.otelAutopilot.mode }}
+            - --otel-autopilot-managed-store={{ .Values.otelAutopilot.managedStore.enabled }}
+            {{- if .Values.otelAutopilot.export.metrics.remoteWrite.url }}
+            - --otel-export-metrics-remote-write-url={{ .Values.otelAutopilot.export.metrics.remoteWrite.url }}
+            {{- end }}
+            {{- if .Values.otelAutopilot.export.otlp.endpoint }}
+            - --otel-export-otlp-endpoint={{ .Values.otelAutopilot.export.otlp.endpoint }}
+            {{- if .Values.otelAutopilot.export.otlp.insecure }}
+            - --otel-export-otlp-insecure
+            {{- end }}
+            {{- end }}
+            {{- end }}
           env:
             # Pod identity for the telemetry resource, read via WithFromEnv.
             # Supplying it here rather than in the chart's values means a span

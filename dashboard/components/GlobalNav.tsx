@@ -6,7 +6,7 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Navigation, Lock, Sparkles, LayoutDashboard, Bot } from "lucide-react";
+import { Navigation, Lock, Sparkles, LayoutDashboard, Bot, Radio } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useNamespaceLock } from "@/lib/useNamespaceLock";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -15,6 +15,7 @@ const NAV_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "CoPilot", icon: Sparkles },
   { href: "/dashboard", label: "Pilot", icon: LayoutDashboard },
   { href: "/autopilot", label: "AutoPilot", icon: Bot },
+  { href: "/otel", label: "OTLP", icon: Radio },
 ];
 
 // Stamped at build time by `make dashboard` (NEXT_PUBLIC_BUILD_VERSION).

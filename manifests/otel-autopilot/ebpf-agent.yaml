@@ -1,0 +1,45 @@
+## Optional eBPF agent DaemonSet (best-effort zero-code traces/metrics).
+## Uses OpenTelemetry eBPF profiler/instrumentation image where available.
+## Keep disabled until the cluster supports the required kernel features.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-ebpf-agent
+  namespace: kubepilot-system
+  labels:
+    app.kubernetes.io/name: otel-ebpf-agent
+    app.kubernetes.io/managed-by: kubepilot
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-ebpf-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-ebpf-agent
+    spec:
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+        - operator: Exists
+      serviceAccountName: otel-collector
+      containers:
+        - name: ebpf-instrument
+          # Placeholder image — operators should pin a verified OBI / eBPF auto-instr release.
+          image: ghcr.io/open-telemetry/opentelemetry-ebpf-instrumentation/autoinstrumentation-ebpf:latest
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.kubepilot-system.svc:4318
+            - name: OTEL_SERVICE_NAME
+              value: kubepilot-ebpf
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

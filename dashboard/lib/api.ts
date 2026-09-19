@@ -740,6 +740,111 @@ export const resumeAutopilot = (): Promise<AutopilotStatus> =>
 export const setAutopilotMode = (mode: AutopilotMode): Promise<AutopilotStatus> =>
   http.post("/autopilot/mode", { mode }).then((r) => r.data);
 
+// ─────────────────────────────────────────
+// OTLP Autopilot (automatic observability)
+// ─────────────────────────────────────────
+
+export type OTELAutopilotMode = "off" | "observe" | "enable";
+export type OTELCapability =
+  | "ebpf"
+  | "auto-instr"
+  | "collector-only"
+  | "needs-config"
+  | "unsupported";
+export type OTELPlane = "cluster" | "application" | "";
+
+export interface OTELExportConfig {
+  metrics_remote_write_url?: string;
+  otlp_endpoint?: string;
+  otlp_insecure?: boolean;
+}
+
+export interface OTELAppCoverage {
+  id: string;
+  kind: string;
+  name: string;
+  namespace: string;
+  runtime?: string;
+  capability: OTELCapability;
+  reason: string;
+  next_step?: string;
+  enabled: boolean;
+  signals: string[];
+  plane: "cluster" | "application";
+  last_seen: string;
+  service_name?: string;
+  image?: string;
+}
+
+export interface OTELAutopilotStatus {
+  enabled: boolean;
+  policy: {
+    mode: OTELAutopilotMode;
+    managed_store_enabled: boolean;
+    blocked_namespaces: string[];
+    supported_runtimes: string[];
+    export: OTELExportConfig;
+    retention: number;
+  };
+  coverage: {
+    generated_at: string;
+    mode: OTELAutopilotMode;
+    totals: {
+      total: number;
+      ebpf: number;
+      auto_instr: number;
+      collector_only: number;
+      needs_config: number;
+      unsupported: number;
+      enabled: number;
+    };
+    apps: OTELAppCoverage[];
+  };
+  signals: {
+    managed_store_enabled: boolean;
+    metrics_count: number;
+    logs_count: number;
+    traces_count: number;
+    export: OTELExportConfig;
+    export_active: boolean;
+    last_ingest_at?: string;
+  };
+  plans?: Array<{
+    app_id: string;
+    capability: OTELCapability;
+    actions: string[];
+    applied: boolean;
+    message?: string;
+  }>;
+}
+
+export const getOTELAutopilotStatus = (): Promise<OTELAutopilotStatus> =>
+  http.get("/otel/autopilot").then((r) => r.data);
+
+export const setOTELAutopilotMode = (mode: OTELAutopilotMode): Promise<OTELAutopilotStatus> =>
+  http.post("/otel/autopilot/mode", { mode }).then((r) => r.data);
+
+export const pauseOTELAutopilot = (): Promise<OTELAutopilotStatus> =>
+  http.post("/otel/autopilot/pause").then((r) => r.data);
+
+export const resumeOTELAutopilot = (): Promise<OTELAutopilotStatus> =>
+  http.post("/otel/autopilot/resume").then((r) => r.data);
+
+export const listOTELApps = (): Promise<{ apps: OTELAppCoverage[] }> =>
+  http.get("/otel/apps").then((r) => r.data);
+
+export const getOTELMetrics = (params?: { plane?: OTELPlane; service?: string; limit?: number }) =>
+  http.get("/otel/metrics", { params }).then((r) => r.data);
+
+export const getOTELLogs = (params?: { plane?: OTELPlane; service?: string; limit?: number }) =>
+  http.get("/otel/logs", { params }).then((r) => r.data);
+
+export const getOTELTraces = (params?: { plane?: OTELPlane; service?: string; limit?: number }) =>
+  http.get("/otel/traces", { params }).then((r) => r.data);
+
+export const getOTELService = (id: string) =>
+  http.get(`/otel/services/${encodeURIComponent(id)}`).then((r) => r.data);
+
   export const getServiceGraph = (namespace: string): Promise<ServiceGraph> =>
     http
       .get("/clusters/service-graph", { params: { namespace } })

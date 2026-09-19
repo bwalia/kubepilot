@@ -83,6 +83,26 @@ autopilot_blocked_namespaces: "kube-system,kube-public,kube-node-lease,kubepilot
 autopilot_cooldown: "10m"                  # min time between actions on the same resource
 autopilot_max_actions_per_hour: 10         # blast-radius cap across the whole cluster
 
+# ─────────────────────────────────────────────────────────────────────────────
+# OTLP Autopilot — automatic observability engine (NOT a config UI).
+#
+# Discover apps → enable Logs/Metrics/Traces with zero/low-code changes.
+# Hybrid storage: KubePilot-managed short-retention store powers the built-in UI;
+# optional export dual-writes to Prometheus/Thanos/Cortex and external OTLP sinks.
+# Grafana remains an optional advanced visualization layer.
+#
+# Modes: off | observe (discover only) | enable (apply auto-instr / eBPF / collector)
+# ─────────────────────────────────────────────────────────────────────────────
+otel_autopilot_mode: "off"
+otel_autopilot_managed_store: true
+otel_autopilot_allowed_namespaces: ""
+otel_autopilot_blocked_namespaces: "kube-system,kube-public,kube-node-lease,kubepilot-system"
+otel_autopilot_supported_runtimes: "java,nodejs,python,dotnet,go"
+otel_autopilot_retention: "24h"
+otel_export_metrics_remote_write_url: ""   # e.g. http://thanos-receive:19291/api/v1/receive
+otel_export_otlp_endpoint: ""              # optional external OTLP sink
+otel_export_otlp_insecure: false
+
 # Operator settings.
 operator:
   metrics_addr: ":8081"
