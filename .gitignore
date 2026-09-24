@@ -13,3 +13,4 @@ dashboard/tsconfig.tsbuildinfo
 # Environment
 .env
 .env.local
+__pycache__/
