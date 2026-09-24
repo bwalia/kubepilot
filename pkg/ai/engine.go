@@ -34,7 +34,7 @@ const (
 	// RCA. Prefer a small non-thinking model (≈3B) so analysis returns in
 	// seconds. Large "thinking" models (e.g. qwen3.8) can take minutes per
 	// request and are a poor fit for the UI. Override with --ollama-model.
-	DefaultOllamaModel = "llama3.2:3b"
+	DefaultOllamaModel = "llama3.2:3b-dash"
 )
 
 // Config holds the AI engine configuration.
