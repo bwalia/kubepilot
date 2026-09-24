@@ -30,8 +30,11 @@ const (
 	// DefaultOllamaBaseURL is the default Ollama API endpoint.
 	// Override with KUBEPILOT_OLLAMA_BASE_URL for remote or authenticated Ollama instances.
 	DefaultOllamaBaseURL = "http://localhost:11434/v1"
-	// DefaultOllamaModel is the default Ollama model. Override with --ollama-model.
-	DefaultOllamaModel = "llama3"
+	// DefaultOllamaModel is the default Ollama model for interactive dashboard
+	// RCA. Prefer a small non-thinking model (≈3B) so analysis returns in
+	// seconds. Large "thinking" models (e.g. qwen3.8) can take minutes per
+	// request and are a poor fit for the UI. Override with --ollama-model.
+	DefaultOllamaModel = "llama3.2:3b"
 )
 
 // Config holds the AI engine configuration.

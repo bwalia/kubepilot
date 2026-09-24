@@ -5,7 +5,7 @@
 ## Environment variable overrides (prefix: KUBEPILOT_):
 ##   KUBEPILOT_OLLAMA_BASE_URL=http://localhost:11434/v1
 ##   KUBEPILOT_OLLAMA_API_KEY=<only needed if Ollama is behind an auth proxy>
-##   KUBEPILOT_OLLAMA_MODEL=llama3
+##   KUBEPILOT_OLLAMA_MODEL=llama3.2:3b
 ##   KUBEPILOT_LOG_LEVEL=debug
 ##   KUBEPILOT_MCP_PORT=9090
 ##   KUBEPILOT_DASHBOARD_AUTH_ENABLED=true
@@ -36,7 +36,9 @@ dashboard_port: 9080
 # ollama_base_url defaults to http://localhost:11434/v1 — override for remote instances.
 # ollama_api_key is optional (only needed if Ollama is behind an auth proxy).
 ollama_base_url: "http://localhost:11434/v1"
-ollama_model: llama3
+# Prefer a small non-thinking model for interactive dashboard RCA.
+# Avoid large thinking models (qwen3.8, etc.) — they routinely exceed UI timeouts.
+ollama_model: llama3.2:3b
 
 # Security settings for dashboard/API.
 #

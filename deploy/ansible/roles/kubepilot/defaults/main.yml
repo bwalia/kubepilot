@@ -21,7 +21,7 @@ kubepilot_auth_username: "{{ lookup('env', 'KUBEPILOT_AUTH_USERNAME') | default(
 kubepilot_auth_password: "{{ lookup('env', 'KUBEPILOT_AUTH_PASSWORD') | default('', true) }}"
 kubepilot_auth_token: "{{ lookup('env', 'KUBEPILOT_AUTH_TOKEN') | default('', true) }}"
 kubepilot_ollama_base_url: "{{ lookup('env', 'KUBEPILOT_OLLAMA_BASE_URL') | default('http://localhost:11434/v1', true) }}"
-kubepilot_ollama_model: "{{ lookup('env', 'KUBEPILOT_OLLAMA_MODEL') | default('llama3', true) }}"
+kubepilot_ollama_model: "{{ lookup('env', 'KUBEPILOT_OLLAMA_MODEL') | default('llama3.2:3b', true) }}"
 kubepilot_cors_allowed_origins: "{{ lookup('env', 'KUBEPILOT_CORS_ALLOWED_ORIGINS') | default('', true) }}"
 
 # ── Telemetry ────────────────────────────────────────────────────────────────

@@ -9,7 +9,7 @@ OpenTelemetry traces and metrics the server emits about its own behaviour.
 |---|---|---|
 | Dashboard + REST API | `GET /api/v1/clusters/pods/{namespace}/{pod}` | `http.server.request.duration`, `http.server.active_requests`, request/response body size |
 | Kubernetes API client | `k8s GET pods/log` | `kubepilot.k8s.client.duration`, `kubepilot.k8s.client.errors` |
-| AI backend | `chat llama3.1:8b` | `gen_ai.client.operation.duration`, `gen_ai.client.token.usage`, `kubepilot.ai.errors` |
+| AI backend | `chat llama3.2:3b` | `gen_ai.client.operation.duration`, `gen_ai.client.token.usage`, `kubepilot.ai.errors` |
 | Anomaly detection | `watcher.poll` | `kubepilot.anomalies.detected` |
 | Root cause analysis | `rca.AnalyzePod` | `kubepilot.rca.reports`, `kubepilot.rca.duration` |
 | Autopilot | `autopilot.HandleReport` | `kubepilot.autopilot.actions` |

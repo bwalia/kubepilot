@@ -211,7 +211,7 @@ ingress:
 
 kubepilot:
   ollamaBaseURL: "http://ollama.ollama.svc:11434/v1"
-  ollamaModel: llama3
+  ollamaModel: llama3.2:3b
   logLevel: info
 
 networkPolicy:
@@ -298,7 +298,7 @@ how to verify auth is enforced.
 | `ingress.hosts` | Ingress host rules | `[{host: kubepilot.local}]` |
 | `ingress.tls` | Ingress TLS configuration | `[]` |
 | `kubepilot.ollamaBaseURL` | Ollama API endpoint | `http://localhost:11434/v1` |
-| `kubepilot.ollamaModel` | AI model name | `llama3` |
+| `kubepilot.ollamaModel` | AI model name | `llama3.2:3b` |
 | `kubepilot.logLevel` | Log level | `info` |
 | `networkPolicy.enabled` | Enable NetworkPolicy | `false` |
 | `metrics.enabled` | Enable metrics endpoint | `true` |
@@ -324,7 +324,7 @@ Example:
 ```bash
 export KUBEPILOT_KUBECONFIG="$HOME/.kube/config"
 export KUBEPILOT_OLLAMA_BASE_URL="http://localhost:11434/v1"
-export KUBEPILOT_OLLAMA_MODEL="llama3"
+export KUBEPILOT_OLLAMA_MODEL="llama3.2:3b"
 ./dist/kubepilot serve --dashboard-port=8383
 ```
 
