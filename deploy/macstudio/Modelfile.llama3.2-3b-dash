@@ -1,0 +1,6 @@
+FROM llama3.2:3b
+# Cap context for interactive dashboard RCA. The stock llama3.2:3b tag defaults
+# to a huge context window (~128k), which balloons VRAM (~11GB) and slows every
+# first token. 4k is enough for pod diagnostics + truncated logs.
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.2

@@ -70,8 +70,16 @@ fi
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 if command -v ollama >/dev/null 2>&1; then
   echo "Ensuring Ollama model ${MODEL} is present…"
-  ollama pull "$MODEL" || true
-  for heavy in qwen3.8:latest qwen3.8-fast:latest qwen3-coder:30b qwen3:30b-a3b careerops:32k muse-glimmer:latest; do
+  # Dashboard pin is a local Modelfile derived from llama3.2:3b (4k ctx).
+  if [ "$MODEL" = "llama3.2:3b-dash" ] && [ -f "$SRC/Modelfile.llama3.2-3b-dash" ]; then
+    ollama pull llama3.2:3b || true
+    ollama create llama3.2:3b-dash -f "$SRC/Modelfile.llama3.2-3b-dash" || true
+  else
+    ollama pull "$MODEL" || true
+  fi
+  for heavy in qwen3.8:latest qwen3.8-fast:latest qwen3-coder:30b qwen3:30b-a3b careerops:32k muse-glimmer:latest llama3.1:8b llama3.2:3b; do
+    # Keep the pinned model loaded; stop everything else that steals GPU.
+    [ "$heavy" = "$MODEL" ] && continue
     ollama stop "$heavy" 2>/dev/null || true
   done
   curl -s -m 180 "http://127.0.0.1:11434/api/generate" \

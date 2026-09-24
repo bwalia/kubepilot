@@ -15,7 +15,9 @@ thinking model.
 
 ## Interactive model policy
 
-Default: **`llama3.2:3b`** — small, non-thinking, fast enough for dashboard RCA.
+Default: **`llama3.2:3b-dash`** — `llama3.2:3b` with `num_ctx=4096` (see
+`Modelfile.llama3.2-3b-dash`). Stock `llama3.2:3b` allocates a huge context and
+is too heavy for interactive RCA.
 
 Do **not** set `KUBEPILOT_OLLAMA_MODEL` to large thinking models (`qwen3.8`,
 `qwen3-coder:30b`, …) in `kubepilot.env`. Those routinely hang the UI for
