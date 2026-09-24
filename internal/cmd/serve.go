@@ -44,7 +44,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("kubeconfig", "", "path to kubeconfig (defaults to in-cluster config)")
 	cmd.Flags().String("ollama-base-url", "", "Ollama API base URL (or set KUBEPILOT_OLLAMA_BASE_URL, default: http://localhost:11434/v1)")
 	cmd.Flags().String("ollama-api-key", "", "Ollama API key — optional, only needed if Ollama is behind an auth proxy (or set KUBEPILOT_OLLAMA_API_KEY)")
-	cmd.Flags().String("ollama-model", "", "Ollama model name, e.g. llama3, mistral, codellama (default: llama3)")
+	cmd.Flags().String("ollama-model", "", "Ollama model name (default: llama3.2:3b). Prefer small non-thinking models for interactive RCA")
 	cmd.Flags().String("prometheus-url", "", "Prometheus server URL for metrics-based anomaly detection (optional)")
 	cmd.Flags().Bool("dashboard-auth-enabled", false, "Enable dashboard/API auth middleware")
 	cmd.Flags().String("dashboard-auth-token", "", "Bearer token for dashboard/API auth (optional if username/password is set)")

@@ -95,6 +95,19 @@ jobs:
           rm -rf "$DEST/dashboard/out"
           cp -R dashboard/out "$DEST/dashboard/out"
 
+      # Install versioned Mac Studio runtime from deploy/macstudio/ (model pin,
+      # start-server.sh, kubepilot.env). Secrets stay in ~/.kubepilot/secrets.env.
+      - name: Install Mac Studio runtime config
+        env:
+          KP_OLLAMA_MODEL: ${{ vars.KUBEPILOT_OLLAMA_MODEL }}
+        run: |
+          set -euo pipefail
+          export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+          if [ -n "${KP_OLLAMA_MODEL:-}" ]; then
+            export KUBEPILOT_OLLAMA_MODEL="$KP_OLLAMA_MODEL"
+          fi
+          bash deploy/macstudio/install-runtime.sh
+
       - name: Restart launchd service
         run: |
           set -euo pipefail
