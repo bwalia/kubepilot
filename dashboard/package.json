@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:fuzzy": "tsc lib/fuzzy.ts lib/fuzzy.check.ts --outDir .tmp-test --module nodenext --target es2022 --moduleResolution nodenext --strict && node .tmp-test/fuzzy.check.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

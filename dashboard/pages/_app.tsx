@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { GlobalNav } from "@/components/GlobalNav";
+import { CommandPalette } from "@/components/CommandPalette";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Footer } from "@/components/Footer";
 import "../styles/globals.css";
 
@@ -22,6 +24,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* One provider for the whole app. Previously every StatusPill mounted
+          its own, which on a 768-row pod table meant 768 providers. */}
+      <TooltipProvider delayDuration={120}>
       <div className="flex min-h-screen flex-col">
         <GlobalNav />
         <div className="flex-1">
@@ -40,7 +45,11 @@ export default function App({ Component, pageProps }: AppProps) {
           </AnimatePresence>
         </div>
         <Footer />
+        {/* Mounted at the app root so Cmd/Ctrl-K works on every page, not just
+            the dashboard. It fetches nothing until it is opened. */}
+        <CommandPalette />
       </div>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

@@ -1,10 +1,23 @@
+/**
+ * PodTable — the pod list, rendered through the shared ResourceTable so it
+ * gets the same fuzzy filter, sortable columns, sticky header and phone-sized
+ * card layout as every other list in the dashboard.
+ *
+ * The status column deliberately shows plain English ("Crash looping") rather
+ * than the raw phase, with the Kubernetes wording one keystroke away under the
+ * "?" — a pod list is the first thing a non-operator is shown when they ask
+ * "is my app up?", and "CrashLoopBackOff" does not answer that question.
+ */
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PodSummary } from "@/lib/api";
 import { troubleshootPod } from "@/lib/api";
-import { AlertTriangle, CheckCircle, RefreshCw, Search, X } from "lucide-react";
+import { RefreshCw, X, Stethoscope } from "lucide-react";
 import { PortForwardButton } from "@/components/PortForwardButton";
 import { AIReportActions } from "@/components/AIReportActions";
+import { ResourceTable, type Column } from "@/components/dashboard/ResourceTable";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { explainPod } from "@/lib/k8sExplain";
 
 interface Props {
   pods: PodSummary[];
@@ -14,123 +27,124 @@ interface Props {
   onRowClick?: (namespace: string, name: string) => void;
   // Enables the per-row Port Forward control when the server allows mutations.
   mutationsEnabled?: boolean;
-  // Optional extra filter control rendered right-aligned on the search row.
+  // Optional extra filter control rendered right-aligned on the toolbar.
   filterSlot?: ReactNode;
 }
 
+/** Kubernetes-style age ("4d15h", "12m") to minutes, for sorting. */
+function ageToMinutes(uptime: string): number {
+  if (!uptime) return Number.MAX_SAFE_INTEGER;
+  const part = (unit: string) => {
+    const m = uptime.match(new RegExp(`(\\d+)\\s*${unit}`));
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  const mins = part("d") * 1440 + part("h") * 60 + part("m") + part("s") / 60;
+  return mins || Number.MAX_SAFE_INTEGER;
+}
+
 export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false, filterSlot }: Props) {
-  const [search, setSearch] = useState("");
   const [troubleshootTarget, setTroubleshootTarget] = useState<{
     namespace: string;
     pod: string;
   } | null>(null);
 
-  const filtered = pods.filter(
-    (p) =>
-      p.Name.toLowerCase().includes(search.toLowerCase()) ||
-      p.Namespace.toLowerCase().includes(search.toLowerCase())
-  );
+  const columns: Column<PodSummary>[] = [
+    {
+      header: "Pod",
+      cell: (pod) => (
+        <span className="font-mono font-semibold text-pilot-text-primary">{pod.Name}</span>
+      ),
+      sortValue: (pod) => pod.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (pod) => <span className="text-pilot-text-secondary">{pod.Namespace}</span>,
+      sortValue: (pod) => pod.Namespace,
+    },
+    {
+      header: "Status",
+      cell: (pod) => (
+        <StatusPill
+          explanation={explainPod(pod)}
+          raw={pod.Reason || (pod.Phase && !pod.Ready ? `${pod.Phase} (not ready)` : pod.Phase)}
+        />
+      ),
+      // Sort by severity, not alphabetically — "show me what is broken" is the
+      // only reason anyone sorts a status column.
+      sortValue: (pod) => {
+        const rank = { bad: 0, warn: 1, info: 2, idle: 3, ok: 4 } as const;
+        return rank[explainPod(pod).tone];
+      },
+    },
+    {
+      header: "Restarts",
+      align: "right",
+      cell: (pod) => (
+        <span
+          className={
+            pod.Restarts > 5
+              ? "font-bold tabular-nums text-pilot-warning"
+              : "tabular-nums text-pilot-text-secondary"
+          }
+        >
+          {pod.Restarts}
+        </span>
+      ),
+      sortValue: (pod) => pod.Restarts,
+    },
+    {
+      header: "Age",
+      cell: (pod) => <span className="font-mono text-pilot-text-secondary">{pod.Uptime || "\u2014"}</span>,
+      sortValue: (pod) => ageToMinutes(pod.Uptime),
+      hideBelow: "lg",
+    },
+    {
+      header: "Machine",
+      cell: (pod) => <span className="text-pilot-text-secondary">{pod.NodeName || "\u2014"}</span>,
+      sortValue: (pod) => pod.NodeName,
+      hideBelow: "lg",
+    },
+    {
+      header: "Actions",
+      align: "right",
+      cell: (pod) => (
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setTroubleshootTarget({ namespace: pod.Namespace, pod: pod.Name });
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-pilot-accent/10 px-3 py-1.5 text-sm font-medium text-pilot-accent-light transition-colors hover:bg-pilot-accent/20"
+            title="Ask the AI what is wrong with this pod"
+          >
+            <Stethoscope className="h-3.5 w-3.5" aria-hidden="true" />
+            Diagnose
+          </button>
+          <PortForwardButton
+            kind="pod"
+            namespace={pod.Namespace}
+            name={pod.Name}
+            mutationsEnabled={mutationsEnabled}
+          />
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div>
-      {/* Filters row: search (left) + optional filter slot (right) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2 bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 w-72 max-w-full focus-within:border-pilot-accent/60 focus-within:ring-2 focus-within:ring-pilot-accent/25">
-          <Search className="w-4 h-4 text-pilot-muted shrink-0" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter pods..."
-            className="bg-transparent text-sm text-pilot-text-primary placeholder:text-pilot-muted focus:outline-none w-full"
-          />
-        </div>
-        {filterSlot}
-      </div>
-
-      {loading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 bg-pilot-surface rounded-xl animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-pilot-surface border border-pilot-border rounded-xl overflow-hidden shadow-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="text-left px-5 py-3.5 eyebrow">Namespace</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Pod</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Phase</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Reason</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Restarts</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Uptime</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Node</th>
-                  <th className="text-left px-5 py-3.5 eyebrow">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-pilot-border">
-                {filtered.map((pod) => (
-                  <tr
-                    key={`${pod.Namespace}/${pod.Name}`}
-                    onClick={onRowClick ? () => onRowClick(pod.Namespace, pod.Name) : undefined}
-                    className={`hover:bg-pilot-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
-                  >
-                    <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.Namespace}</td>
-                    <td className="px-5 py-3.5 text-sm text-pilot-text-primary font-mono font-semibold">{pod.Name}</td>
-                    <td className="px-5 py-3.5">
-                      <PhaseChip phase={pod.Phase} ready={pod.Ready} />
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {pod.Reason ? (
-                        <span className="text-sm text-pilot-danger font-semibold">{pod.Reason}</span>
-                      ) : (
-                        <span className="text-sm text-pilot-muted">&mdash;</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-center">
-                      <span
-                        className={pod.Restarts > 5 ? "text-pilot-warning font-bold" : "text-pilot-text-secondary"}
-                      >
-                        {pod.Restarts}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-pilot-text-secondary font-mono">{pod.Uptime || "\u2014"}</td>
-                    <td className="px-5 py-3.5 text-sm text-pilot-text-secondary">{pod.NodeName || "\u2014"}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTroubleshootTarget({ namespace: pod.Namespace, pod: pod.Name });
-                          }}
-                          className="text-sm bg-pilot-accent/10 text-pilot-accent-light px-3 py-1.5 rounded-lg hover:bg-pilot-accent/20 font-medium"
-                        >
-                          AI Diagnose
-                        </button>
-                        <PortForwardButton
-                          kind="pod"
-                          namespace={pod.Namespace}
-                          name={pod.Name}
-                          mutationsEnabled={mutationsEnabled}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-5 py-10 text-center text-pilot-muted text-sm">
-                      No pods match filter.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <ResourceTable
+        columns={columns}
+        items={pods}
+        rowKey={(pod) => `${pod.Namespace}/${pod.Name}`}
+        loading={loading}
+        noun="pod"
+        searchText={(pod) => `${pod.Namespace}/${pod.Name} ${pod.NodeName} ${pod.Phase} ${pod.Reason}`}
+        searchPlaceholder="Find a pod by name…"
+        filterSlot={filterSlot}
+        onRowClick={onRowClick ? (pod) => onRowClick(pod.Namespace, pod.Name) : undefined}
+        emptyMessage="No pods are running here."
+      />
 
       {/* Troubleshoot slide-over panel */}
       {troubleshootTarget && (
@@ -141,32 +155,6 @@ export function PodTable({ pods, loading, onRowClick, mutationsEnabled = false, 
         />
       )}
     </div>
-  );
-}
-
-function PhaseChip({ phase, ready }: { phase: string; ready: boolean }) {
-  const isOk = phase === "Running" && ready;
-  const isPending = phase === "Pending";
-
-  const color = isOk
-    ? "text-pilot-success"
-    : isPending
-    ? "text-pilot-warning"
-    : "text-pilot-danger";
-
-  const bgColor = isOk
-    ? "bg-pilot-success/10"
-    : isPending
-    ? "bg-pilot-warning/10"
-    : "bg-pilot-danger/10";
-
-  const Icon = isOk ? CheckCircle : AlertTriangle;
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-2 py-0.5 rounded-md ${color} ${bgColor}`}>
-      <Icon className="w-3.5 h-3.5" />
-      {phase}
-    </span>
   );
 }
 
