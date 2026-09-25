@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   Search,
   Box,
@@ -119,11 +120,11 @@ export function CommandPalette() {
   // Cluster data is only fetched while the palette is open, and is shared with
   // the rest of the app through the react-query cache (no duplicate requests).
   const enabled = open;
-  const pods = useQuery({ queryKey: ["dash-pods", ""], queryFn: () => listPods(""), enabled });
-  const nodes = useQuery({ queryKey: ["nodes"], queryFn: listNodes, enabled });
-  const namespaces = useQuery({ queryKey: ["namespaces"], queryFn: listNamespaces, enabled });
+  const pods = useQuery({ queryKey: qk.pods(""), queryFn: () => listPods(""), enabled });
+  const nodes = useQuery({ queryKey: qk.nodes(), queryFn: listNodes, enabled });
+  const namespaces = useQuery({ queryKey: qk.namespaces(), queryFn: listNamespaces, enabled });
   const deployments = useQuery({
-    queryKey: ["dash-deployments", ""],
+    queryKey: qk.deployments(""),
     queryFn: () => listDeployments(""),
     enabled,
   });

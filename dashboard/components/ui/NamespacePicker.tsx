@@ -50,12 +50,14 @@ interface Props {
   namespaces: NamespaceOption[];
   /** URL-locked: render as a static chip with no picker at all. */
   locked?: boolean;
+  /** Top-bar variant: shorter, and the label collapses on small screens. */
+  compact?: boolean;
   className?: string;
 }
 
 const ALL = "\u0000all"; // sentinel so "All namespaces" can be a normal row
 
-export function NamespacePicker({ value, onChange, namespaces, locked, className }: Props) {
+export function NamespacePicker({ value, onChange, namespaces, locked, compact, className }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
@@ -137,13 +139,14 @@ export function NamespacePicker({ value, onChange, namespaces, locked, className
     return (
       <span
         className={cn(
-          "inline-flex h-11 items-center gap-2 rounded-xl border border-pilot-accent/40 bg-pilot-accent/12 px-3 text-sm font-medium text-pilot-accent-light",
+          "inline-flex items-center gap-2 rounded-xl border border-pilot-accent/40 bg-pilot-accent/12 px-3 text-sm font-medium text-pilot-accent-light",
+          compact ? "h-10 max-w-[11rem]" : "h-11",
           className
         )}
         title="Locked to this namespace by the ?namespace= URL parameter"
       >
         <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="font-mono truncate">{value}</span>
+        <span className="truncate font-mono">{value}</span>
       </span>
     );
   }
@@ -158,10 +161,31 @@ export function NamespacePicker({ value, onChange, namespaces, locked, className
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        className="inline-flex h-11 w-full min-w-[13rem] items-center gap-2 rounded-xl border border-pilot-border bg-pilot-surface px-3 text-sm font-medium text-pilot-text-primary transition-colors hover:border-pilot-border-hover"
+        // In the top bar the scope must read as a *setting*, not a filter on
+        // one table — a tinted border when it is narrowed, neutral for "all".
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl border px-3 text-sm font-medium text-pilot-text-primary transition-colors",
+          compact ? "h-10 max-w-[11rem] sm:max-w-[14rem]" : "h-11 w-full min-w-[13rem]",
+          value
+            ? "border-pilot-accent/40 bg-pilot-accent/10 hover:border-pilot-accent/60"
+            : "border-pilot-border bg-pilot-surface hover:border-pilot-border-hover"
+        )}
+        title={value ? `Showing namespace ${value}` : "Showing every namespace"}
       >
-        <Layers className="h-4 w-4 shrink-0 text-pilot-muted" aria-hidden="true" />
-        <span className={cn("truncate", !value && "text-pilot-text-secondary")}>{label}</span>
+        <Layers
+          className={cn("h-4 w-4 shrink-0", value ? "text-pilot-accent" : "text-pilot-muted")}
+          aria-hidden="true"
+        />
+        <span
+          className={cn(
+            "truncate",
+            !value && "text-pilot-text-secondary",
+            // Below sm the top bar is tight; the icon + tint still say "scoped".
+            compact && !value && "hidden sm:inline"
+          )}
+        >
+          {label}
+        </span>
         <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-pilot-muted" aria-hidden="true" />
       </button>
 

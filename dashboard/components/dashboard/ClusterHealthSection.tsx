@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import { getClusterTroubleshootingSummary, type NodeHealthRow, type ProblemPod } from "@/lib/api";
 import { NodeIPDisplay } from "@/components/NodeIPDisplay";
 import { NodeRoleBadge } from "@/components/NodeRoleBadge";
@@ -12,7 +13,7 @@ import { explainPod, explainNode } from "@/lib/k8sExplain";
 
 export function ClusterHealthSection({ namespace }: { namespace: string }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["dash-health", namespace],
+    queryKey: qk.health(namespace),
     queryFn: () => getClusterTroubleshootingSummary(namespace),
   });
 

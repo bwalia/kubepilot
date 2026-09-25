@@ -6,10 +6,14 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Navigation, Lock, Sparkles, LayoutDashboard, Bot, Radio, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Navigation, Sparkles, LayoutDashboard, Bot, Radio, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { listNamespaces } from "@/lib/api";
+import { qk } from "@/lib/queryKeys";
+import { useNamespace } from "@/lib/useNamespace";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NamespacePicker } from "@/components/ui/NamespacePicker";
 import { openCommandPalette } from "@/components/CommandPalette";
 
 const NAV_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -25,7 +29,16 @@ const BUILD_VERSION = process.env.NEXT_PUBLIC_BUILD_VERSION || "dev";
 
 export function GlobalNav() {
   const { pathname } = useRouter();
-  const { locked, namespace } = useNamespaceLock();
+  const { namespace, setNamespace, locked } = useNamespace();
+
+  // The namespace list is small and shared with every other surface through
+  // this key, so putting the picker in the top bar costs no extra request.
+  const { data: namespaces = [] } = useQuery({
+    queryKey: qk.namespaces(),
+    queryFn: listNamespaces,
+    staleTime: 5 * 60_000,
+  });
+  const options = namespaces.map((ns) => ({ name: ns.Name }));
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -66,9 +79,19 @@ export function GlobalNav() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          {/* The namespace scope is global: set it once here and every page —
+              home, dashboard, events, topology — follows it. */}
+          <NamespacePicker
+            value={namespace}
+            onChange={setNamespace}
+            namespaces={options}
+            locked={locked}
+            compact
+          />
+
           {/* Search is the fastest route to anything in the cluster, so it sits
-              in the top bar on every page. Icon-only below sm, but never
+              in the top bar on every page. Icon-only below md, but never
               without an accessible name. */}
           <button
             type="button"
@@ -77,24 +100,15 @@ export function GlobalNav() {
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-pilot-border bg-pilot-surface-2 px-2.5 text-sm text-pilot-text-secondary transition-colors hover:border-pilot-border-hover hover:text-pilot-text-primary"
           >
             <Search className="h-[1.15rem] w-[1.15rem] shrink-0" aria-hidden="true" />
-            <span className="hidden md:inline">Search</span>
-            <kbd className="hidden rounded border border-pilot-border bg-pilot-surface px-1.5 py-0.5 font-mono text-[0.7rem] text-pilot-muted lg:inline">
+            <span className="hidden lg:inline">Search</span>
+            <kbd className="hidden rounded border border-pilot-border bg-pilot-surface px-1.5 py-0.5 font-mono text-[0.7rem] text-pilot-muted xl:inline">
               &#8984;K
             </kbd>
           </button>
-          {locked && (
-            <span
-              className="hidden sm:inline-flex items-center gap-1.5 bg-pilot-accent/12 text-pilot-accent-light border border-pilot-accent/35 rounded-lg px-2.5 py-1.5 text-xs font-medium max-w-[12rem]"
-              title="The dashboard is locked to this namespace via the URL. Remove the ?namespace= parameter to browse all namespaces."
-            >
-              <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-pilot-muted">ns</span>
-              <span className="font-mono truncate">{namespace}</span>
-            </span>
-          )}
+
           <ThemeToggle />
           <span
-            className="hidden lg:inline font-mono text-xs text-pilot-muted/70 select-text"
+            className="hidden font-mono text-xs text-pilot-muted/70 select-text 2xl:inline"
             title="Dashboard build version"
           >
             {BUILD_VERSION}

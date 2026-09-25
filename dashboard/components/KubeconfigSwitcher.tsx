@@ -9,6 +9,7 @@ import {
   uploadKubeconfig,
 } from "@/lib/api";
 import { Link2, Upload, RefreshCw, X } from "lucide-react";
+import { qk } from "@/lib/queryKeys";
 
 interface Props {
   onSwitched?: () => void;
@@ -41,11 +42,12 @@ export function KubeconfigSwitcher({ onSwitched }: Props) {
   }, [selectedPath, activePath]);
 
   const invalidateClusterData = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["kubeconfigs"] });
-    await queryClient.invalidateQueries({ queryKey: ["crashing-pods"] });
-    await queryClient.invalidateQueries({ queryKey: ["nodes"] });
-    await queryClient.invalidateQueries({ queryKey: ["deployments"] });
-    await queryClient.invalidateQueries({ queryKey: ["anomalies-count"] });
+    // Everything cached describes the cluster we just switched away from, so
+    // invalidate the lot. The previous version named five keys by hand and so
+    // missed pods, services, ingresses, configmaps and the rest — after a
+    // switch those panes kept showing the OLD cluster's resources until their
+    // next poll, which is worse than showing a spinner.
+    await queryClient.invalidateQueries();
     onSwitched?.();
   };
 

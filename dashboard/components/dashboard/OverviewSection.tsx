@@ -6,6 +6,7 @@
  * the visualisations stay consistent with the rest of the site.
  */
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   PieChart,
   Pie,
@@ -75,18 +76,18 @@ function classifyPod(p: PodSummary): PodBucket {
 
 export function OverviewSection({ namespace }: { namespace: string }) {
   const refetchInterval = 15_000;
-  const pods = useQuery({ queryKey: ["ov-pods", namespace], queryFn: () => listPods(namespace), refetchInterval });
-  const deployments = useQuery({ queryKey: ["ov-deploy", namespace], queryFn: () => listDeployments(namespace), refetchInterval });
-  const statefulsets = useQuery({ queryKey: ["ov-sts", namespace], queryFn: () => listStatefulSets(namespace), refetchInterval });
-  const daemonsets = useQuery({ queryKey: ["ov-ds", namespace], queryFn: () => listDaemonSets(namespace), refetchInterval });
-  const jobs = useQuery({ queryKey: ["ov-jobs", namespace], queryFn: () => listK8sJobs(namespace), refetchInterval });
-  const cronjobs = useQuery({ queryKey: ["ov-cron", namespace], queryFn: () => listCronJobs(namespace), refetchInterval });
-  const services = useQuery({ queryKey: ["ov-svc", namespace], queryFn: () => listServiceEndpoints(namespace), refetchInterval });
-  const ingresses = useQuery({ queryKey: ["ov-ing", namespace], queryFn: () => listIngresses(namespace), refetchInterval });
-  const pvcs = useQuery({ queryKey: ["ov-pvc", namespace], queryFn: () => listPVCs(namespace), refetchInterval });
-  const configmaps = useQuery({ queryKey: ["ov-cm", namespace], queryFn: () => listConfigMaps(namespace), refetchInterval });
-  const secrets = useQuery({ queryKey: ["ov-secrets", namespace], queryFn: () => listSecrets(namespace), refetchInterval });
-  const nodes = useQuery({ queryKey: ["ov-nodes"], queryFn: listNodes, refetchInterval: 30_000 });
+  const pods = useQuery({ queryKey: qk.pods(namespace), queryFn: () => listPods(namespace), refetchInterval });
+  const deployments = useQuery({ queryKey: qk.deployments(namespace), queryFn: () => listDeployments(namespace), refetchInterval });
+  const statefulsets = useQuery({ queryKey: qk.statefulSets(namespace), queryFn: () => listStatefulSets(namespace), refetchInterval });
+  const daemonsets = useQuery({ queryKey: qk.daemonSets(namespace), queryFn: () => listDaemonSets(namespace), refetchInterval });
+  const jobs = useQuery({ queryKey: qk.jobs(namespace), queryFn: () => listK8sJobs(namespace), refetchInterval });
+  const cronjobs = useQuery({ queryKey: qk.cronJobs(namespace), queryFn: () => listCronJobs(namespace), refetchInterval });
+  const services = useQuery({ queryKey: qk.services(namespace), queryFn: () => listServiceEndpoints(namespace), refetchInterval });
+  const ingresses = useQuery({ queryKey: qk.ingresses(namespace), queryFn: () => listIngresses(namespace), refetchInterval });
+  const pvcs = useQuery({ queryKey: qk.pvcs(namespace), queryFn: () => listPVCs(namespace), refetchInterval });
+  const configmaps = useQuery({ queryKey: qk.configMaps(namespace), queryFn: () => listConfigMaps(namespace), refetchInterval });
+  const secrets = useQuery({ queryKey: qk.secrets(namespace), queryFn: () => listSecrets(namespace), refetchInterval });
+  const nodes = useQuery({ queryKey: qk.nodes(), queryFn: listNodes, refetchInterval: 30_000 });
 
   // Theme-resolved chart palette (recolours instantly on Daylight/Night toggle).
   const tc = useThemeColors(["success", "warning", "danger", "accent", "accent-light", "info", "muted", "surface", "border", "text-primary", "text-secondary"]);

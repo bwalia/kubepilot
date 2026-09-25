@@ -347,3 +347,242 @@ export const TONE_CLASS: Record<Tone, { pill: string; dot: string; text: string 
     text: "text-pilot-muted",
   },
 };
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Guided debugging
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Where in the pod drawer a step is carried out. */
+export type DebugTab = "logs" | "events" | "containers" | "yaml";
+
+export interface DebugStep {
+  /** The action, as an instruction: "Read what it printed before it died". */
+  title: string;
+  /** What to look for, and how to read what you find. */
+  detail: string;
+  /** Tab that answers this step — the UI turns it into a jump button. */
+  tab?: DebugTab;
+  /**
+   * The kubectl equivalent. Shown so an engineer who prefers the terminal can
+   * copy it, and so someone learning can see what the UI is doing for them.
+   * `{ns}` and `{pod}` are substituted by the renderer.
+   */
+  command?: string;
+}
+
+const LOGS_STEP: DebugStep = {
+  title: "Read what it printed before it stopped",
+  detail:
+    "Applications almost always log the reason on their way down — a missing environment variable, a database it could not reach, a port already in use. This is the single most useful thing to look at.",
+  tab: "logs",
+  command: "kubectl logs {pod} -n {ns} --previous --tail=100",
+};
+
+const EVENTS_STEP: DebugStep = {
+  title: "Check what Kubernetes itself reported",
+  detail:
+    "Events are Kubernetes' own account of what it tried and what happened — failed probes, missing images, no room to schedule.",
+  tab: "events",
+  command: "kubectl describe pod {pod} -n {ns}",
+};
+
+/**
+ * An ordered checklist for a failing pod, most-likely-to-explain-it first.
+ *
+ * These are the steps an engineer actually performs, written so that someone
+ * who has never run kubectl can follow them. They are keyed off the same
+ * reason/phase the status pill uses, so the guide always matches the badge.
+ *
+ * Deliberately deterministic: this works with no AI configured, on a
+ * disconnected cluster, and it never invents a cause. The AI analysis is a
+ * separate, optional layer on top.
+ */
+export function debugSteps(pod: {
+  Phase?: string;
+  Reason?: string;
+  Ready?: boolean;
+  Restarts?: number;
+}): DebugStep[] {
+  const reason = pod.Reason?.trim() ?? "";
+  const phase = pod.Phase?.trim() ?? "";
+
+  if (reason === "CrashLoopBackOff" || reason === "Error" || phase === "Failed") {
+    return [
+      LOGS_STEP,
+      {
+        title: "Look at the exit code",
+        detail:
+          "The code the container exited with narrows it down fast. 137 means it was killed for using too much memory; 1 or 2 is usually the application failing on its own; 0 with restarts usually means a health check is killing a process that thinks it is fine.",
+        tab: "containers",
+      },
+      EVENTS_STEP,
+      {
+        title: "Check the settings it starts with",
+        detail:
+          "A container that dies instantly often cannot find a ConfigMap, Secret or environment variable it expects. Check the names it references actually exist in this namespace.",
+        tab: "yaml",
+      },
+    ];
+  }
+
+  if (reason === "ImagePullBackOff" || reason === "ErrImagePull" || reason === "InvalidImageName") {
+    return [
+      {
+        title: "Check the image name and tag, character by character",
+        detail:
+          "Most pull failures are a typo, or a tag that was never pushed. Compare what is requested against what exists in the registry.",
+        tab: "yaml",
+        command: "kubectl get pod {pod} -n {ns} -o jsonpath='{.spec.containers[*].image}'",
+      },
+      {
+        title: "Read the registry's actual refusal",
+        detail:
+          "Events carry the registry's own words. \"not found\" means the image or tag does not exist; \"unauthorized\" or \"denied\" means this cluster has no credentials for it.",
+        tab: "events",
+        command: "kubectl describe pod {pod} -n {ns}",
+      },
+      {
+        title: "If the registry is private, check the pull secret",
+        detail:
+          "A private image needs an imagePullSecret on the pod or its service account, and that secret has to live in this same namespace.",
+        tab: "yaml",
+        command: "kubectl get secrets -n {ns}",
+      },
+    ];
+  }
+
+  if (reason === "OOMKilled") {
+    return [
+      {
+        title: "Find the current memory limit",
+        detail:
+          "The container was stopped for exceeding its allowed memory. Start by seeing what that allowance actually is.",
+        tab: "containers",
+      },
+      LOGS_STEP,
+      {
+        title: "Decide: raise the limit, or fix the usage",
+        detail:
+          "If the limit was simply set too low for the workload, raise it. If memory climbs steadily until it dies, the application is leaking and a higher limit only delays the crash.",
+        tab: "yaml",
+      },
+      {
+        title: "Check the machine has the memory to give",
+        detail:
+          "Raising a limit only helps if the node has headroom. Cluster Health shows memory per machine.",
+      },
+    ];
+  }
+
+  if (reason === "CreateContainerConfigError" || reason === "CreateContainerError") {
+    return [
+      {
+        title: "Find which ConfigMap or Secret is missing",
+        detail:
+          "Events name the exact object that could not be found. This is nearly always a typo or something that lives in a different namespace.",
+        tab: "events",
+        command: "kubectl describe pod {pod} -n {ns}",
+      },
+      {
+        title: "Confirm it exists here",
+        detail:
+          "Secrets and ConfigMaps are per-namespace — one in 'default' is invisible to a pod in 'prod'. Check under Config & Storage.",
+        command: "kubectl get configmap,secret -n {ns}",
+      },
+      { title: "Check the keys inside it", detail: "The object can exist while the specific key the container asks for does not.", tab: "yaml" },
+    ];
+  }
+
+  if (reason === "Evicted") {
+    return [
+      {
+        title: "Find what the machine ran out of",
+        detail: "Eviction is the node protecting itself — usually memory or disk. The event says which.",
+        tab: "events",
+      },
+      {
+        title: "Check that machine under Cluster Health",
+        detail: "If one node keeps evicting pods it is under-provisioned or has something else consuming it.",
+      },
+      {
+        title: "Give this pod a resource request",
+        detail:
+          "Pods with no memory request are evicted first. Setting a request makes it a harder target and helps the scheduler place it somewhere with room.",
+        tab: "yaml",
+      },
+    ];
+  }
+
+  if (phase === "Pending" || reason === "Unschedulable" || reason === "NodeAffinity") {
+    return [
+      {
+        title: "Read why it could not be placed",
+        detail:
+          "The scheduler explains its refusal per node: not enough CPU or memory, a taint it does not tolerate, or no node matching its selector.",
+        tab: "events",
+        command: "kubectl describe pod {pod} -n {ns}",
+      },
+      {
+        title: "Check there is room anywhere",
+        detail: "Cluster Health shows free CPU and memory per machine. If everything is full, this pod has nowhere to go.",
+      },
+      {
+        title: "Check its placement rules are satisfiable",
+        detail:
+          "A nodeSelector or affinity rule referencing a label no node carries will keep a pod Pending forever, on an otherwise empty cluster.",
+        tab: "yaml",
+      },
+      {
+        title: "If it needs storage, check the disk was created",
+        detail: "A pod waiting on a storage claim that is not yet Bound stays Pending. Config & Storage shows claim status.",
+        command: "kubectl get pvc -n {ns}",
+      },
+    ];
+  }
+
+  if (phase === "Running" && pod.Ready === false) {
+    return [
+      {
+        title: "See which health check is failing",
+        detail:
+          "The container is up but its readiness probe says no, so it receives no traffic. Events give the probe's actual response — a connection refused, a 404, a timeout.",
+        tab: "events",
+      },
+      {
+        title: "Check whether it is simply still starting",
+        detail:
+          "Slow-booting applications are not-ready for a while by design. If the logs show normal startup progress, it may just need a longer initialDelaySeconds.",
+        tab: "logs",
+      },
+      {
+        title: "Verify the probe points at the right place",
+        detail:
+          "A readiness probe on the wrong port or path fails against a perfectly healthy application. Compare the probe to what the app actually serves.",
+        tab: "yaml",
+      },
+    ];
+  }
+
+  if ((pod.Restarts ?? 0) > 5) {
+    return [
+      {
+        title: "Look at what it logged before the last restart",
+        detail: "It is running now, but something has repeatedly killed it. The previous container's logs hold the reason.",
+        tab: "logs",
+        command: "kubectl logs {pod} -n {ns} --previous",
+      },
+      {
+        title: "Check whether a liveness probe is doing the killing",
+        detail:
+          "A liveness probe that is too aggressive restarts a healthy-but-busy application in a loop. Events show each restart and its trigger.",
+        tab: "events",
+      },
+      { title: "Check for memory pressure", detail: "Repeated restarts with exit code 137 mean it is being killed for memory, not crashing.", tab: "containers" },
+    ];
+  }
+
+  // Healthy, or a state with no specific playbook — still give the two
+  // universally useful moves rather than an empty panel.
+  return [LOGS_STEP, EVENTS_STEP];
+}

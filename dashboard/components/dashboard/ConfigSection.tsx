@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   listConfigMaps,
   listSecrets,
@@ -46,7 +47,7 @@ export function ConfigSection({ namespace, onViewYAML }: Props) {
 
 function ConfigMapsTab({ namespace, onViewYAML }: Props) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-configmaps", namespace],
+    queryKey: qk.configMaps(namespace),
     queryFn: () => listConfigMaps(namespace),
   });
   const columns: Column<ConfigMapSummary>[] = [
@@ -87,7 +88,7 @@ function ConfigMapsTab({ namespace, onViewYAML }: Props) {
 
 function SecretsTab({ namespace, onViewYAML }: Props) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-secrets", namespace],
+    queryKey: qk.secrets(namespace),
     queryFn: () => listSecrets(namespace),
   });
   const columns: Column<SecretSummary>[] = [
@@ -133,7 +134,7 @@ function SecretsTab({ namespace, onViewYAML }: Props) {
 
 function PVCsTab({ namespace, onViewYAML }: Props) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-pvcs", namespace],
+    queryKey: qk.pvcs(namespace),
     queryFn: () => listPVCs(namespace),
   });
   const columns: Column<PVCSummary>[] = [
@@ -189,7 +190,7 @@ function PVCsTab({ namespace, onViewYAML }: Props) {
 
 function StorageClassesTab({ onViewYAML }: { onViewYAML: Props["onViewYAML"] }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-storageclasses"],
+    queryKey: qk.storageClasses(),
     queryFn: () => listStorageClasses(),
   });
   const columns: Column<StorageClassInfo>[] = [

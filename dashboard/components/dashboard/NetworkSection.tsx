@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   listServiceEndpoints,
   listIngresses,
@@ -40,7 +41,7 @@ export function NetworkSection({
 
 function ServicesTab({ namespace, mutationsEnabled }: { namespace: string; mutationsEnabled: boolean }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-services", namespace],
+    queryKey: qk.services(namespace),
     queryFn: () => listServiceEndpoints(namespace),
   });
   const columns: Column<ServiceEndpointSummary>[] = [
@@ -102,7 +103,7 @@ function ServicesTab({ namespace, mutationsEnabled }: { namespace: string; mutat
 
 function IngressesTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-ingresses", namespace],
+    queryKey: qk.ingresses(namespace),
     queryFn: () => listIngresses(namespace),
   });
   const columns: Column<IngressSummary>[] = [

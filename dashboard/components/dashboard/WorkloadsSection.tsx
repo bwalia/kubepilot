@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   listPods,
   listDeployments,
@@ -92,7 +93,7 @@ function PodsTab({
 }) {
   const [rangeMin, setRangeMin] = useState(0);
   const { data: pods = [], isLoading } = useQuery({
-    queryKey: ["dash-pods", namespace],
+    queryKey: qk.pods(namespace),
     queryFn: () => listPods(namespace),
   });
 
@@ -135,7 +136,7 @@ function PodsTab({
 
 function DeploymentsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-deployments", namespace],
+    queryKey: qk.deployments(namespace),
     queryFn: () => listDeployments(namespace),
   });
   const columns: Column<DeploymentSummary>[] = [
@@ -182,7 +183,7 @@ function DeploymentsTab({ namespace }: { namespace: string }) {
 
 function StatefulSetsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-statefulsets", namespace],
+    queryKey: qk.statefulSets(namespace),
     queryFn: () => listStatefulSets(namespace),
   });
   const columns: Column<StatefulSetSummary>[] = [
@@ -234,7 +235,7 @@ function StatefulSetsTab({ namespace }: { namespace: string }) {
 
 function DaemonSetsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-daemonsets", namespace],
+    queryKey: qk.daemonSets(namespace),
     queryFn: () => listDaemonSets(namespace),
   });
   const columns: Column<DaemonSetSummary>[] = [
@@ -280,7 +281,7 @@ function DaemonSetsTab({ namespace }: { namespace: string }) {
 
 function JobsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-jobs", namespace],
+    queryKey: qk.jobs(namespace),
     queryFn: () => listK8sJobs(namespace),
   });
   const columns: Column<K8sJobSummary>[] = [
@@ -324,7 +325,7 @@ function JobsTab({ namespace }: { namespace: string }) {
 
 function CronJobsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-cronjobs", namespace],
+    queryKey: qk.cronJobs(namespace),
     queryFn: () => listCronJobs(namespace),
   });
   const columns: Column<CronJobSummary>[] = [
