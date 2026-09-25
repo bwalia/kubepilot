@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   listServiceEndpoints,
   listIngresses,
@@ -9,6 +10,8 @@ import {
 import { ResourceTable, type Column } from "./ResourceTable";
 import { SubTabs } from "./SubTabs";
 import { Badge } from "@/components/ui/badge";
+import { KindHint } from "@/components/ui/StatusPill";
+import { KIND_HELP } from "@/lib/k8sExplain";
 import { PortForwardButton } from "@/components/PortForwardButton";
 import { ExternalLink } from "lucide-react";
 
@@ -38,14 +41,27 @@ export function NetworkSection({
 
 function ServicesTab({ namespace, mutationsEnabled }: { namespace: string; mutationsEnabled: boolean }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-services", namespace],
+    queryKey: qk.services(namespace),
     queryFn: () => listServiceEndpoints(namespace),
   });
   const columns: Column<ServiceEndpointSummary>[] = [
-    { header: "Namespace", cell: (s) => <span className="text-pilot-text-secondary">{s.namespace}</span> },
-    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono">{s.name}</span> },
-    { header: "Type", cell: (s) => <Badge variant="muted">{s.type}</Badge> },
-    { header: "Cluster IP", cell: (s) => <span className="text-pilot-text-secondary font-mono text-xs">{s.cluster_ip || "—"}</span> },
+    {
+      header: "Name",
+      cell: (s) => <span className="font-mono font-semibold text-pilot-text-primary">{s.name}</span>,
+      sortValue: (s) => s.name,
+    },
+    {
+      header: "Namespace",
+      cell: (s) => <span className="text-pilot-text-secondary">{s.namespace}</span>,
+      sortValue: (s) => s.namespace,
+    },
+    { header: "Type", cell: (s) => <Badge variant="muted">{s.type}</Badge>, sortValue: (s) => s.type },
+    {
+      header: "Cluster IP",
+      cell: (s) => <span className="font-mono text-xs text-pilot-text-secondary">{s.cluster_ip || "\u2014"}</span>,
+      sortValue: (s) => s.cluster_ip,
+      hideBelow: "lg",
+    },
     {
       header: "Ports",
       cell: (s) => (
@@ -69,26 +85,43 @@ function ServicesTab({ namespace, mutationsEnabled }: { namespace: string; mutat
     },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(s) => `${s.namespace}/${s.name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No services in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.services} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(s) => `${s.namespace}/${s.name}`}
+        loading={isLoading}
+        error={error}
+        noun="service"
+        searchText={(s) => `${s.namespace}/${s.name} ${s.type} ${s.cluster_ip}`}
+        emptyMessage="No services in this namespace."
+      />
+    </>
   );
 }
 
 function IngressesTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-ingresses", namespace],
+    queryKey: qk.ingresses(namespace),
     queryFn: () => listIngresses(namespace),
   });
   const columns: Column<IngressSummary>[] = [
-    { header: "Namespace", cell: (i) => <span className="text-pilot-text-secondary">{i.Namespace}</span> },
-    { header: "Name", cell: (i) => <span className="text-pilot-text-primary font-mono">{i.Name}</span> },
-    { header: "Host", cell: (i) => <span className="text-pilot-text-secondary">{i.Host || "—"}</span> },
+    {
+      header: "Name",
+      cell: (i) => <span className="font-mono font-semibold text-pilot-text-primary">{i.Name}</span>,
+      sortValue: (i) => i.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (i) => <span className="text-pilot-text-secondary">{i.Namespace}</span>,
+      sortValue: (i) => i.Namespace,
+    },
+    {
+      header: "Host",
+      cell: (i) => <span className="text-pilot-text-secondary">{i.Host || "\u2014"}</span>,
+      sortValue: (i) => i.Host,
+    },
     {
       header: "URL",
       cell: (i) =>
@@ -110,13 +143,18 @@ function IngressesTab({ namespace }: { namespace: string }) {
     { header: "TLS", align: "center", cell: (i) => (i.TLS ? <Badge variant="success">TLS</Badge> : <span className="text-pilot-muted">—</span>) },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(i) => `${i.Namespace}/${i.Name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No ingresses in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.ingresses} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(i) => `${i.Namespace}/${i.Name}`}
+        loading={isLoading}
+        error={error}
+        noun="ingress rule"
+        searchText={(i) => `${i.Namespace}/${i.Name} ${i.Host} ${i.IngressURL ?? ""}`}
+        emptyMessage="No ingress rules in this namespace."
+      />
+    </>
   );
 }

@@ -26,7 +26,7 @@ import {
 } from "@/lib/api";
 import { LogViewer } from "@/components/LogViewer";
 import { AIReportActions, InsightActions } from "@/components/AIReportActions";
-import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { useNamespace } from "@/lib/useNamespace";
 
 const IMPORTANT_REASONS = new Set([
   "FailedScheduling",
@@ -45,11 +45,11 @@ const IMPORTANT_REASONS = new Set([
 const PAGE_SIZE = 25;
 
 export function ClusterEventsTroubleshooting() {
-  const { locked, namespace: lockedNamespace } = useNamespaceLock();
+  // Scope follows the global picker in the top bar — one namespace choice for
+  // the whole app, rather than a separate one buried in this panel.
+  const { namespace, setNamespace, locked } = useNamespace();
   const [namespaceInput, setNamespaceInput] = useState("all");
-  const [selectedNamespace, setSelectedNamespace] = useState("");
-  // A URL-locked namespace overrides the in-panel namespace controls.
-  const namespace = locked ? lockedNamespace! : selectedNamespace;
+  const setSelectedNamespace = setNamespace;
   const [kind, setKind] = useState("");
   const [severity, setSeverity] = useState("");
   const [search, setSearch] = useState("");

@@ -15,7 +15,10 @@ import { PortForwardButton } from "@/components/PortForwardButton";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { X, RefreshCw, Brain } from "lucide-react";
+import { DebugGuide } from "@/components/dashboard/DebugGuide";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { explainPod, type DebugTab } from "@/lib/k8sExplain";
+import { X, RefreshCw, Brain, LifeBuoy } from "lucide-react";
 
 interface Props {
   namespace: string;
@@ -32,13 +35,40 @@ export function PodDetailDrawer({ namespace, pod, mutationsEnabled, onClose, onA
   });
   const containerPorts = (diag?.diagnostics.container_statuses ?? []).flatMap((c) => c.ports ?? []);
 
+  const d = diag?.diagnostics;
+  // Rebuild the same shape the pod list uses, so the drawer's status and the
+  // row's status can never disagree.
+  const summary = {
+    Phase: d?.phase ?? "",
+    // state_reason is the current wait/termination reason ("CrashLoopBackOff",
+    // "ImagePullBackOff"); last_terminated_reason covers a container that has
+    // since restarted but died of something specific ("OOMKilled"). Prefer a
+    // not-ready container's reason — a ready sidecar's stale reason is noise.
+    Reason:
+      d?.container_statuses?.find((c) => !c.ready && c.state_reason)?.state_reason ??
+      d?.container_statuses?.find((c) => c.state_reason)?.state_reason ??
+      d?.container_statuses?.find((c) => c.last_terminated_reason)?.last_terminated_reason ??
+      "",
+    Ready: d?.container_statuses?.every((c) => c.ready) ?? true,
+    Restarts: d?.container_statuses?.reduce((n, c) => n + (c.restart_count ?? 0), 0) ?? 0,
+  };
+  const explanation = explainPod(summary);
+  const healthy = explanation.tone === "ok";
+
+  // A failing pod opens on the debug guide; a healthy one opens on Overview,
+  // because there is nothing to walk through.
+  const [tab, setTab] = useState<string>(healthy ? "overview" : "debug");
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DrawerContent aria-describedby={undefined}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-pilot-border shrink-0">
-          <div>
-            <h3 className="font-bold font-display text-pilot-text-primary text-base">Pod Details</h3>
-            <p className="text-sm text-pilot-muted mt-0.5 font-mono">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-base font-bold text-pilot-text-primary">Pod</h3>
+              <StatusPill explanation={explanation} raw={summary.Reason || summary.Phase} hideWhy />
+            </div>
+            <p className="mt-0.5 truncate font-mono text-sm text-pilot-muted">
               {namespace}/{pod}
             </p>
           </div>
@@ -61,8 +91,12 @@ export function PodDetailDrawer({ namespace, pod, mutationsEnabled, onClose, onA
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          <Tabs defaultValue="overview">
+          <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="overflow-x-auto">
+              <TabsTrigger value="debug" className="gap-1.5">
+                <LifeBuoy className="h-4 w-4" aria-hidden="true" />
+                {healthy ? "Debug" : "What's wrong"}
+              </TabsTrigger>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="containers">Containers</TabsTrigger>
               <TabsTrigger value="logs">Logs</TabsTrigger>
@@ -70,6 +104,16 @@ export function PodDetailDrawer({ namespace, pod, mutationsEnabled, onClose, onA
               <TabsTrigger value="yaml">YAML</TabsTrigger>
               <TabsTrigger value="ai">AI Analysis</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="debug">
+              <DebugGuide
+                namespace={namespace}
+                pod={pod}
+                summary={summary}
+                onGoToTab={(t: DebugTab) => setTab(t)}
+                onAuthorizeAction={mutationsEnabled ? onAuthorizeAction : undefined}
+              />
+            </TabsContent>
 
             <TabsContent value="overview">
               <OverviewTab namespace={namespace} pod={pod} />

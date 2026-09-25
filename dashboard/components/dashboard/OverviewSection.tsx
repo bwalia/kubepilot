@@ -6,6 +6,7 @@
  * the visualisations stay consistent with the rest of the site.
  */
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   PieChart,
   Pie,
@@ -54,6 +55,10 @@ import {
 } from "@/lib/api";
 import { useThemeColors } from "@/lib/useThemeColors";
 import { ResourceMeters } from "./ResourceMeters";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { explainPod } from "@/lib/k8sExplain";
+import { requestDashboardTarget } from "@/lib/dashboardNav";
+import { ChevronRight, ShieldCheck } from "lucide-react";
 
 // ── Pod classification ────────────────────────────────────────────────────────
 type PodBucket = "Running" | "Pending" | "CrashLoop" | "Failed" | "Succeeded";
@@ -71,18 +76,18 @@ function classifyPod(p: PodSummary): PodBucket {
 
 export function OverviewSection({ namespace }: { namespace: string }) {
   const refetchInterval = 15_000;
-  const pods = useQuery({ queryKey: ["ov-pods", namespace], queryFn: () => listPods(namespace), refetchInterval });
-  const deployments = useQuery({ queryKey: ["ov-deploy", namespace], queryFn: () => listDeployments(namespace), refetchInterval });
-  const statefulsets = useQuery({ queryKey: ["ov-sts", namespace], queryFn: () => listStatefulSets(namespace), refetchInterval });
-  const daemonsets = useQuery({ queryKey: ["ov-ds", namespace], queryFn: () => listDaemonSets(namespace), refetchInterval });
-  const jobs = useQuery({ queryKey: ["ov-jobs", namespace], queryFn: () => listK8sJobs(namespace), refetchInterval });
-  const cronjobs = useQuery({ queryKey: ["ov-cron", namespace], queryFn: () => listCronJobs(namespace), refetchInterval });
-  const services = useQuery({ queryKey: ["ov-svc", namespace], queryFn: () => listServiceEndpoints(namespace), refetchInterval });
-  const ingresses = useQuery({ queryKey: ["ov-ing", namespace], queryFn: () => listIngresses(namespace), refetchInterval });
-  const pvcs = useQuery({ queryKey: ["ov-pvc", namespace], queryFn: () => listPVCs(namespace), refetchInterval });
-  const configmaps = useQuery({ queryKey: ["ov-cm", namespace], queryFn: () => listConfigMaps(namespace), refetchInterval });
-  const secrets = useQuery({ queryKey: ["ov-secrets", namespace], queryFn: () => listSecrets(namespace), refetchInterval });
-  const nodes = useQuery({ queryKey: ["ov-nodes"], queryFn: listNodes, refetchInterval: 30_000 });
+  const pods = useQuery({ queryKey: qk.pods(namespace), queryFn: () => listPods(namespace), refetchInterval });
+  const deployments = useQuery({ queryKey: qk.deployments(namespace), queryFn: () => listDeployments(namespace), refetchInterval });
+  const statefulsets = useQuery({ queryKey: qk.statefulSets(namespace), queryFn: () => listStatefulSets(namespace), refetchInterval });
+  const daemonsets = useQuery({ queryKey: qk.daemonSets(namespace), queryFn: () => listDaemonSets(namespace), refetchInterval });
+  const jobs = useQuery({ queryKey: qk.jobs(namespace), queryFn: () => listK8sJobs(namespace), refetchInterval });
+  const cronjobs = useQuery({ queryKey: qk.cronJobs(namespace), queryFn: () => listCronJobs(namespace), refetchInterval });
+  const services = useQuery({ queryKey: qk.services(namespace), queryFn: () => listServiceEndpoints(namespace), refetchInterval });
+  const ingresses = useQuery({ queryKey: qk.ingresses(namespace), queryFn: () => listIngresses(namespace), refetchInterval });
+  const pvcs = useQuery({ queryKey: qk.pvcs(namespace), queryFn: () => listPVCs(namespace), refetchInterval });
+  const configmaps = useQuery({ queryKey: qk.configMaps(namespace), queryFn: () => listConfigMaps(namespace), refetchInterval });
+  const secrets = useQuery({ queryKey: qk.secrets(namespace), queryFn: () => listSecrets(namespace), refetchInterval });
+  const nodes = useQuery({ queryKey: qk.nodes(), queryFn: listNodes, refetchInterval: 30_000 });
 
   // Theme-resolved chart palette (recolours instantly on Daylight/Night toggle).
   const tc = useThemeColors(["success", "warning", "danger", "accent", "accent-light", "info", "muted", "surface", "border", "text-primary", "text-secondary"]);
@@ -175,8 +180,20 @@ export function OverviewSection({ namespace }: { namespace: string }) {
 
   const scopeLabel = namespace === "" ? "all namespaces" : `namespace “${namespace}”`;
 
+  // Anything a person would call "broken", worst first. This is the first
+  // thing on the page on purpose: the question someone opens a dashboard to
+  // answer is "is anything wrong?", and a wall of charts does not answer it.
+  //
+  // Grouped by owner, not listed per pod. A CronJob that has failed twelve
+  // times produces twelve pods; twelve near-identical rows bury every other
+  // problem on the cluster while describing a single fault.
+  const needsAttention = groupFailures(podList);
+
   return (
     <div className="space-y-8">
+      {/* ── Needs attention ── */}
+      <AttentionPanel pods={needsAttention} loading={pods.isLoading} scopeLabel={scopeLabel} />
+
       {/* ── Cluster capacity ── */}
       <section className="space-y-4">
         <SectionHeader
@@ -346,4 +363,148 @@ function HeadlineStat({ label, value, total, icon, color }: { label: string; val
       </div>
     </div>
   );
+}
+
+
+/**
+ * The "anything broken?" panel. Green and quiet when all is well; a short,
+ * clickable list when it is not. Capped at eight rows — past that the point is
+ * made, and the full list is one click away in Workloads.
+ */
+function AttentionPanel({
+  pods,
+  loading,
+  scopeLabel,
+}: {
+  pods: FailureGroup[];
+  loading: boolean;
+  scopeLabel: string;
+}) {
+  if (loading) {
+    return <div className="h-24 animate-pulse rounded-xl bg-pilot-surface" />;
+  }
+
+  if (pods.length === 0) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-pilot-success/30 bg-pilot-success/10 px-4 py-3.5">
+        <ShieldCheck className="h-5 w-5 shrink-0 text-pilot-success" aria-hidden="true" />
+        <p className="text-sm text-pilot-text-secondary">
+          <span className="font-semibold text-pilot-success">Everything is running.</span> No app in{" "}
+          {scopeLabel} is failing or stuck.
+        </p>
+      </div>
+    );
+  }
+
+  const shown = pods.slice(0, 8);
+  const affected = pods.reduce((n, g) => n + g.count, 0);
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-pilot-danger/30 bg-pilot-surface shadow-card">
+      <div className="flex items-center gap-3 border-b border-pilot-border bg-pilot-danger/10 px-4 py-3">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-pilot-danger" aria-hidden="true" />
+        <div>
+          <h3 className="font-display text-sm font-bold text-pilot-text-primary">
+            {pods.length} {pods.length === 1 ? "app needs" : "apps need"} attention
+          </h3>
+          <p className="text-xs text-pilot-muted">
+            {affected > pods.length ? `${affected} pods affected. ` : ""}
+            Select one to see its logs and what went wrong.
+          </p>
+        </div>
+      </div>
+      <ul className="divide-y divide-pilot-border">
+        {shown.map((group) => (
+          <li key={group.key}>
+            <button
+              type="button"
+              onClick={() =>
+                requestDashboardTarget({
+                  type: "pod",
+                  namespace: group.sample.Namespace,
+                  name: group.sample.Name,
+                })
+              }
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-pilot-surface-2"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-mono text-sm font-semibold text-pilot-text-primary">
+                  {group.label}
+                </span>
+                <span className="block truncate text-xs text-pilot-muted">
+                  {group.sample.Namespace}
+                  {group.count > 1 && ` \u00b7 ${group.count} pods`}
+                </span>
+              </span>
+              <StatusPill
+                explanation={explainPod(group.sample)}
+                raw={group.sample.Reason || group.sample.Phase}
+                hideWhy
+              />
+              <ChevronRight className="h-4 w-4 shrink-0 text-pilot-muted" aria-hidden="true" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      {pods.length > shown.length && (
+        <div className="border-t border-pilot-border px-4 py-2.5 text-xs text-pilot-muted">
+          and {pods.length - shown.length} more &mdash; see the full list under Workloads.
+        </div>
+      )}
+    </section>
+  );
+}
+
+
+interface FailureGroup {
+  key: string;
+  /** The owner's name, with the generated pod suffixes stripped. */
+  label: string;
+  count: number;
+  /** A representative pod — the one the row opens. */
+  sample: PodSummary;
+}
+
+/**
+ * Strip the suffixes Kubernetes generates, so every pod of one Deployment or
+ * CronJob collapses to the name a person would use for it:
+ *
+ *   checkout-7d9f8b-x2k4l        -> checkout      (Deployment: hash + pod id)
+ *   reconcile-29827706-4v92q     -> reconcile     (CronJob: unix minute + pod id)
+ *   backup-x9k2p                 -> backup        (Job: pod id)
+ *   coredns-node-6kknm           -> coredns-node  (DaemonSet: pod id)
+ *
+ * A heuristic, not a lookup of ownerReferences — the pod list endpoint does not
+ * carry them, and a wrong grouping here costs a slightly odd label, not
+ * correctness: the row still opens a real pod.
+ */
+function ownerName(podName: string): string {
+  let name = podName;
+  // Trailing pod id: five lowercase alphanumerics.
+  name = name.replace(/-[a-z0-9]{5}$/, "");
+  // Then a ReplicaSet hash or a CronJob schedule stamp, if one is left.
+  name = name.replace(/-(?:[0-9]{8,11}|[a-f0-9]{6,10}|[a-z0-9]{9,10})$/, "");
+  return name || podName;
+}
+
+/** Failing pods, collapsed per owner, worst first then most-affected first. */
+function groupFailures(pods: PodSummary[]): FailureGroup[] {
+  const groups = new Map<string, FailureGroup>();
+
+  for (const pod of pods) {
+    const ex = explainPod(pod);
+    if (ex.tone !== "bad" && ex.tone !== "warn") continue;
+
+    // Keyed by label too, so one owner failing two different ways stays two rows.
+    const label = ownerName(pod.Name);
+    const key = `${pod.Namespace}/${label}/${ex.label}`;
+    const existing = groups.get(key);
+    if (existing) existing.count += 1;
+    else groups.set(key, { key, label, count: 1, sample: pod });
+  }
+
+  return [...groups.values()].sort((a, b) => {
+    const rank = (g: FailureGroup) => (explainPod(g.sample).tone === "bad" ? 0 : 1);
+    return rank(a) - rank(b) || b.count - a.count || a.label.localeCompare(b.label);
+  });
 }

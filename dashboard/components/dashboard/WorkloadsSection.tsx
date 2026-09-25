@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import {
   listPods,
   listDeployments,
@@ -17,6 +18,8 @@ import { PodTable } from "@/components/PodTable";
 import { ResourceTable, type Column } from "./ResourceTable";
 import { SubTabs } from "./SubTabs";
 import { Badge } from "@/components/ui/badge";
+import { KindHint } from "@/components/ui/StatusPill";
+import { KIND_HELP } from "@/lib/k8sExplain";
 
 type WorkloadTab = "pods" | "deployments" | "statefulsets" | "daemonsets" | "jobs" | "cronjobs";
 
@@ -90,7 +93,7 @@ function PodsTab({
 }) {
   const [rangeMin, setRangeMin] = useState(0);
   const { data: pods = [], isLoading } = useQuery({
-    queryKey: ["dash-pods", namespace],
+    queryKey: qk.pods(namespace),
     queryFn: () => listPods(namespace),
   });
 
@@ -110,16 +113,14 @@ function PodsTab({
       mutationsEnabled={mutationsEnabled}
       filterSlot={
         <div className="flex items-center gap-2">
-          {rangeMin > 0 && (
-            <span className="text-sm text-pilot-muted tabular-nums">
-              {shown.length} of {pods.length}
-            </span>
-          )}
-          <span className="eyebrow">Started within</span>
+          <label htmlFor="pod-age-filter" className="eyebrow">
+            Started within
+          </label>
           <select
+            id="pod-age-filter"
             value={rangeMin}
             onChange={(e) => setRangeMin(Number(e.target.value))}
-            className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
+            className="h-11 rounded-xl border border-pilot-border bg-pilot-surface px-3 text-sm text-pilot-text-primary focus:border-pilot-accent/60 focus:outline-none focus:ring-2 focus:ring-pilot-accent/25"
           >
             {AGE_RANGES.map((r) => (
               <option key={r.minutes} value={r.minutes}>
@@ -135,89 +136,166 @@ function PodsTab({
 
 function DeploymentsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-deployments", namespace],
+    queryKey: qk.deployments(namespace),
     queryFn: () => listDeployments(namespace),
   });
   const columns: Column<DeploymentSummary>[] = [
-    { header: "Namespace", cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span> },
-    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono font-semibold">{d.Name}</span> },
+    {
+      header: "Name",
+      cell: (d) => <span className="font-mono font-semibold text-pilot-text-primary">{d.Name}</span>,
+      sortValue: (d) => d.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span>,
+      sortValue: (d) => d.Namespace,
+    },
     {
       header: "Ready",
       align: "center",
-      cell: (d) => (
-        <ReadyBadge ready={d.ReadyReplicas} total={d.Replicas} />
-      ),
+      cell: (d) => <ReadyBadge ready={d.ReadyReplicas} total={d.Replicas} />,
+      // Sort by how far short of the target it is, so the worst float together.
+      sortValue: (d) => d.ReadyReplicas - d.Replicas,
     },
-    { header: "Image", cell: (d) => <span className="text-pilot-muted font-mono text-xs">{d.Image}</span> },
+    {
+      header: "Image",
+      cell: (d) => <span className="font-mono text-xs text-pilot-muted">{d.Image}</span>,
+      sortValue: (d) => d.Image,
+      hideBelow: "lg",
+    },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(d) => `${d.Namespace}/${d.Name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No deployments in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.deployments} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(d) => `${d.Namespace}/${d.Name}`}
+        loading={isLoading}
+        error={error}
+        noun="deployment"
+        searchText={(d) => `${d.Namespace}/${d.Name} ${d.Image}`}
+        emptyMessage="No deployments in this namespace."
+      />
+    </>
   );
 }
 
 function StatefulSetsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-statefulsets", namespace],
+    queryKey: qk.statefulSets(namespace),
     queryFn: () => listStatefulSets(namespace),
   });
   const columns: Column<StatefulSetSummary>[] = [
-    { header: "Namespace", cell: (s) => <span className="text-pilot-text-secondary">{s.Namespace}</span> },
-    { header: "Name", cell: (s) => <span className="text-pilot-text-primary font-mono font-semibold">{s.Name}</span> },
-    { header: "Ready", align: "center", cell: (s) => <ReadyBadge ready={s.ReadyReplicas} total={s.Replicas} /> },
-    { header: "Service", cell: (s) => <span className="text-pilot-text-secondary">{s.ServiceName || "—"}</span> },
-    { header: "Image", cell: (s) => <span className="text-pilot-muted font-mono text-xs">{s.Image}</span> },
+    {
+      header: "Name",
+      cell: (s) => <span className="font-mono font-semibold text-pilot-text-primary">{s.Name}</span>,
+      sortValue: (s) => s.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (s) => <span className="text-pilot-text-secondary">{s.Namespace}</span>,
+      sortValue: (s) => s.Namespace,
+    },
+    {
+      header: "Ready",
+      align: "center",
+      cell: (s) => <ReadyBadge ready={s.ReadyReplicas} total={s.Replicas} />,
+      sortValue: (s) => s.ReadyReplicas - s.Replicas,
+    },
+    {
+      header: "Service",
+      cell: (s) => <span className="text-pilot-text-secondary">{s.ServiceName || "\u2014"}</span>,
+      sortValue: (s) => s.ServiceName,
+      hideBelow: "lg",
+    },
+    {
+      header: "Image",
+      cell: (s) => <span className="font-mono text-xs text-pilot-muted">{s.Image}</span>,
+      sortValue: (s) => s.Image,
+      hideBelow: "lg",
+    },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(s) => `${s.Namespace}/${s.Name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No statefulsets in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.statefulsets} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(s) => `${s.Namespace}/${s.Name}`}
+        loading={isLoading}
+        error={error}
+        noun="StatefulSet"
+        searchText={(s) => `${s.Namespace}/${s.Name} ${s.Image}`}
+        emptyMessage="No StatefulSets in this namespace."
+      />
+    </>
   );
 }
 
 function DaemonSetsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-daemonsets", namespace],
+    queryKey: qk.daemonSets(namespace),
     queryFn: () => listDaemonSets(namespace),
   });
   const columns: Column<DaemonSetSummary>[] = [
-    { header: "Namespace", cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span> },
-    { header: "Name", cell: (d) => <span className="text-pilot-text-primary font-mono font-semibold">{d.Name}</span> },
-    { header: "Ready", align: "center", cell: (d) => <ReadyBadge ready={d.NumberReady} total={d.DesiredNumberScheduled} /> },
-    { header: "Image", cell: (d) => <span className="text-pilot-muted font-mono text-xs">{d.Image}</span> },
+    {
+      header: "Name",
+      cell: (d) => <span className="font-mono font-semibold text-pilot-text-primary">{d.Name}</span>,
+      sortValue: (d) => d.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (d) => <span className="text-pilot-text-secondary">{d.Namespace}</span>,
+      sortValue: (d) => d.Namespace,
+    },
+    {
+      header: "Ready",
+      align: "center",
+      cell: (d) => <ReadyBadge ready={d.NumberReady} total={d.DesiredNumberScheduled} />,
+      sortValue: (d) => d.NumberReady - d.DesiredNumberScheduled,
+    },
+    {
+      header: "Image",
+      cell: (d) => <span className="font-mono text-xs text-pilot-muted">{d.Image}</span>,
+      sortValue: (d) => d.Image,
+      hideBelow: "lg",
+    },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(d) => `${d.Namespace}/${d.Name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No daemonsets in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.daemonsets} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(d) => `${d.Namespace}/${d.Name}`}
+        loading={isLoading}
+        error={error}
+        noun="DaemonSet"
+        searchText={(d) => `${d.Namespace}/${d.Name} ${d.Image}`}
+        emptyMessage="No DaemonSets in this namespace."
+      />
+    </>
   );
 }
 
 function JobsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-jobs", namespace],
+    queryKey: qk.jobs(namespace),
     queryFn: () => listK8sJobs(namespace),
   });
   const columns: Column<K8sJobSummary>[] = [
-    { header: "Namespace", cell: (j) => <span className="text-pilot-text-secondary">{j.Namespace}</span> },
-    { header: "Name", cell: (j) => <span className="text-pilot-text-primary font-mono font-semibold">{j.Name}</span> },
-    { header: "Status", cell: (j) => <JobStatusBadge status={j.Status} /> },
+    {
+      header: "Name",
+      cell: (j) => <span className="font-mono font-semibold text-pilot-text-primary">{j.Name}</span>,
+      sortValue: (j) => j.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (j) => <span className="text-pilot-text-secondary">{j.Namespace}</span>,
+      sortValue: (j) => j.Namespace,
+    },
+    { header: "Status", cell: (j) => <JobStatusBadge status={j.Status} />, sortValue: (j) => j.Status },
     {
       header: "Completions",
       align: "center",
@@ -229,26 +307,43 @@ function JobsTab({ namespace }: { namespace: string }) {
     },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(j) => `${j.Namespace}/${j.Name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No jobs in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.jobs} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(j) => `${j.Namespace}/${j.Name}`}
+        loading={isLoading}
+        error={error}
+        noun="job"
+        searchText={(j) => `${j.Namespace}/${j.Name} ${j.Status}`}
+        emptyMessage="No jobs in this namespace."
+      />
+    </>
   );
 }
 
 function CronJobsTab({ namespace }: { namespace: string }) {
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["dash-cronjobs", namespace],
+    queryKey: qk.cronJobs(namespace),
     queryFn: () => listCronJobs(namespace),
   });
   const columns: Column<CronJobSummary>[] = [
-    { header: "Namespace", cell: (c) => <span className="text-pilot-text-secondary">{c.Namespace}</span> },
-    { header: "Name", cell: (c) => <span className="text-pilot-text-primary font-mono font-semibold">{c.Name}</span> },
-    { header: "Schedule", cell: (c) => <span className="text-pilot-text-secondary font-mono text-xs">{c.Schedule}</span> },
+    {
+      header: "Name",
+      cell: (c) => <span className="font-mono font-semibold text-pilot-text-primary">{c.Name}</span>,
+      sortValue: (c) => c.Name,
+    },
+    {
+      header: "Namespace",
+      cell: (c) => <span className="text-pilot-text-secondary">{c.Namespace}</span>,
+      sortValue: (c) => c.Namespace,
+    },
+    {
+      header: "Schedule",
+      cell: (c) => <span className="font-mono text-xs text-pilot-text-secondary">{c.Schedule}</span>,
+      sortValue: (c) => c.Schedule,
+    },
     {
       header: "Suspended",
       align: "center",
@@ -258,14 +353,19 @@ function CronJobsTab({ namespace }: { namespace: string }) {
     { header: "Running", align: "center", cell: (c) => <span className="text-pilot-text-secondary">{c.Active}</span> },
   ];
   return (
-    <ResourceTable
-      columns={columns}
-      items={data}
-      rowKey={(c) => `${c.Namespace}/${c.Name}`}
-      loading={isLoading}
-      error={error}
-      emptyMessage="No cronjobs in this namespace."
-    />
+    <>
+      <KindHint {...KIND_HELP.cronjobs} />
+      <ResourceTable
+        columns={columns}
+        items={data}
+        rowKey={(c) => `${c.Namespace}/${c.Name}`}
+        loading={isLoading}
+        error={error}
+        noun="CronJob"
+        searchText={(c) => `${c.Namespace}/${c.Name} ${c.Schedule}`}
+        emptyMessage="No CronJobs in this namespace."
+      />
+    </>
   );
 }
 

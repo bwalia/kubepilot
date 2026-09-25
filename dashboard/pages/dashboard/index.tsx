@@ -4,16 +4,17 @@
  * state (no dynamic file-based routes) so the page is compatible with Next.js
  * static export (output: "export").
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  listNamespaces,
   getServerConfig,
   getResourceYAML,
   executeSuggestedAction,
   type SuggestedAction,
 } from "@/lib/api";
-import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { useNamespace } from "@/lib/useNamespace";
+import { qk } from "@/lib/queryKeys";
+import { consumeDashboardTarget, onDashboardTarget, type DashboardTarget } from "@/lib/dashboardNav";
 import { useSessionState } from "@/lib/useSessionState";
 import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { LogViewer } from "@/components/LogViewer";
@@ -30,18 +31,57 @@ import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel"
 import { DeckSidebar } from "@/components/DeckSidebar";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
-import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Lock, Menu } from "lucide-react";
+import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Menu, Layers } from "lucide-react";
 
 type Section = "overview" | "workloads" | "network" | "config" | "topology" | "health" | "events";
 
-const SECTIONS: { key: Section; label: string; icon: typeof Boxes }[] = [
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "workloads", label: "Workloads", icon: Boxes },
-  { key: "network", label: "Network", icon: Network },
-  { key: "config", label: "Config & Storage", icon: Database },
-  { key: "topology", label: "Topology", icon: Share2 },
-  { key: "health", label: "Cluster Health", icon: HeartPulse },
-  { key: "events", label: "Events", icon: FileWarning },
+// Every section carries a one-line description. The nav label has to stay
+// short, but a label alone ("Workloads", "Config & Storage") assumes you
+// already know the Kubernetes vocabulary — which is exactly the assumption
+// this dashboard should not make.
+const SECTIONS: { key: Section; label: string; icon: typeof Boxes; blurb: string }[] = [
+  {
+    key: "overview",
+    label: "Overview",
+    icon: LayoutDashboard,
+    blurb: "How the cluster is doing right now, and anything that needs attention.",
+  },
+  {
+    key: "workloads",
+    label: "Workloads",
+    icon: Boxes,
+    blurb: "Your running apps — and the instructions that keep them running.",
+  },
+  {
+    key: "network",
+    label: "Network",
+    icon: Network,
+    blurb: "How traffic reaches your apps, from the public internet and from inside the cluster.",
+  },
+  {
+    key: "config",
+    label: "Config & Storage",
+    icon: Database,
+    blurb: "Settings, credentials and disks that your apps depend on.",
+  },
+  {
+    key: "topology",
+    label: "Topology",
+    icon: Share2,
+    blurb: "A map of which services talk to which.",
+  },
+  {
+    key: "health",
+    label: "Cluster Health",
+    icon: HeartPulse,
+    blurb: "The machines behind the cluster, and whether they have room to spare.",
+  },
+  {
+    key: "events",
+    label: "Events",
+    icon: FileWarning,
+    blurb: "Kubernetes' own running commentary — the first place to look when something changed.",
+  },
 ];
 
 interface YAMLTarget {
@@ -51,11 +91,9 @@ interface YAMLTarget {
 }
 
 export default function KubernetesDashboard() {
-  const { locked, namespace: lockedNamespace } = useNamespaceLock();
-  // Persisted for the session so a page refresh keeps the chosen namespace.
-  const [selectedNamespace, setSelectedNamespace] = useSessionState("kubepilot-dashboard-ns", "");
-  // When the URL locks a namespace, it overrides the dropdown selection.
-  const namespace = locked ? lockedNamespace! : selectedNamespace;
+  // The namespace scope is global — set in the top bar, shared with every
+  // other page. This page no longer owns a copy of it.
+  const { namespace, setNamespace, locked } = useNamespace();
   // Section persists across refresh (session-scoped), like the namespace.
   const [sectionRaw, setSectionRaw] = useSessionState("kubepilot-dashboard-section", "overview");
   const section = sectionRaw as Section;
@@ -65,18 +103,41 @@ export default function KubernetesDashboard() {
   const [yamlTarget, setYamlTarget] = useState<YAMLTarget | null>(null);
   const [crAction, setCrAction] = useState<SuggestedAction | null>(null);
 
-  const { data: namespaces = [] } = useQuery({
-    queryKey: ["namespaces"],
-    queryFn: listNamespaces,
-  });
+  // Requests from the command palette ("open this pod", "go to this section").
+  // Handled here because the palette lives in _app, outside this page's state.
+  useEffect(() => {
+    const apply = (t: DashboardTarget) => {
+      if (t.type === "pod") {
+        setSelectedPod({ namespace: t.namespace, name: t.name });
+      } else if (t.type === "section") {
+        setSectionRaw(t.section);
+      } else if (t.type === "namespace" && !locked) {
+        setNamespace(t.namespace);
+        setSectionRaw("workloads");
+      }
+    };
+    const pending = consumeDashboardTarget();
+    if (pending) apply(pending);
+    return onDashboardTarget(apply);
+  }, [locked, setSectionRaw, setNamespace]);
+
+  // Deep link: /dashboard?pod=<namespace>/<name> opens straight to a pod, so a
+  // link to a broken thing can be pasted into a chat and just work.
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("pod");
+    if (!raw) return;
+    const slash = raw.indexOf("/");
+    if (slash > 0) setSelectedPod({ namespace: raw.slice(0, slash), name: raw.slice(slash + 1) });
+  }, []);
 
   const { data: serverConfig } = useQuery({
-    queryKey: ["server-config"],
+    queryKey: qk.serverConfig(),
     queryFn: getServerConfig,
     staleTime: 60_000,
     refetchInterval: false,
   });
   const mutationsEnabled = serverConfig?.mutations_enabled ?? false;
+  const current = SECTIONS.find((s) => s.key === section);
 
   const handleAuthorizeAction = async (action: SuggestedAction) => {
     if (action.requires_cr_code) {
@@ -93,8 +154,8 @@ export default function KubernetesDashboard() {
   return (
     <div className="min-h-screen bg-pilot-bg text-pilot-text-primary">
       {/* Header */}
-      <header className="bg-pilot-surface border-b border-pilot-border px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-pilot-border bg-pilot-surface px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
@@ -104,11 +165,19 @@ export default function KubernetesDashboard() {
             <Menu className="w-5 h-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">Kubernetes Pilot (SRE Troubleshooting)</h1>
-            <p className="text-sm text-pilot-muted mt-0.5">Read-only cluster resource browser</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-pilot-text-primary">
+              Cluster
+            </h1>
+            {/* Hidden on phones: at 390px it reflows into a narrow column
+                beside the buttons and pushes the real content off-screen. */}
+            <p className="mt-0.5 hidden text-sm text-pilot-muted sm:block">
+              Browse and troubleshoot everything running here. Nothing on this page changes the cluster.
+            </p>
           </div>
         </div>
-        <KubeconfigSwitcher onSwitched={() => setSelectedPod(null)} />
+        <div className="flex shrink-0 items-center gap-2">
+          <KubeconfigSwitcher onSwitched={() => setSelectedPod(null)} />
+        </div>
       </header>
 
       {/* Sidebar + section content */}
@@ -124,33 +193,17 @@ export default function KubernetesDashboard() {
         />
 
         <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6">
-          {/* Breadcrumb (no duplicate heading) + namespace picker */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
-            <Breadcrumb items={["Dashboard", SECTIONS.find((s) => s.key === section)?.label ?? ""]} className="mr-auto" />
-            <div className="flex items-center gap-2">
-              <span className="eyebrow">Namespace</span>
-              {locked ? (
-                <span
-                  className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-2 text-sm font-medium min-w-44"
-                  title="Locked to this namespace via URL parameter"
-                >
-                  <Lock className="w-4 h-4" />
-                  {namespace}
-                </span>
-              ) : (
-                <select
-                  value={selectedNamespace}
-                  onChange={(e) => setSelectedNamespace(e.target.value)}
-                  className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary min-w-44"
-                >
-                  <option value="">All Namespaces</option>
-                  {namespaces.map((ns) => (
-                    <option key={ns.Name} value={ns.Name}>
-                      {ns.Name}
-                    </option>
-                  ))}
-                </select>
-              )}
+          {/* Section identity + the namespace scope it is showing. */}
+          <div className="mb-6">
+            <Breadcrumb items={["Cluster", current?.label ?? ""]} className="mb-3" />
+            <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+              <div className="min-w-0 max-w-2xl">
+                <h2 className="font-display text-xl font-bold tracking-tight text-pilot-text-primary">
+                  {current?.label}
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-pilot-muted">{current?.blurb}</p>
+              </div>
+              <ScopeNote namespace={namespace} />
             </div>
           </div>
 
@@ -243,5 +296,27 @@ function YAMLDrawer({ target, onClose }: { target: YAMLTarget; onClose: () => vo
         </div>
       </DrawerContent>
     </Dialog>
+  );
+}
+
+
+/**
+ * Restates the active namespace next to the section title. The picker itself
+ * is in the top bar; this is the reminder of what you are looking at, so a
+ * page of "0 pods" is never mistaken for an empty cluster when it is really a
+ * narrow scope.
+ */
+function ScopeNote({ namespace }: { namespace: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-pilot-border bg-pilot-surface px-3 py-2">
+      <Layers
+        className={`h-4 w-4 shrink-0 ${namespace ? "text-pilot-accent" : "text-pilot-muted"}`}
+        aria-hidden="true"
+      />
+      <span className="text-sm text-pilot-muted">Showing</span>
+      <span className={`text-sm font-semibold ${namespace ? "font-mono text-pilot-accent-light" : "text-pilot-text-primary"}`}>
+        {namespace || "all namespaces"}
+      </span>
+    </div>
   );
 }

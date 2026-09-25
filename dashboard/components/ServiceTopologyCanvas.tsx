@@ -31,7 +31,7 @@ import {
   type SGEdge,
   type ServiceGraph,
 } from "@/lib/api";
-import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { useNamespace } from "@/lib/useNamespace";
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 const NW = 192;       // node card width  (px)
@@ -441,13 +441,14 @@ function ColHeader({ label, count, color }: { label: string; count: number; colo
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export function ServiceTopologyCanvas() {
-  const { locked, namespace: lockedNamespace } = useNamespaceLock();
-  const [selectedNamespace, setSelectedNamespace] = useState("default");
-  const [nsInput, setNsInput] = useState("default");
+  // Scope follows the global picker in the top bar. Note this canvas used to
+  // default to "default" while every other surface defaulted to all
+  // namespaces — so the topology silently showed a different slice of the
+  // cluster than the page around it.
+  const { namespace, setNamespace, locked } = useNamespace();
+  const [nsInput, setNsInput] = useState(namespace || "all");
   const [selected, setSelected] = useState<SGNode | null>(null);
-  // A URL-locked namespace overrides the in-canvas namespace controls.
-  const namespace = locked ? lockedNamespace! : selectedNamespace;
-  const setNamespace = setSelectedNamespace;
+  const setSelectedNamespace = setNamespace;
 
   const normalizeNamespace = (value: string): string => {
     const ns = value.trim();

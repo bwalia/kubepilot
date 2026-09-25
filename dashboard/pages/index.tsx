@@ -4,7 +4,8 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Cpu, AlertTriangle, Terminal, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen, Layers, Lock, CheckCircle } from "lucide-react";
+import { qk } from "@/lib/queryKeys";
+import { Activity, Cpu, AlertTriangle, Terminal, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen, CheckCircle } from "lucide-react";
 import {
   listCrashingPods,
   listNodes,
@@ -15,7 +16,7 @@ import {
   getServerConfig,
   type SuggestedAction,
 } from "@/lib/api";
-import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { useNamespace } from "@/lib/useNamespace";
 import { StaggerGroup, StaggerCard } from "@/components/motion";
 import { ClusterList } from "@/components/ClusterList";
 import { PodTable } from "@/components/PodTable";
@@ -45,10 +46,6 @@ const TABS = [
 
 type TabKey = typeof TABS[number]["key"];
 
-// Sentinel for the explicit "look across every namespace" choice, kept distinct
-// from "" which here means "nothing selected yet" (prompt the user first).
-const ALL_NAMESPACES = "__all__";
-
 export default function DashboardHome() {
   const [command, setCommand] = useState("");
   const [aiActions, setAiActions] = useState<SuggestedAction[] | null>(null);
@@ -59,33 +56,28 @@ export default function DashboardHome() {
   const activeTab = activeTabRaw as TabKey;
   const setActiveTab = (t: TabKey) => setActiveTabRaw(t);
 
-  // Crashing pods are scoped to a namespace the user must pick first — we do not
-  // fan out across the whole cluster by default. A URL ?namespace= lock wins.
-  const { locked, namespace: lockedNamespace } = useNamespaceLock();
-  const [selectedNamespace, setSelectedNamespace] = useSessionState("kubepilot-home-ns", "");
-  const nsChosen = locked || selectedNamespace !== "";
-  const effectiveNamespace = locked ? lockedNamespace! : selectedNamespace;
-  // Backend treats "" as "all namespaces"; map our explicit ALL sentinel to it.
-  const nsForQuery = effectiveNamespace === ALL_NAMESPACES ? "" : effectiveNamespace;
+  // Scope comes from the global picker in the top bar. "" means all
+  // namespaces — a real choice, not "nothing selected yet", so this page no
+  // longer blocks on a second namespace prompt of its own.
+  const { namespace: nsForQuery } = useNamespace();
 
   const { data: namespaces = [] } = useQuery({
-    queryKey: ["namespaces"],
+    queryKey: qk.namespaces(),
     queryFn: listNamespaces,
   });
 
   const { data: crashingPods = [], isLoading: podsLoading } = useQuery({
-    queryKey: ["crashing-pods", nsForQuery],
+    queryKey: qk.crashingPods(nsForQuery),
     queryFn: () => listCrashingPods(nsForQuery),
-    enabled: nsChosen,
   });
 
   const { data: nodes = [], isLoading: nodesLoading } = useQuery({
-    queryKey: ["nodes"],
+    queryKey: qk.nodes(),
     queryFn: listNodes,
   });
 
   const { data: deployments = [] } = useQuery({
-    queryKey: ["deployments"],
+    queryKey: qk.deployments(""),
     queryFn: () => listDeployments(),
   });
 
@@ -96,7 +88,7 @@ export default function DashboardHome() {
   });
 
   const { data: serverConfig } = useQuery({
-    queryKey: ["server-config"],
+    queryKey: qk.serverConfig(),
     queryFn: getServerConfig,
     staleTime: 60_000,
     refetchInterval: false,
@@ -140,13 +132,6 @@ export default function DashboardHome() {
             <p className="text-sm text-pilot-muted mt-1">Ask in plain English — KubePilot diagnoses issues and proposes fixes.</p>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <NamespacePicker
-              locked={locked}
-              lockedNamespace={lockedNamespace}
-              value={selectedNamespace}
-              namespaces={namespaces}
-              onChange={setSelectedNamespace}
-            />
             <ClusterStatusBar
               onSwitched={() => {
                 setAiActions(null);
@@ -171,9 +156,9 @@ export default function DashboardHome() {
           <StaggerCard>
             <KPICard
               label="Crashing Pods"
-              value={nsChosen ? crashingPods.length : "—"}
+              value={crashingPods.length}
               icon={<AlertTriangle className="w-5 h-5" />}
-              alert={nsChosen && crashingPods.length > 0}
+              alert={crashingPods.length > 0}
             />
           </StaggerCard>
           <StaggerCard>
@@ -296,20 +281,13 @@ export default function DashboardHome() {
             <ClusterList nodes={nodes} loading={nodesLoading} />
             <section>
               <h2 className="text-base font-bold text-pilot-text-primary mb-4 flex items-center gap-2">
-                <AlertTriangle className={`w-5 h-5 ${nsChosen && crashingPods.length > 0 ? "text-pilot-danger" : "text-pilot-muted"}`} />
+                <AlertTriangle className={`w-5 h-5 ${crashingPods.length > 0 ? "text-pilot-danger" : "text-pilot-muted"}`} />
                 Crashing Pods
-                {nsChosen && (
-                  <span className="text-sm font-medium text-pilot-muted font-mono">
-                    · {nsForQuery === "" ? "all namespaces" : nsForQuery}
-                  </span>
-                )}
+                <span className="font-mono text-sm font-medium text-pilot-muted">
+                  · {nsForQuery === "" ? "all namespaces" : nsForQuery}
+                </span>
               </h2>
-              {!nsChosen ? (
-                <NamespacePrompt
-                  namespaces={namespaces}
-                  onChange={setSelectedNamespace}
-                />
-              ) : podsLoading ? (
+              {podsLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="h-14 bg-pilot-surface rounded-xl animate-pulse" />
@@ -353,89 +331,6 @@ export default function DashboardHome() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-/** Header namespace control. Shows a locked badge when the URL pins a namespace,
- *  otherwise a dropdown whose blank default forces an explicit choice. */
-function NamespacePicker({
-  locked,
-  lockedNamespace,
-  value,
-  namespaces,
-  onChange,
-}: {
-  locked: boolean;
-  lockedNamespace: string | null;
-  value: string;
-  namespaces: { Name: string }[];
-  onChange: (ns: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="eyebrow flex items-center gap-1.5">
-        <Layers className="w-3.5 h-3.5" /> Namespace
-      </span>
-      {locked ? (
-        <span
-          className="inline-flex items-center gap-1.5 bg-pilot-accent/15 text-pilot-accent-light border border-pilot-accent/40 rounded-lg px-3 py-2 text-sm font-medium"
-          title="Locked to this namespace via URL parameter"
-        >
-          <Lock className="w-4 h-4" />
-          {lockedNamespace}
-        </span>
-      ) : (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary min-w-44 focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
-        >
-          <option value="">Select namespace…</option>
-          <option value={ALL_NAMESPACES}>All Namespaces</option>
-          {namespaces.map((ns) => (
-            <option key={ns.Name} value={ns.Name}>
-              {ns.Name}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
-  );
-}
-
-/** Empty-state shown in place of the crashing-pods table until a namespace is
- *  chosen, so we never fan out across the whole cluster unprompted. */
-function NamespacePrompt({
-  namespaces,
-  onChange,
-}: {
-  namespaces: { Name: string }[];
-  onChange: (ns: string) => void;
-}) {
-  return (
-    <div className="bg-pilot-surface border border-dashed border-pilot-border rounded-xl p-8 text-center">
-      <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-pilot-accent/12 text-pilot-accent mb-4">
-        <Layers className="w-6 h-6" />
-      </div>
-      <p className="text-base font-semibold text-pilot-text-primary">Select a namespace</p>
-      <p className="text-sm text-pilot-muted mt-1.5 max-w-md mx-auto">
-        Choose a namespace to scan for crashing pods. KubePilot won&rsquo;t scan every
-        namespace at once unless you ask it to.
-      </p>
-      <select
-        value=""
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-5 bg-pilot-surface border border-pilot-border rounded-lg px-3 py-2 text-sm text-pilot-text-primary min-w-52 focus:outline-none focus:border-pilot-accent/60 focus:ring-2 focus:ring-pilot-accent/25"
-      >
-        <option value="" disabled>Select namespace…</option>
-        <option value={ALL_NAMESPACES}>All Namespaces</option>
-        {namespaces.map((ns) => (
-          <option key={ns.Name} value={ns.Name}>
-            {ns.Name}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }
