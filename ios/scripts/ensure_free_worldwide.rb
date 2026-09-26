@@ -76,14 +76,35 @@ def free_price_point_id
   free.fetch("id")
 end
 
+def schedule_has_current_price?(schedule_id)
+  return false if schedule_id.to_s.empty?
+
+  code, payload = request(
+    :get,
+    "v1/appPriceSchedules/#{schedule_id}/manualPrices?include=appPricePoint&limit=50"
+  )
+  return false unless code.between?(200, 299)
+
+  (payload["data"] || []).any? do |price|
+    # Current price has null startDate (live immediately) or a past start.
+    attrs = price["attributes"] || {}
+    start = attrs["startDate"]
+    start.nil? || start.to_s <= Time.now.utc.strftime("%Y-%m-%d")
+  end
+end
+
 def ensure_price_schedule!
+  schedule_id = nil
   code, payload = request(:get, "v1/apps/#{APP_ID}/appPriceSchedule")
-  if code.between?(200, 299) && payload&.dig("data", "id")
-    puts "Price schedule already set (#{payload.dig('data', 'id')}) — skipping"
+  schedule_id = payload.dig("data", "id") if code.between?(200, 299)
+
+  if schedule_has_current_price?(schedule_id)
+    puts "Free price schedule already active (#{schedule_id}) — skipping"
     return
   end
 
-  # 404 / empty = never priced; create free schedule with immediate start.
+  # Relationship stub can exist without any manualPrices; POST creates/replaces
+  # the schedule with a free base-territory price (Apple equalizes the rest).
   point_id = free_price_point_id
   body = {
     data: {
