@@ -1,0 +1,1 @@
+Demo: enter any reachable KubePilot server URL from TestFlight notes, or use the in-app sample flow if configured. The app requires a KubePilot backend; without a server it shows connection settings only.

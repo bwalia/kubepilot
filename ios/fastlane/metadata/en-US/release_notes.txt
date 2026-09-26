@@ -1,0 +1,1 @@
+First public release — free Kubernetes AI companion for your KubePilot server.

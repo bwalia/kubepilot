@@ -39,6 +39,7 @@ jobs:
         run: |
           mkdir -p _site/screenshots
           sed 's|\.\./screenshots/|screenshots/|g' docs/landing/index.html > _site/index.html
+          cp docs/landing/privacy.html _site/privacy.html
           cp docs/screenshots/*.svg _site/screenshots/ 2>/dev/null || true
           cp docs/screenshots/README.md _site/screenshots/ 2>/dev/null || true
 

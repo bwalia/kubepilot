@@ -1,0 +1,12 @@
+KubePilot is an AI-assisted Kubernetes companion for SREs and platform engineers on the move.
+
+Connect to your KubePilot server to see cluster health, problem pods, events, and logs — then run AI root-cause analysis when something is CrashLooping or failing.
+
+Features:
+• Live cluster health and problem-pod triage
+• Pod logs, events, and diagnostics
+• AI troubleshooting powered by your KubePilot backend
+• Secure credential storage with optional Face ID
+• Widgets for quick cluster status
+
+KubePilot does not require a separate cloud account: you point the app at your own KubePilot server (for example on your LAN or in your organisation).
