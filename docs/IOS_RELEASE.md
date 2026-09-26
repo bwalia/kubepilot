@@ -117,11 +117,15 @@ Bump `MARKETING_VERSION` in `project.yml` before a new App Store version line.
 The `release` lane (`target=app_store`) prepares ASC, then submits:
 
 1. `ensure_free_worldwide` — free `appPriceSchedules` + all territories (`appAvailabilities` v2)
-2. `ensure_app_privacy` — App Privacy nutrition labels as **Data Not Collected**
+2. `ensure_app_privacy` — best-effort App Privacy as **Data Not Collected** (ASC API keys cannot
+   publish iris nutrition labels; publish once in App Store Connect UI if CI soft-skips)
 3. `deliver` — listing copy, polished screenshots, age rating (`metadata/age_rating.json`),
    **automatic_release: true**
 
 Do not pass deliver `price_tier` — Apple removed the legacy `apps.prices` API.
+
+**One-time ASC UI:** App → App Privacy → select **Data Not Collected** → Publish, then re-run
+`target=app_store` so review submit can proceed.
 
 Privacy policy URL (required): `https://pages.kubepilot.org/privacy.html`
 (from `docs/landing/privacy.html`, published by the Landing Page workflow).
