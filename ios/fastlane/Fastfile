@@ -244,6 +244,7 @@ platform :ios do
 
     # Legacy deliver price_tier hits removed ASC relationships; set free/worldwide first.
     ensure_free_worldwide
+    # Best-effort: API key cannot publish iris App Privacy; soft-skips if unauthorized.
     ensure_app_privacy
 
     deliver(
