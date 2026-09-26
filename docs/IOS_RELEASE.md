@@ -114,11 +114,14 @@ Bump `MARKETING_VERSION` in `project.yml` before a new App Store version line.
 
 ## Free worldwide release
 
-The `release` lane (`target=app_store`) first runs `ensure_free_worldwide` (ASC
-`appPriceSchedules` + `appAvailabilities` v2) so the app is **free** in all
-territories, then uploads listing copy from `ios/fastlane/metadata/` and sets
-**automatic_release: true** so it goes live worldwide when Apple approves.
-(Do not pass deliver `price_tier` — Apple removed the legacy apps.prices API.)
+The `release` lane (`target=app_store`) prepares ASC, then submits:
+
+1. `ensure_free_worldwide` — free `appPriceSchedules` + all territories (`appAvailabilities` v2)
+2. `ensure_app_privacy` — App Privacy nutrition labels as **Data Not Collected**
+3. `deliver` — listing copy, polished screenshots, age rating (`metadata/age_rating.json`),
+   **automatic_release: true**
+
+Do not pass deliver `price_tier` — Apple removed the legacy `apps.prices` API.
 
 Privacy policy URL (required): `https://pages.kubepilot.org/privacy.html`
 (from `docs/landing/privacy.html`, published by the Landing Page workflow).
