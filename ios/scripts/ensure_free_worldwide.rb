@@ -140,25 +140,31 @@ def all_territory_ids
 end
 
 def ensure_worldwide_availability!
-  code, payload = request(
-    :get,
-    "v2/appAvailabilities/#{APP_ID}/territoryAvailabilities?limit=200&filter[available]=true"
-  )
-  if code.between?(200, 299)
-    available = []
-    next_path = "v2/appAvailabilities/#{APP_ID}/territoryAvailabilities?limit=200&filter[available]=true"
-    while next_path
-      c, p = request(:get, next_path)
-      break unless c.between?(200, 299)
+  # Prefer the app's availability relationship id (may differ from the numeric app id).
+  avail_id = APP_ID
+  code, payload = request(:get, "v1/apps/#{APP_ID}/appAvailability")
+  if code.between?(200, 299) && payload&.dig("data", "id")
+    avail_id = payload.dig("data", "id")
+  else
+    code, payload = request(:get, "v2/apps/#{APP_ID}/appAvailability")
+    avail_id = payload.dig("data", "id") if code.between?(200, 299) && payload&.dig("data", "id")
+  end
 
-      available.concat(p.fetch("data"))
-      next_link = p.dig("links", "next")
-      next_path = next_link ? next_link.sub(API, "") : nil
-    end
-    if available.size >= 150
-      puts "Worldwide availability already set (#{available.size} territories) — skipping"
-      return
-    end
+  available = []
+  next_path = "v2/appAvailabilities/#{avail_id}/territoryAvailabilities?limit=200&filter[available]=true"
+  loop do
+    c, p = request(:get, next_path)
+    break unless c.between?(200, 299)
+
+    available.concat(p.fetch("data"))
+    next_link = p.dig("links", "next")
+    break unless next_link
+
+    next_path = next_link.sub(API, "")
+  end
+  if available.size >= 150
+    puts "Worldwide availability already set (#{available.size} territories) — skipping"
+    return
   end
 
   territories = all_territory_ids
@@ -188,6 +194,10 @@ def ensure_worldwide_availability!
   }
 
   code, payload = request(:post, "v2/appAvailabilities", body)
+  if code == 409
+    puts "App availability already exists — treating as configured (#{payload})"
+    return
+  end
   raise "Create app availability failed (#{code}): #{payload}" unless code.between?(200, 299)
 
   puts "Enabled availability in #{territories.size} territories (availableInNewTerritories=true)"
