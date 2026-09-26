@@ -1,0 +1,16 @@
+app_identifier("io.kubepilot.app")
+# Free in all App Store territories.
+price_tier(0)
+# Release automatically once Apple approves.
+automatic_release(true)
+phased_release(false)
+submit_for_review(true)
+force(true)
+precheck_include_in_app_purchases(false)
+submission_information({
+  add_id_info_uses_idfa: false,
+  export_compliance_uses_encryption: false,
+  export_compliance_encryption_updated: false,
+  content_rights_contains_third_party_content: false,
+  content_rights_has_rights: true
+})

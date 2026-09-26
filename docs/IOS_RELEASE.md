@@ -111,3 +111,12 @@ bundle exec fastlane ios beta
 - **Build number** — auto-incremented per marketing version from TestFlight (`latest + 1`)
 
 Bump `MARKETING_VERSION` in `project.yml` before a new App Store version line.
+
+## Free worldwide release
+
+The `release` lane (`target=app_store`) submits version metadata as **free** (`price_tier: 0`),
+uploads store listing copy from `ios/fastlane/metadata/`, and sets **automatic_release: true**
+so the app goes live in all available App Store territories when Apple approves.
+
+Privacy policy URL (required): `https://pages.kubepilot.org/privacy.html`
+(from `docs/landing/privacy.html`, published by the Landing Page workflow).

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KubePilot Privacy Policy</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.55; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.15rem; margin-top: 1.75rem; }
+    .muted { opacity: 0.7; font-size: 0.95rem; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <h1>KubePilot Privacy Policy</h1>
+  <p class="muted">Last updated: 26 September 2026</p>
+
+  <p>KubePilot (“we”, “the app”) is an AI-assisted Kubernetes operations companion. This policy explains what the <strong>iOS app</strong> collects and how data is handled.</p>
+
+  <h2>Who processes your data</h2>
+  <p>The KubePilot iOS app connects to a <strong>KubePilot server that you configure</strong> (your own host or organisation). We do not operate a mandatory cloud backend for the mobile app. Data you load in the app is sent to the server URL you enter.</p>
+
+  <h2>Data the app accesses</h2>
+  <ul>
+    <li><strong>Account credentials you enter</strong> — server URL, username/password or token. Stored in the iOS Keychain on your device; used only to authenticate to your KubePilot server.</li>
+    <li><strong>Cluster operations data</strong> — pod lists, events, logs, diagnostics, and AI troubleshooting results returned by your server.</li>
+    <li><strong>Optional biometrics</strong> — Face ID / Touch ID only unlocks credentials already on device; biometric templates never leave the device.</li>
+  </ul>
+
+  <h2>Data we do not collect</h2>
+  <ul>
+    <li>No advertising SDKs or third-party analytics trackers are embedded in the iOS app.</li>
+    <li>No sale of personal data.</li>
+    <li>No Apple Advertising Identifier (IDFA).</li>
+  </ul>
+
+  <h2>On-device storage</h2>
+  <p>The app may cache recent cluster summaries locally (SwiftData) to improve offline browsing. You can remove this data by signing out or deleting the app.</p>
+
+  <h2>AI features</h2>
+  <p>AI troubleshooting runs on the KubePilot server (and its configured LLM, such as a local Ollama instance). Prompts include operational context you request (for example pod logs). That processing is controlled by your server operator, not by a separate KubePilot consumer cloud.</p>
+
+  <h2>Children</h2>
+  <p>KubePilot is a developer / SRE tool and is not directed at children under 13.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy: <a href="mailto:support@kubepilot.org">support@kubepilot.org</a> · Product site: <a href="https://kubepilot.org/">https://kubepilot.org/</a></p>
+</body>
+</html>
