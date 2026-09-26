@@ -13,6 +13,11 @@ final class AuthManager {
     private var unlockedSession = false
 
     init() {
+        // Screenshot capture seeds a temporary account via launch args — skip
+        // Keychain restore so Face ID / stale accounts cannot block the UI.
+        if ProcessInfo.processInfo.arguments.contains("-UITestingScreenshots") {
+            return
+        }
         Task { await loadAccounts() }
     }
 

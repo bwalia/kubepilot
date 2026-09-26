@@ -15,6 +15,9 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: appState.isAuthenticated)
+        .task {
+            await appState.applyScreenshotLaunchConfigurationIfNeeded()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background {
                 appState.authManager.lockIfNeeded()
