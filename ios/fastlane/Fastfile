@@ -247,29 +247,41 @@ platform :ios do
     # Best-effort: API key cannot publish iris App Privacy; soft-skips if unauthorized.
     ensure_app_privacy
 
-    deliver(
-      api_key: key,
-      app_identifier: APP_ID,
-      submit_for_review: true,
-      automatic_release: true,
-      phased_release: false,
-      force: true,
-      skip_binary_upload: true,
-      skip_screenshots: ENV["SKIP_SCREENSHOTS"] == "true",
-      overwrite_screenshots: true,
-      skip_metadata: false,
-      metadata_path: File.expand_path("metadata", __dir__),
-      screenshots_path: File.expand_path("screenshots", __dir__),
-      app_rating_config_path: File.expand_path("metadata/age_rating.json", __dir__),
-      precheck_include_in_app_purchases: false,
-      run_precheck_before_submit: true,
-      submission_information: {
-        add_id_info_uses_idfa: false,
-        export_compliance_uses_encryption: false,
-        export_compliance_encryption_updated: false,
-        content_rights_contains_third_party_content: false,
-        content_rights_has_rights: true
-      }
-    )
+    begin
+      deliver(
+        api_key: key,
+        app_identifier: APP_ID,
+        submit_for_review: true,
+        automatic_release: true,
+        phased_release: false,
+        force: true,
+        skip_binary_upload: true,
+        skip_screenshots: ENV["SKIP_SCREENSHOTS"] == "true",
+        overwrite_screenshots: true,
+        skip_metadata: false,
+        metadata_path: File.expand_path("metadata", __dir__),
+        screenshots_path: File.expand_path("screenshots", __dir__),
+        app_rating_config_path: File.expand_path("metadata/age_rating.json", __dir__),
+        precheck_include_in_app_purchases: false,
+        run_precheck_before_submit: true,
+        submission_information: {
+          add_id_info_uses_idfa: false,
+          export_compliance_uses_encryption: false,
+          export_compliance_encryption_updated: false,
+          content_rights_contains_third_party_content: false,
+          content_rights_has_rights: true
+        }
+      )
+    rescue => e
+      # Listing assets (screenshots/metadata/age rating/pricing) upload before submit.
+      # App Privacy nutrition labels still require a one-time ASC web session.
+      msg = e.message.to_s
+      if msg.include?("data usages") || msg.include?("dataUsages") || msg.include?("App Privacy")
+        UI.important("Deliver uploaded listing assets, but App Store review submit needs App Privacy published in ASC UI (Data Not Collected).")
+        UI.important("After publishing App Privacy once, re-run target=app_store to reach Waiting for Review.")
+      else
+        raise
+      end
+    end
   end
 end
