@@ -1,6 +1,6 @@
 app_identifier("io.kubepilot.app")
-# Free in all App Store territories.
-price_tier(0)
+# Pricing is set via scripts/ensure_free_worldwide.rb (new ASC price-schedule
+# API). Do not set price_tier here — deliver's legacy upload_price_tier 400s.
 # Release automatically once Apple approves.
 automatic_release(true)
 phased_release(false)
