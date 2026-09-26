@@ -6,7 +6,7 @@
 #   bash ios/scripts/capture_store_screenshots.sh \
 #     --server http://127.0.0.1:8383 --user admin --password "$PASS"
 #
-# Writes PNGs to ios/fastlane/screenshots/{en-GB,en-US}/.
+# Writes PNGs to ios/fastlane/screenshots/en-GB/ (ASC primary locale).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -35,7 +35,7 @@ if [[ -z "$PASSWORD" ]]; then
 fi
 
 export PATH="/opt/homebrew/bin:/usr/bin:$PATH"
-mkdir -p "$OUT_TMP" "$IOS/fastlane/screenshots/en-GB" "$IOS/fastlane/screenshots/en-US"
+mkdir -p "$OUT_TMP" "$IOS/fastlane/screenshots/en-GB"
 
 resolve_udid() {
   local name="$1"
@@ -113,21 +113,19 @@ if [[ -n "${IPAD_UDID:-}" ]]; then
   shot "$IPAD_UDID" dashboard "$OUT_TMP/06_ipad_dashboard.png"
 fi
 
-# Publish into fastlane screenshot folders (both locales).
-for loc in en-GB en-US; do
-  DEST="$IOS/fastlane/screenshots/$loc"
-  rm -f "$DEST"/*.png
-  cp "$OUT_TMP/01_dashboard.png" "$DEST/01_dashboard.png"
-  cp "$OUT_TMP/02_pods.png"      "$DEST/02_pods.png"
-  cp "$OUT_TMP/03_ai.png"        "$DEST/03_ai.png"
-  cp "$OUT_TMP/04_alerts.png"    "$DEST/04_alerts.png"
-  # Prefer iPad frame when present; otherwise keep settings as 5th iPhone frame.
-  if [[ -f "$OUT_TMP/06_ipad_dashboard.png" ]]; then
-    cp "$OUT_TMP/06_ipad_dashboard.png" "$DEST/05_ipad_dashboard.png"
-  else
-    cp "$OUT_TMP/05_settings.png" "$DEST/05_settings.png"
-  fi
-done
+# Publish into fastlane screenshot folder (App Store primary locale is en-GB).
+DEST="$IOS/fastlane/screenshots/en-GB"
+mkdir -p "$DEST"
+rm -f "$DEST"/*.png
+cp "$OUT_TMP/01_dashboard.png" "$DEST/01_dashboard.png"
+cp "$OUT_TMP/02_pods.png"      "$DEST/02_pods.png"
+cp "$OUT_TMP/03_ai.png"        "$DEST/03_ai.png"
+cp "$OUT_TMP/04_alerts.png"    "$DEST/04_alerts.png"
+if [[ -f "$OUT_TMP/06_ipad_dashboard.png" ]]; then
+  cp "$OUT_TMP/06_ipad_dashboard.png" "$DEST/05_ipad_dashboard.png"
+else
+  cp "$OUT_TMP/05_settings.png" "$DEST/05_settings.png"
+fi
 
-echo "Store screenshots ready under ios/fastlane/screenshots/"
-ls -la "$IOS/fastlane/screenshots/en-GB/"
+echo "Store screenshots ready under ios/fastlane/screenshots/en-GB/"
+ls -la "$DEST"
