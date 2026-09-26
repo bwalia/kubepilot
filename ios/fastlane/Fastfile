@@ -237,6 +237,7 @@ platform :ios do
       force: true,
       skip_binary_upload: true,
       skip_screenshots: ENV["SKIP_SCREENSHOTS"] == "true",
+      overwrite_screenshots: true,
       skip_metadata: false,
       metadata_path: File.expand_path("metadata", __dir__),
       screenshots_path: File.expand_path("screenshots", __dir__),
