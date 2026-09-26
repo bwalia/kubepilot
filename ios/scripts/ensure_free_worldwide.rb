@@ -65,7 +65,7 @@ def get_paginated(path)
 end
 
 def free_price_point_id
-  path = "v1/apps/#{APP_ID}/appPricePoints?filter[territory]=#{BASE_TERRITORY}&include=priceTier&limit=200"
+  path = "v1/apps/#{APP_ID}/appPricePoints?filter[territory]=#{BASE_TERRITORY}&limit=200"
   points = get_paginated(path)
   free = points.find do |p|
     price = p.dig("attributes", "customerPrice").to_s
