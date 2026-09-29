@@ -13,10 +13,10 @@ precheck_include_in_app_purchases(false)
 # Sign-in is required for review — ASC "Sign-in required" needs demo_user /
 # demo_password (also mirrored in metadata/review_information/*.txt).
 app_review_information(
-  first_name: "KubePilot Demo",
-  last_name: "Team",
-  phone_number: "+44 20 7946 0958",
-  email_address: "support@kubepilot.org",
+  first_name: "Balinder",
+  last_name: "Walia",
+  phone_number: "+447515356146",
+  email_address: "support@workstation.co.uk",
   demo_user: "apple",
   demo_password: "review"
 )
