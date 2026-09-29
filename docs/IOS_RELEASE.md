@@ -127,5 +127,10 @@ Do not pass deliver `price_tier` — Apple removed the legacy `apps.prices` API.
 **One-time ASC UI:** App → App Privacy → select **Data Not Collected** → Publish, then re-run
 `target=app_store` so review submit can proceed.
 
+**Routing App Coverage:** if ASC asks for a geographic coverage `.geojson`, the release lane
+uploads `ios/fastlane/metadata/routing_app_coverage.geojson` (worldwide MultiPolygon) via
+`ensure_routing_coverage`. You can also upload that file manually under the version’s
+**Routing App Coverage File** field.
+
 Privacy policy URL (required): `https://pages.kubepilot.org/privacy.html`
 (from `docs/landing/privacy.html`, published by the Landing Page workflow).

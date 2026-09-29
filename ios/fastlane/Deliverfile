@@ -7,6 +7,8 @@ phased_release(false)
 submit_for_review(true)
 force(true)
 precheck_include_in_app_purchases(false)
+# Routing coverage is uploaded by scripts/ensure_routing_coverage.rb (worldwide
+# MultiPolygon at metadata/routing_app_coverage.geojson).
 submission_information({
   add_id_info_uses_idfa: false,
   export_compliance_uses_encryption: false,
