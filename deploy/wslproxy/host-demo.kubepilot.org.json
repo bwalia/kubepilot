@@ -1,0 +1,21 @@
+{
+  "id": "host:demo.kubepilot.org",
+  "server_name": "demo.kubepilot.org",
+  "proxy_server_name": "demo.kubepilot.org",
+  "rules": "kubepilot-demo-default",
+  "profile_id": "prod",
+  "ssl_enabled": true,
+  "ssl_force_https": true,
+  "ssl_auto_renew": true,
+  "ssl_staging": false,
+  "ssl_email": "support@kubepilot.org",
+  "listens": [
+    {
+      "listen": "80"
+    }
+  ],
+  "match_cases": {},
+  "config_status": true,
+  "access_log": "logs/demo.kubepilot.org.access.log",
+  "error_log": "logs/demo.kubepilot.org.error.log"
+}

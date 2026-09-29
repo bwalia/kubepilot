@@ -1,1 +1,20 @@
-Demo: enter any reachable KubePilot server URL from TestFlight notes, or use the in-app sample flow if configured. The app requires a KubePilot backend; without a server it shows connection settings only.
+# KubePilot App Review notes
+
+## Demo access (preferred)
+
+1. On the Welcome screen, tap **Try demo**.
+2. The app connects to https://demo.kubepilot.org with Basic auth user `apple` / password `review`.
+3. If the hosted demo is unreachable, the app loads the same fixture data offline so you can still browse Dashboard, Pods, AI, Autopilot, and Alerts.
+
+## Manual connect (same credentials)
+
+- Server: https://demo.kubepilot.org
+- Authentication: Username & Password
+- Username: apple
+- Password: review
+
+Face ID can be left enabled or disabled for review.
+
+## What you will see
+
+Synthetic cluster data only (payments CrashLoopBackOff, pending image pull, canned AI RCA). No customer clusters or real kubeconfigs are exposed.
