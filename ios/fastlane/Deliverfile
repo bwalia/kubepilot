@@ -9,6 +9,17 @@ force(true)
 precheck_include_in_app_purchases(false)
 # Routing coverage is uploaded by scripts/ensure_routing_coverage.rb (worldwide
 # MultiPolygon at metadata/routing_app_coverage.geojson).
+#
+# Sign-in is required for review — ASC "Sign-in required" needs demo_user /
+# demo_password (also mirrored in metadata/review_information/*.txt).
+app_review_information(
+  first_name: "KubePilot Demo",
+  last_name: "Team",
+  phone_number: "+44 20 7946 0958",
+  email_address: "support@kubepilot.org",
+  demo_user: "apple",
+  demo_password: "review"
+)
 submission_information({
   add_id_info_uses_idfa: false,
   export_compliance_uses_encryption: false,

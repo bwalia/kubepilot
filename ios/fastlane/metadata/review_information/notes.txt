@@ -1,17 +1,25 @@
 # KubePilot App Review notes
 
-## Demo access (preferred)
+Sign-in is required. Use the demo account below (or tap Try demo in the app).
 
-1. On the Welcome screen, tap **Try demo**.
-2. The app connects to https://demo.kubepilot.org with Basic auth user `apple` / password `review`.
-3. If the hosted demo is unreachable, the app loads the same fixture data offline so you can still browse Dashboard, Pods, AI, Autopilot, and Alerts.
+## Demo account (ASC Sign-in Required)
 
-## Manual connect (same credentials)
-
-- Server: https://demo.kubepilot.org
-- Authentication: Username & Password
-- Username: apple
+- User name: apple
 - Password: review
+- Server URL (if asked on Welcome): https://demo.kubepilot.org
+- Auth method: Username & Password
+
+## Preferred path
+
+1. On Welcome, tap **Try demo** (fills server + credentials automatically).
+2. If the host is unreachable, the app loads the same fixture data offline.
+
+## Manual path
+
+1. Server: https://demo.kubepilot.org
+2. Authentication: Username & Password
+3. Username: apple
+4. Password: review
 
 Face ID can be left enabled or disabled for review.
 
