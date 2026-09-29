@@ -263,6 +263,8 @@ platform :ios do
         automatic_release: true,
         phased_release: false,
         force: true,
+        # Cancel a prior review submission (e.g. Invalid Binary) so we can attach the new build.
+        reject_if_possible: true,
         skip_binary_upload: true,
         skip_screenshots: ENV["SKIP_SCREENSHOTS"] == "true",
         overwrite_screenshots: true,
@@ -287,6 +289,8 @@ platform :ios do
       if msg.include?("data usages") || msg.include?("dataUsages") || msg.include?("App Privacy")
         UI.important("Deliver uploaded listing assets, but App Store review submit needs App Privacy published in ASC UI (Data Not Collected).")
         UI.important("After publishing App Privacy once, re-run target=app_store to reach Waiting for Review.")
+      elsif msg.include?("review submission is already in progress")
+        UI.important("ASC already has a review submission in progress — treating as submitted (select build in ASC if it still points at an Invalid Binary).")
       else
         raise
       end
