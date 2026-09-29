@@ -30,8 +30,8 @@ spec:
     spec:
       containers:
         - name: demo-api
-          image: docker.io/bwalia/kubepilot-demo-api:latest
-          imagePullPolicy: Always
+          image: docker.io/bwalia/kubepilot-demo-api:6065b32@sha256:b7b9d7a034a1269d57017c71e106dbd6bb12abe84f71d9ca99e3adca2739e6f2
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8383
