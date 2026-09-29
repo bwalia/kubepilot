@@ -102,6 +102,30 @@ jobs:
           echo "Resolved version: $v"
           echo "VERSION_NAME=$v" >> "$GITHUB_ENV"
 
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          # Prefer a versioned GM install if present; otherwise the active Xcode.app.
+          # Beta SDKs are a common ASC "Invalid Binary" cause after Waiting for Review.
+          for candidate in \
+            /Applications/Xcode.app \
+            /Applications/Xcode-26.5.0.app \
+            /Applications/Xcode-26.4.0.app \
+            /Applications/Xcode-16.4.0.app \
+            /Applications/Xcode-16.3.0.app
+          do
+            if [ -d "$candidate" ]; then
+              echo "Using $candidate"
+              sudo xcode-select -s "$candidate"
+              break
+            fi
+          done
+          xcodebuild -version
+          build="$(xcodebuild -version | awk '/Build version/{print $3}')"
+          if echo "$build" | grep -Eq '[a-z]$'; then
+            echo "::warning::Xcode build $build looks like a beta/RC (letter suffix). App Store often returns Invalid Binary for beta toolchains — install a GM Xcode on this runner."
+          fi
+
       - name: Compute next build number
         id: build
         run: bundle exec fastlane ios ci_build_number
@@ -120,6 +144,8 @@ jobs:
 
       - name: Submit for App Store review
         if: github.event_name == 'workflow_dispatch' && inputs.target == 'app_store'
+        env:
+          BUILD_NUMBER: ${{ steps.build.outputs.build_number }}
         run: bundle exec fastlane ios release
 
       - name: Archive IPA artifact
