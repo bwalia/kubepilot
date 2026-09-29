@@ -21,14 +21,16 @@ Same edge pattern as fishers.cloud (`devops/wslproxy` + `traefik-edge`).
 |---|---|---|
 | Workload | `deploy/demo-api/` on k3s1 | `kubectl apply -k deploy/demo-api/` |
 | Edge vhost + rule (POP files) | `bwalia/wslproxy` → `data/servers/prod/host:demo.kubepilot.org.json` + `data/rules/prod/kubepilot-demo-default.json` | Push + **Deploy WSLProxy Virtual Servers** (`prod` / `lon1.pop0.uk`) |
-| Edge + DNS (app-side reconcile) | `deploy/wslproxy/*.json` + `scripts/upsert-demo-cname.sh` | `.github/workflows/register-demo-edge.yml` on push / `workflow_dispatch` |
+| Edge + DNS (reconcile with secrets) | `bwalia/fishers` → `devops/wslproxy/host-demo.kubepilot.org.json` + rule (mirror of kubepilot specs) | `register-kubepilot-demo-edge.yml` (push / hourly / `workflow_dispatch`) |
+| App-side mirror | `deploy/wslproxy/*.json` + `scripts/upsert-demo-cname.sh` | `.github/workflows/register-demo-edge.yml` (needs CF/wslproxy secrets on **kubepilot**) |
 
-Required GitHub secrets on **bwalia/kubepilot** (same values as fishers):
+Keep the three JSON copies aligned when changing backends or hostnames:
 
-- `CLOUDFLARE_API_TOKEN` — Zone.DNS edit on `kubepilot.org`
-- `WSLPROXY_USER` / `WSLPROXY_PASSWORD` / `WSLPROXY_GATEWAY_URL`
+1. `kubepilot` `deploy/wslproxy/`
+2. `fishers` `devops/wslproxy/` (drives the live CF + import reconcile)
+3. `wslproxy` `data/{servers,rules}/prod/` (lon1 POP file plane)
 
-Keep the kubepilot `deploy/wslproxy` specs and the wslproxy `data/` copies in sync when changing backends or hostnames.
+Required secrets live on **bwalia/fishers** today (`CLOUDFLARE_API_TOKEN`, `WSLPROXY_*`). Copy the same four onto **bwalia/kubepilot** if you want `register-demo-edge.yml` to run from this repo.
 
 ## Credentials
 
