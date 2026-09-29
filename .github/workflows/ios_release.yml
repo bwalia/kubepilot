@@ -103,36 +103,64 @@ jobs:
           echo "VERSION_NAME=$v" >> "$GITHUB_ENV"
 
       - name: Select Xcode
+        env:
+          APP_STORE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'app_store' }}
         run: |
           set -euo pipefail
-          # Prefer a versioned GM install if present; otherwise the active Xcode.app.
-          # Beta SDKs are a common ASC "Invalid Binary" cause after Waiting for Review.
-          # Do NOT use sudo xcode-select — the self-hosted runner has no TTY password.
-          # DEVELOPER_DIR is enough for xcodebuild/fastlane in later steps.
+          # App Store IPAs built with beta/future SDKs (e.g. iphoneos26.5) often flip to
+          # Invalid Binary seconds after Waiting for Review. Prefer GM Xcode 16.x for app_store.
+          # Do NOT use sudo xcode-select — set DEVELOPER_DIR for later steps.
+          sdk_major_for() {
+            local app="$1"
+            DEVELOPER_DIR="$app/Contents/Developer" xcrun --sdk iphoneos --show-sdk-version 2>/dev/null \
+              | cut -d. -f1
+          }
+          is_usable() {
+            local app="$1"
+            [ -d "$app/Contents/Developer" ] || return 1
+            local major
+            major="$(sdk_major_for "$app")"
+            [ -n "$major" ] || return 1
+            if [ "${APP_STORE_RELEASE:-false}" = "true" ] && [ "$major" -ge 26 ] 2>/dev/null; then
+              echo "Skipping $app (iphoneos SDK major $major — not accepted for App Store on this project)"
+              return 1
+            fi
+            return 0
+          }
           selected=""
           for candidate in \
+            /Applications/Xcode-16.4.0.app \
+            /Applications/Xcode-16.3.0.app \
+            /Applications/Xcode-16.2.0.app \
             /Applications/Xcode.app \
             /Applications/Xcode-26.5.0.app \
-            /Applications/Xcode-26.4.0.app \
-            /Applications/Xcode-16.4.0.app \
-            /Applications/Xcode-16.3.0.app
+            /Applications/Xcode-26.4.0.app
           do
-            if [ -d "$candidate/Contents/Developer" ]; then
+            if is_usable "$candidate"; then
               selected="$candidate"
               break
             fi
           done
           if [ -z "$selected" ]; then
-            echo "::error::No Xcode.app found under /Applications"
+            if [ "${APP_STORE_RELEASE:-false}" = "true" ]; then
+              echo "::error::No App Store–safe Xcode found. Install Xcode 16.4 GM to /Applications/Xcode-16.4.0.app on this runner (avoid iphoneos26+ SDK)."
+            else
+              echo "::error::No Xcode.app found under /Applications"
+            fi
             exit 1
           fi
           echo "Using $selected"
           echo "DEVELOPER_DIR=$selected/Contents/Developer" >> "$GITHUB_ENV"
           export DEVELOPER_DIR="$selected/Contents/Developer"
           xcodebuild -version
+          echo "iphoneos SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
           build="$(xcodebuild -version | awk '/Build version/{print $3}')"
           if echo "$build" | grep -Eq '[a-z]$'; then
-            echo "::warning::Xcode build $build looks like a beta/RC (letter suffix). App Store often returns Invalid Binary for beta toolchains — install a GM Xcode on this runner."
+            echo "::warning::Xcode build $build looks like a beta/RC (letter suffix)."
+            if [ "${APP_STORE_RELEASE:-false}" = "true" ]; then
+              echo "::error::Refusing App Store release with beta Xcode $build — install GM Xcode 16.4 on the runner."
+              exit 1
+            fi
           fi
 
       - name: Compute next build number
