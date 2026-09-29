@@ -208,7 +208,7 @@ final class OnboardingViewModel {
         username: String? = nil,
         password: String? = nil,
         provider: String = "Custom",
-        environment: ClusterEnvironment = .production
+        environment: ClusterProfile.ClusterEnvironment = .production
     ) async throws {
         let cluster = ClusterProfile(
             id: UUID().uuidString,
