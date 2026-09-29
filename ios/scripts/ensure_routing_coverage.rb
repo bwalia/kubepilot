@@ -41,16 +41,33 @@ if defined?(Spaceship::ConnectAPI::RoutingAppCoverage)
     if existing.respond_to?(:delete!)
       existing.delete!
       puts "Removed previous routing coverage"
+    elsif existing.respond_to?(:id) && existing.id
+      # Some Spaceship versions expose the relationship but not delete! on the model.
+      begin
+        Spaceship::ConnectAPI.delete_routing_app_coverage(routing_app_coverage_id: existing.id)
+        puts "Removed previous routing coverage (#{existing.id})"
+      rescue StandardError => e
+        warn "Could not delete prior coverage via API: #{e.message}"
+      end
     end
   rescue StandardError => e
     warn "Could not clear prior coverage: #{e.message}"
   end
 
-  Spaceship::ConnectAPI::RoutingAppCoverage.create(
-    app_store_version_id: version.id,
-    path: COVERAGE
-  )
-  puts "Uploaded routing app coverage (worldwide MultiPolygon)"
+  begin
+    Spaceship::ConnectAPI::RoutingAppCoverage.create(
+      app_store_version_id: version.id,
+      path: COVERAGE
+    )
+    puts "Uploaded routing app coverage (worldwide MultiPolygon)"
+  rescue Spaceship::UnexpectedResponse => e
+    msg = e.message.to_s
+    if msg.include?("already exists") || msg.include?("RoutingAppCoverages file already exists")
+      puts "Routing app coverage already present — treating as configured"
+    else
+      raise
+    end
+  end
 else
   raise "This fastlane build has no RoutingAppCoverage API — upgrade fastlane"
 end
