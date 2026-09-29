@@ -92,6 +92,9 @@ actor APIClient {
 
     func healthCheck() async throws -> Bool {
         guard let baseURL else { throw APIError.invalidURL }
+        if DemoFixtures.isOfflineURL(baseURL) {
+            return true
+        }
         var request = URLRequest(url: baseURL.appendingPathComponent("healthz"))
         request.httpMethod = HTTPMethod.get.rawValue
         let (_, response) = try await session.data(for: request)
@@ -123,6 +126,12 @@ actor APIClient {
 
     private func sendRaw(_ apiRequest: APIRequest) async throws -> Data {
         guard let baseURL else { throw APIError.invalidURL }
+        if DemoFixtures.isOfflineURL(baseURL) {
+            guard let fixture = DemoFixtures.data(forAPIPath: apiRequest.path, query: apiRequest.query) else {
+                throw APIError.notFound
+            }
+            return fixture
+        }
         guard var components = URLComponents(
             url: baseURL.appendingPathComponent("api/v1").appendingPathComponent(apiRequest.path),
             resolvingAgainstBaseURL: false

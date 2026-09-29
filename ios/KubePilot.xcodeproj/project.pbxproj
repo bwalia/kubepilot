@@ -41,6 +41,7 @@
 		F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B316A2C59A6C1836CA04DB /* KeychainStore.swift */; };
 		FCF0A5D578E9639FE0EAC677 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C034A8644F934030296CD024 /* Theme.swift */; };
 		FDB7A6FE80E32AF8337CD86F /* KubePilotAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC25EE581B2006F6D7F5C03F /* KubePilotAPI.swift */; };
+		B2C3D4E5F60718293A4B5C6D /* DemoFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* DemoFixtures.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -113,6 +114,7 @@
 		EE0ADD9653B7A452DF443B32 /* KubePilotWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KubePilotWidgets.entitlements; sourceTree = "<group>"; };
 		F232B0102FDC4B276D6DE6B8 /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
 		FD56197EAE085B464CF39AC5 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* DemoFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoFixtures.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -120,6 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */,
+				A1B2C3D4E5F60718293A4B5C /* DemoFixtures.swift */,
 				BC25EE581B2006F6D7F5C03F /* KubePilotAPI.swift */,
 			);
 			path = Networking;
@@ -489,6 +492,7 @@
 				0412E91B59FDDCADDE8639CB /* AIAssistantView.swift in Sources */,
 				4FB041433372998B3391504B /* AIReportCopyBar.swift in Sources */,
 				2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */,
+				B2C3D4E5F60718293A4B5C6D /* DemoFixtures.swift in Sources */,
 				932B03C9135B29347A230757 /* APIModels.swift in Sources */,
 				CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */,
 				6932105F4E0AF9300310BB69 /* AnalyseWithAIButton.swift in Sources */,
