@@ -107,46 +107,23 @@ jobs:
           APP_STORE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'app_store' }}
         run: |
           set -euo pipefail
-          # App Store IPAs built with beta/future SDKs (e.g. iphoneos26.5) often flip to
-          # Invalid Binary seconds after Waiting for Review. Prefer GM Xcode 16.x for app_store.
+          # Apple requires App Store uploads to be built with the iOS 26 SDK
+          # (Xcode 26+) since April 2026, so never pin to an older Xcode. Prefer the
+          # newest installed Xcode; the build-number check below rejects betas.
           # Do NOT use sudo xcode-select — set DEVELOPER_DIR for later steps.
-          sdk_major_for() {
-            local app="$1"
-            DEVELOPER_DIR="$app/Contents/Developer" xcrun --sdk iphoneos --show-sdk-version 2>/dev/null \
-              | cut -d. -f1
-          }
-          is_usable() {
-            local app="$1"
-            [ -d "$app/Contents/Developer" ] || return 1
-            local major
-            major="$(sdk_major_for "$app")"
-            [ -n "$major" ] || return 1
-            if [ "${APP_STORE_RELEASE:-false}" = "true" ] && [ "$major" -ge 26 ] 2>/dev/null; then
-              echo "Skipping $app (iphoneos SDK major $major — not accepted for App Store on this project)"
-              return 1
-            fi
-            return 0
-          }
           selected=""
           for candidate in \
-            /Applications/Xcode-16.4.0.app \
-            /Applications/Xcode-16.3.0.app \
-            /Applications/Xcode-16.2.0.app \
-            /Applications/Xcode.app \
             /Applications/Xcode-26.5.0.app \
-            /Applications/Xcode-26.4.0.app
+            /Applications/Xcode-26.4.0.app \
+            /Applications/Xcode.app
           do
-            if is_usable "$candidate"; then
+            if [ -d "$candidate/Contents/Developer" ]; then
               selected="$candidate"
               break
             fi
           done
           if [ -z "$selected" ]; then
-            if [ "${APP_STORE_RELEASE:-false}" = "true" ]; then
-              echo "::error::No App Store–safe Xcode found. Install Xcode 16.4 GM to /Applications/Xcode-16.4.0.app on this runner (avoid iphoneos26+ SDK)."
-            else
-              echo "::error::No Xcode.app found under /Applications"
-            fi
+            echo "::error::No Xcode.app found under /Applications"
             exit 1
           fi
           echo "Using $selected"
@@ -158,7 +135,7 @@ jobs:
           if echo "$build" | grep -Eq '[a-z]$'; then
             echo "::warning::Xcode build $build looks like a beta/RC (letter suffix)."
             if [ "${APP_STORE_RELEASE:-false}" = "true" ]; then
-              echo "::error::Refusing App Store release with beta Xcode $build — install GM Xcode 16.4 on the runner."
+              echo "::error::Refusing App Store release with beta Xcode $build — install a GM Xcode 26+ on the runner."
               exit 1
             fi
           fi

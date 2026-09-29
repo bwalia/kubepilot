@@ -58,7 +58,7 @@ See `ios/ci/ios.vault.env.example`.
 
 The Mac Studio runner needs:
 
-- Xcode 16+, XcodeGen, CocoaPods (if added later)
+- Xcode 26+ GM (Apple requires the iOS 26 SDK for uploads since April 2026), XcodeGen, CocoaPods (if added later)
 - Vault token file (default `VAULT_TOKEN_FILE` in workflow)
 - Label `ios_cicd`
 
@@ -128,10 +128,10 @@ Do not pass deliver `price_tier` — Apple removed the legacy `apps.prices` API.
 `target=app_store` so review submit can proceed.
 
 **Invalid Binary (no Resolution Center text):** If Activity shows Waiting for Review → Invalid Binary
-within minutes, check the IPA SDK. Builds produced with **iphoneos26+** (Xcode 26.x beta on the
-Mac Studio runner) are rejected even when app + widget `CFBundleVersion` match. Install **Xcode 16.4
-GM** as `/Applications/Xcode-16.4.0.app` on the self-hosted runner and re-run `target=app_store`.
-The workflow skips SDK major ≥ 26 for App Store releases.
+within minutes, Apple emails the reason to the account holder — check that first. Do not downgrade
+Xcode: since April 2026 uploads must use the iOS 26 SDK (Xcode 26+), so an Xcode 16.x build is
+refused. The workflow uses the newest installed Xcode and only refuses beta builds (build number
+with a letter suffix) for `target=app_store`.
 
 **Routing App Coverage:** if ASC asks for a geographic coverage `.geojson`, the release lane
 uploads `ios/fastlane/metadata/routing_app_coverage.geojson` (worldwide MultiPolygon) via
