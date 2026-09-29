@@ -1,28 +1,19 @@
-# KubePilot App Review notes
+Thank you for reviewing KubePilot.
 
-Sign-in is required. Use the demo account below (or tap Try demo in the app).
+Sign-in is required. The app connects to a KubePilot backend; for this review please use the hosted demo API below (or tap Try demo on the Welcome screen, which fills these values for you).
 
-## Demo account (ASC Sign-in Required)
+Demo server
+• URL: https://demo.kubepilot.org
+• Authentication: Username and Password
+• Username: apple
+• Password: review
 
-- User name: apple
-- Password: review
-- Server URL (if asked on Welcome): https://demo.kubepilot.org
-- Auth method: Username & Password
+Steps
+1. Launch the app.
+2. On Welcome, either tap Try demo, or enter the URL and credentials above and tap Connect.
+3. Face ID may be enabled or disabled; either is fine for review.
 
-## Preferred path
-
-1. On Welcome, tap **Try demo** (fills server + credentials automatically).
-2. If the host is unreachable, the app loads the same fixture data offline.
-
-## Manual path
-
-1. Server: https://demo.kubepilot.org
-2. Authentication: Username & Password
-3. Username: apple
-4. Password: review
-
-Face ID can be left enabled or disabled for review.
-
-## What you will see
-
-Synthetic cluster data only (payments CrashLoopBackOff, pending image pull, canned AI RCA). No customer clusters or real kubeconfigs are exposed.
+Notes
+• The demo API returns synthetic cluster data only (for example CrashLoopBackOff and sample AI analysis). It does not expose customer clusters or real kubeconfigs.
+• If the demo host is temporarily unreachable, Try demo falls back to the same sample data offline so you can still exercise the main screens.
+• Reviewers with their own KubePilot backend may instead enter that server URL and credentials on Welcome.
