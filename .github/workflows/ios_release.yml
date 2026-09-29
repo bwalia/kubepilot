@@ -107,6 +107,9 @@ jobs:
           set -euo pipefail
           # Prefer a versioned GM install if present; otherwise the active Xcode.app.
           # Beta SDKs are a common ASC "Invalid Binary" cause after Waiting for Review.
+          # Do NOT use sudo xcode-select — the self-hosted runner has no TTY password.
+          # DEVELOPER_DIR is enough for xcodebuild/fastlane in later steps.
+          selected=""
           for candidate in \
             /Applications/Xcode.app \
             /Applications/Xcode-26.5.0.app \
@@ -114,12 +117,18 @@ jobs:
             /Applications/Xcode-16.4.0.app \
             /Applications/Xcode-16.3.0.app
           do
-            if [ -d "$candidate" ]; then
-              echo "Using $candidate"
-              sudo xcode-select -s "$candidate"
+            if [ -d "$candidate/Contents/Developer" ]; then
+              selected="$candidate"
               break
             fi
           done
+          if [ -z "$selected" ]; then
+            echo "::error::No Xcode.app found under /Applications"
+            exit 1
+          fi
+          echo "Using $selected"
+          echo "DEVELOPER_DIR=$selected/Contents/Developer" >> "$GITHUB_ENV"
+          export DEVELOPER_DIR="$selected/Contents/Developer"
           xcodebuild -version
           build="$(xcodebuild -version | awk '/Build version/{print $3}')"
           if echo "$build" | grep -Eq '[a-z]$'; then
