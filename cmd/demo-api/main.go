@@ -32,6 +32,7 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.HandleFunc("/", s.handleRoot).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc("/healthz", s.handleHealthz).Methods(http.MethodGet)
 
 	api := r.PathPrefix("/api/v1").Subrouter()
@@ -114,6 +115,38 @@ func writeJSON(w http.ResponseWriter, v any) {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
+}
+
+// rootPage is shown when someone opens the demo URL in a browser, so a
+// reviewer pasting it into Safari sees a live service rather than a bare 404.
+const rootPage = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KubePilot Demo API</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;max-width:560px;margin:48px auto;padding:0 16px;line-height:1.5;color:#1d1d1f;background:#fff}
+code{background:#f2f2f7;padding:2px 6px;border-radius:4px}
+.ok{color:#1a7f37;font-weight:600}
+</style>
+</head>
+<body>
+<h1>KubePilot Demo API</h1>
+<p class="ok">&#9679; Service is running</p>
+<p>This server hosts synthetic Kubernetes data for the KubePilot iOS app.
+It is an API endpoint, not a website.</p>
+<p>To use it, open the KubePilot app, tap <strong>Try demo</strong> on the Welcome
+screen, or enter <code>https://demo.kubepilot.org</code> with the credentials from
+the App Review notes.</p>
+<p>Health check: <a href="/healthz"><code>/healthz</code></a></p>
+</body>
+</html>
+`
+
+func (s *server) handleRoot(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(rootPage))
 }
 
 func (s *server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
