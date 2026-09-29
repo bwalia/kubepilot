@@ -127,6 +127,12 @@ Do not pass deliver `price_tier` — Apple removed the legacy `apps.prices` API.
 **One-time ASC UI:** App → App Privacy → select **Data Not Collected** → Publish, then re-run
 `target=app_store` so review submit can proceed.
 
+**Invalid Binary (no Resolution Center text):** If Activity shows Waiting for Review → Invalid Binary
+within minutes, check the IPA SDK. Builds produced with **iphoneos26+** (Xcode 26.x beta on the
+Mac Studio runner) are rejected even when app + widget `CFBundleVersion` match. Install **Xcode 16.4
+GM** as `/Applications/Xcode-16.4.0.app` on the self-hosted runner and re-run `target=app_store`.
+The workflow skips SDK major ≥ 26 for App Store releases.
+
 **Routing App Coverage:** if ASC asks for a geographic coverage `.geojson`, the release lane
 uploads `ios/fastlane/metadata/routing_app_coverage.geojson` (worldwide MultiPolygon) via
 `ensure_routing_coverage`. You can also upload that file manually under the version’s
