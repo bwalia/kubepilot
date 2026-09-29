@@ -1,0 +1,137 @@
+name: Register demo.kubepilot.org edge
+
+# GitOps for App Review demo public reachability.
+#
+# Source of truth in this repo: deploy/wslproxy/*.json
+# Companion source of truth on the edge plane: bwalia/wslproxy data/servers|rules/prod
+# (Deploy WSLProxy Virtual Servers on lon1 keeps the POP files in sync).
+#
+# Idempotent: Cloudflare CNAME upsert + wslproxy /api/projects/import.
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "deploy/wslproxy/**"
+      - ".github/workflows/register-demo-edge.yml"
+      - "scripts/upsert-demo-cname.sh"
+  workflow_dispatch:
+    inputs:
+      DRY_RUN:
+        description: "Print actions without writing"
+        type: boolean
+        required: false
+        default: false
+
+env:
+  ZONE: kubepilot.org
+  CNAME_TARGET: lon1.pop0.uk
+  DEMO_HOST: demo.kubepilot.org
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kubepilot-demo-edge
+  cancel-in-progress: false
+
+jobs:
+  register:
+    name: Register demo edge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure Cloudflare CNAME (DNS-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DRY_RUN: ${{ inputs.DRY_RUN || false }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret is required on this repository."
+            exit 1
+          fi
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "DRY_RUN: would upsert CNAME ${DEMO_HOST} -> ${CNAME_TARGET} (proxied=false)"
+            exit 0
+          fi
+          chmod +x scripts/upsert-demo-cname.sh
+          ./scripts/upsert-demo-cname.sh
+
+      - name: Import wslproxy rule + vhost
+        env:
+          WSLPROXY_USER: ${{ secrets.WSLPROXY_USER }}
+          WSLPROXY_PASSWORD: ${{ secrets.WSLPROXY_PASSWORD }}
+          WSLPROXY_GATEWAY_URL: ${{ secrets.WSLPROXY_GATEWAY_URL }}
+          DRY_RUN: ${{ inputs.DRY_RUN || false }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WSLPROXY_USER:-}" ] || [ -z "${WSLPROXY_PASSWORD:-}" ] || [ -z "${WSLPROXY_GATEWAY_URL:-}" ]; then
+            echo "::error::WSLPROXY_USER / WSLPROXY_PASSWORD / WSLPROXY_GATEWAY_URL must all be set."
+            exit 1
+          fi
+
+          HOST_SPEC="deploy/wslproxy/host-${DEMO_HOST}.json"
+          RULE_SPEC="deploy/wslproxy/rule-kubepilot-demo-default.json"
+          [ -f "$HOST_SPEC" ] || { echo "::error::missing $HOST_SPEC"; exit 1; }
+          [ -f "$RULE_SPEC" ] || { echo "::error::missing $RULE_SPEC"; exit 1; }
+          spec_host=$(jq -r '.server_name' "$HOST_SPEC")
+          [ "$spec_host" = "$DEMO_HOST" ] || { echo "::error::$HOST_SPEC server_name=$spec_host != $DEMO_HOST"; exit 1; }
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "DRY_RUN: would import rule $(jq -r .id "$RULE_SPEC") and host $(jq -r .id "$HOST_SPEC")"
+            exit 0
+          fi
+
+          GW="$WSLPROXY_GATEWAY_URL"
+          TOKEN=$(curl -fsS -X POST "$GW/api/user/login" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg e "$WSLPROXY_USER" --arg p "$WSLPROXY_PASSWORD" '{email:$e,password:$p}')" \
+            | jq -r '.data.accessToken // .accessToken // empty')
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::wslproxy login failed for ${WSLPROXY_USER} at ${GW}."
+            exit 1
+          fi
+
+          import() {
+            local dtype="$1" arr="$2" body resp code
+            body=$(jq -cn --argjson data "$arr" --arg dt "$dtype" '{data: $data, dataType: $dt}')
+            resp=$(curl -sS --max-time 60 -w "\n%{http_code}" \
+              -X POST "${GW%/}/api/projects/import?_format=json" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "x-platform: react-admin" \
+              -H "Content-Type: application/json" \
+              --data-raw "$body")
+            code=$(echo "$resp" | tail -n1)
+            echo "  dataType=$dtype -> HTTP $code"
+            case "$code" in
+              200|201) ;;
+              *) echo "$resp" | sed '$d'; echo "::error::import of $dtype failed (HTTP $code)"; return 1 ;;
+            esac
+          }
+
+          RULES_ARR=$(jq -s '.' "$RULE_SPEC")
+          echo "Importing rule(s): $(echo "$RULES_ARR" | jq -r '[.[].id] | join(", ")')"
+          import rules "$RULES_ARR"
+
+          SERVERS_ARR=$(jq -s '.' "$HOST_SPEC")
+          echo "Importing vhost(s): $(echo "$SERVERS_ARR" | jq -r '[.[].server_name] | join(", ")')"
+          import servers "$SERVERS_ARR"
+
+      - name: Smoke public healthz
+        if: ${{ (inputs.DRY_RUN || false) != true }}
+        run: |
+          set -euo pipefail
+          # DNS / cert can lag briefly after first upsert.
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 15 "https://${DEMO_HOST}/healthz" | grep -q ok; then
+              echo "https://${DEMO_HOST}/healthz ok"
+              exit 0
+            fi
+            echo "attempt $i failed; sleeping 10s"
+            sleep 10
+          done
+          echo "::warning::public smoke did not pass yet — check DNS propagation / ACME"
+          curl -sS -m 15 -D- -o /dev/null "https://${DEMO_HOST}/healthz" || true
+          exit 0

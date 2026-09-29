@@ -15,6 +15,21 @@ Apple reviewer
 
 Same edge pattern as fishers.cloud (`devops/wslproxy` + `traefik-edge`).
 
+## GitOps (persistent)
+
+| Layer | Source of truth | Apply path |
+|---|---|---|
+| Workload | `deploy/demo-api/` on k3s1 | `kubectl apply -k deploy/demo-api/` |
+| Edge vhost + rule (POP files) | `bwalia/wslproxy` → `data/servers/prod/host:demo.kubepilot.org.json` + `data/rules/prod/kubepilot-demo-default.json` | Push + **Deploy WSLProxy Virtual Servers** (`prod` / `lon1.pop0.uk`) |
+| Edge + DNS (app-side reconcile) | `deploy/wslproxy/*.json` + `scripts/upsert-demo-cname.sh` | `.github/workflows/register-demo-edge.yml` on push / `workflow_dispatch` |
+
+Required GitHub secrets on **bwalia/kubepilot** (same values as fishers):
+
+- `CLOUDFLARE_API_TOKEN` — Zone.DNS edit on `kubepilot.org`
+- `WSLPROXY_USER` / `WSLPROXY_PASSWORD` / `WSLPROXY_GATEWAY_URL`
+
+Keep the kubepilot `deploy/wslproxy` specs and the wslproxy `data/` copies in sync when changing backends or hostnames.
+
 ## Credentials
 
 | | |
@@ -31,9 +46,9 @@ Rotate `deploy/demo-api/deployment.yaml` Secret after approval.
 ## Deploy (k3s1)
 
 ```bash
-# 1. Build & push (context = repo root)
-docker build -f deploy/demo-api/Dockerfile -t docker.io/bwalia/kubepilot-demo-api:latest .
-docker push docker.io/bwalia/kubepilot-demo-api:latest
+# 1. Build & push (context = repo root; or use ko)
+ko build --bare --platform=linux/amd64 --tags=latest ./cmd/demo-api
+# KO_DOCKER_REPO=docker.io/bwalia/kubepilot-demo-api
 
 # 2. Apply
 KUBECONFIG=~/.kube/k3s1.yaml kubectl apply -k deploy/demo-api/
@@ -44,20 +59,13 @@ curl -s -u apple:review -H 'Host: demo.kubepilot.org' \
   http://193.237.176.232:8888/api/v1/troubleshooting/summary | head -c 200
 ```
 
-## Edge + DNS
-
-1. **wslproxy** — apply `deploy/wslproxy/host-demo.kubepilot.org.json` and
-   `deploy/wslproxy/rule-kubepilot-demo-default.json` (same flow as fishers
-   `register-edge-vhost`).
-2. **Cloudflare** — CNAME `demo` → `lon1.pop0.uk`, **proxied: false** (grey-cloud):
+## Edge + DNS (manual / local)
 
 ```bash
 export CLOUDFLARE_API_TOKEN=…
 ./scripts/upsert-demo-cname.sh
+# Prefer: gh workflow run register-demo-edge.yml
 ```
-
-`kubepilot.org` is not in the cluster ExternalDNS `--domain-filter` (only
-`diytaxreturn.co.uk`), so the CNAME must be upserted explicitly.
 
 ## In-app Try demo
 
