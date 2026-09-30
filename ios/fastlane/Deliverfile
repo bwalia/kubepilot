@@ -7,8 +7,9 @@ phased_release(false)
 submit_for_review(true)
 force(true)
 precheck_include_in_app_purchases(false)
-# Routing coverage is uploaded by scripts/ensure_routing_coverage.rb (worldwide
-# MultiPolygon at metadata/routing_app_coverage.geojson).
+# KubePilot is NOT a routing app: never upload a Routing App Coverage File.
+# Doing so fails validation with ITMS-90118 unless the binary declares
+# MKDirectionsApplicationSupportedModes (see #40/#48 — builds 13-20).
 #
 # Sign-in is required for review — ASC "Sign-in required" needs demo_user /
 # demo_password (also mirrored in metadata/review_information/*.txt).
