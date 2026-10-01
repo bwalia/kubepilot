@@ -1,5 +1,10 @@
 Thank you for reviewing KubePilot.
 
+Contact for all App Review communication (including any rejection reasons):
+• Name: Balinder Walia
+• Email: support@workstation.co.uk
+• Phone: +44 7515 356146
+
 Sign-in is required. The app connects to a KubePilot backend; for this review please use the hosted demo API below (or tap Try demo on the Welcome screen, which fills these values for you).
 
 Demo server
@@ -17,3 +22,4 @@ Notes
 • The demo API returns synthetic cluster data only (for example CrashLoopBackOff and sample AI analysis). It does not expose customer clusters or real kubeconfigs.
 • If the demo host is temporarily unreachable, Try demo falls back to the same sample data offline so you can still exercise the main screens.
 • Reviewers with their own KubePilot backend may instead enter that server URL and credentials on Welcome.
+• Please send any rejection reasons or follow-up questions to support@workstation.co.uk.
