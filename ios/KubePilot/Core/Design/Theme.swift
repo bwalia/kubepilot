@@ -31,7 +31,12 @@ enum Theme {
 
     static let accent = Color(hex: 0x3B82F6)
     /// Brighter tint for accent-coloured *text* on dark surfaces (AA at 7.3:1).
+    /// `accent` itself is only 4.1:1 on `surfaceElevated`, so it must not be used
+    /// for small text — use this instead, or `onTint(for:)`.
     static let accentLight = Color(hex: 0x7DA9FF)
+    /// Fill for solid buttons carrying white text. `accent` gives white only
+    /// 3.7:1; this is dark enough for 5.2:1 while staying the same hue.
+    static let accentStrong = Color(hex: 0x2563EB)
     static let purple = Color(hex: 0xA78BFA)
     static let green = Color(hex: 0x34D399)
     static let amber = Color(hex: 0xFBBF24)
@@ -136,6 +141,13 @@ enum Theme {
         case "medium", "warning": warning
         default: accent
         }
+    }
+
+    /// AA-safe *text* colour for a semantic tint. Every semantic colour here clears
+    /// 4.5:1 on its own tinted pill except `accent`, which lands at 3.7:1 — so it is
+    /// swapped for `accentLight`. Use this anywhere a tint is painted as text.
+    static func onTint(for color: Color) -> Color {
+        color == accent ? accentLight : color
     }
 
     /// Icon paired with a semantic colour so status never relies on colour alone

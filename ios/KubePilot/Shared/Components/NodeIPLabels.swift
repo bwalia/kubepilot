@@ -29,7 +29,7 @@ struct NodeIPLabels: View {
             }
         } else if fallbackIPs.isEmpty {
             Text("—")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.muted)
         } else {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(fallbackIPs, id: \.self) { ip in
@@ -45,7 +45,7 @@ struct NodeIPLabels: View {
             HStack(alignment: .top, spacing: 6) {
                 Text(label)
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
                     .frame(width: 44, alignment: .leading)
                 Text(ips.joined(separator: ", "))
                     .font(.caption.monospaced())

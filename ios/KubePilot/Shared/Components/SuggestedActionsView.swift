@@ -35,7 +35,7 @@ struct SuggestedActionsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(action.type.uppercased())
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(Theme.accentLight)
                     Text(action.explanation)
                         .font(.caption)
                         .foregroundStyle(Theme.textSecondary)

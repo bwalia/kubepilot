@@ -234,7 +234,7 @@ struct StatusBadge: View {
         .padding(.vertical, 4)
         .background(color.opacity(0.18), in: Capsule())
         .overlay(Capsule().strokeBorder(color.opacity(0.45), lineWidth: 1))
-        .foregroundStyle(color)
+        .foregroundStyle(Theme.onTint(for: color))
         .accessibilityLabel(text)
     }
 }
@@ -379,7 +379,7 @@ struct ThemedPrimaryButton: View {
             .foregroundStyle(.white)
             .background(
                 LinearGradient(
-                    colors: [Theme.accent, Theme.accent.opacity(0.86)],
+                    colors: [Theme.accentStrong, Theme.accentStrong.opacity(0.86)],
                     startPoint: .top,
                     endPoint: .bottom
                 ),
