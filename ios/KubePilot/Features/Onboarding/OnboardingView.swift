@@ -13,44 +13,82 @@ struct OnboardingView: View {
                     Section {
                         KubePilotBrandHeader()
                             .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
+                            .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 4, trailing: 0))
+                    }
+
+                    // The fastest path into the app, kept above the fold so a first-time
+                    // user (or an App Review tester) never has to scroll to find it.
+                    Section {
+                        DemoLaunchCard(isBusy: viewModel.isConnecting) {
+                            Task { await viewModel.tryDemo(using: appState.authManager) }
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                        .listRowBackground(Color.clear)
                     }
 
                     Section {
-                        TextField("https://kubepilot.example.com", text: $viewModel.serverURL)
+                        LabeledField(title: "Server URL") {
+                            TextField(
+                                "",
+                                text: $viewModel.serverURL,
+                                prompt: Text("https://kubepilot.example.com").foregroundStyle(Theme.muted)
+                            )
                             .textInputAutocapitalization(.never)
                             .keyboardType(.URL)
+                            .textContentType(.URL)
                             .autocorrectionDisabled()
                             .foregroundStyle(Theme.textPrimary)
-                    } header: {
-                        Text("Server")
-                    }
-                    .listRowBackground(Theme.surface)
+                        }
 
-                    Section {
                         Picker("Method", selection: $viewModel.authMethod) {
                             ForEach(ServerAccount.AuthMethod.allCases, id: \.self) { method in
                                 Text(method.label).tag(method)
                             }
                         }
+                        .foregroundStyle(Theme.textPrimary)
 
                         switch viewModel.authMethod {
                         case .bearer, .oauthGitHub, .oauthGitLab, .oauthGoogle, .oauthMicrosoft, .oidc:
-                            SecureField("API Token / OAuth Token", text: $viewModel.bearerToken)
+                            LabeledField(title: "Token") {
+                                SecureField(
+                                    "",
+                                    text: $viewModel.bearerToken,
+                                    prompt: Text("API or OAuth token").foregroundStyle(Theme.muted)
+                                )
+                                .foregroundStyle(Theme.textPrimary)
+                            }
                         case .basic:
-                            TextField("Username", text: $viewModel.username)
+                            LabeledField(title: "Username") {
+                                TextField(
+                                    "",
+                                    text: $viewModel.username,
+                                    prompt: Text("Your username").foregroundStyle(Theme.muted)
+                                )
                                 .textInputAutocapitalization(.never)
-                            SecureField("Password", text: $viewModel.password)
+                                .textContentType(.username)
+                                .autocorrectionDisabled()
+                                .foregroundStyle(Theme.textPrimary)
+                            }
+                            LabeledField(title: "Password") {
+                                SecureField(
+                                    "",
+                                    text: $viewModel.password,
+                                    prompt: Text("Your password").foregroundStyle(Theme.muted)
+                                )
+                                .textContentType(.password)
+                                .foregroundStyle(Theme.textPrimary)
+                            }
                         }
                     } header: {
-                        Text("Authentication")
+                        FormSectionHeader(title: "Connect your own server")
                     }
                     .listRowBackground(Theme.surface)
 
                     Section {
                         Toggle("Require Face ID on launch", isOn: $viewModel.biometricLock)
+                            .foregroundStyle(Theme.textPrimary)
                     } header: {
-                        Text("Security")
+                        FormSectionHeader(title: "Security")
                     } footer: {
                         Text("Protect cluster credentials with Face ID or device passcode when reopening the app.")
                             .foregroundStyle(Theme.muted)
@@ -59,11 +97,16 @@ struct OnboardingView: View {
 
                     if let error = viewModel.errorMessage {
                         Section {
-                            Label(error, systemImage: "exclamationmark.triangle.fill")
-                                .foregroundStyle(Theme.danger)
-                                .font(.subheadline)
+                            Label {
+                                Text(error).foregroundStyle(Theme.textSecondary)
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(Theme.danger)
+                            }
+                            .font(.subheadline)
                         }
                         .listRowBackground(Theme.surface)
+                        .accessibilityAddTraits(.isStaticText)
                     }
 
                     Section {
@@ -76,19 +119,6 @@ struct OnboardingView: View {
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                         .disabled(viewModel.isConnecting || viewModel.serverURL.isEmpty)
-
-                        Button {
-                            Task { await viewModel.tryDemo(using: appState.authManager) }
-                        } label: {
-                            Text(viewModel.isConnecting ? "Starting demo…" : "Try demo")
-                                .frame(maxWidth: .infinity)
-                                .font(.body.weight(.semibold))
-                        }
-                        .disabled(viewModel.isConnecting)
-                        .listRowBackground(Color.clear)
-                    } footer: {
-                        Text("Try demo connects to the App Review fixture at demo.kubepilot.org (apple / review), or loads the same data offline if the host is unreachable.")
-                            .foregroundStyle(Theme.muted)
                     }
                 }
                 .themedForm()
@@ -97,6 +127,80 @@ struct OnboardingView: View {
             .navigationBarTitleDisplayMode(.inline)
             .themedScreen()
         }
+    }
+}
+
+/// One-tap entry to the hosted demo. Deliberately the most prominent control on the
+/// screen: for anyone without a KubePilot backend it is the only path that works.
+private struct DemoLaunchCard: View {
+    let isBusy: Bool
+    let action: () -> Void
+
+    var body: some View {
+        SurfaceCard {
+            VStack(alignment: .leading, spacing: Theme.spacingMD) {
+                HStack(spacing: Theme.spacingSM) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(Theme.accentLight)
+                        .symbolRenderingMode(.hierarchical)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Try the live demo")
+                            .font(.headline)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text("No account or cluster needed")
+                            .font(.caption)
+                            .foregroundStyle(Theme.muted)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                Text("Opens a sample cluster with running and crash-looping pods, live logs, events and AI root-cause analysis.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                ThemedSecondaryButton(
+                    title: isBusy ? "Starting demo…" : "Start demo",
+                    systemImage: isBusy ? nil : "arrow.right"
+                ) {
+                    action()
+                }
+                .disabled(isBusy)
+                .opacity(isBusy ? 0.7 : 1)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "sparkles")
+                .font(.caption)
+                .foregroundStyle(Theme.purple)
+                .padding(Theme.spacingMD)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Field with a persistent visible label. A placeholder alone disappears the moment
+/// someone types, which is the single most common accessibility miss in iOS forms.
+private struct LabeledField<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .tracking(0.5)
+                .foregroundStyle(Theme.muted)
+                .textCase(.uppercase)
+            content()
+                .font(Theme.Typography.identifier)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
     }
 }
 

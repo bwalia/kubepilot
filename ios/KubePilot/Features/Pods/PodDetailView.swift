@@ -85,7 +85,7 @@ struct PodDetailView: View {
                         ForEach(diag.containerStatuses) { c in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(c.name).font(.subheadline.weight(.semibold))
-                                Text(c.image).font(.caption).foregroundStyle(.secondary)
+                                Text(c.image).font(.caption).foregroundStyle(Theme.muted)
                                 HStack {
                                     StatusBadge(text: c.state, color: c.ready ? Theme.success : Theme.danger)
                                     Text("\(c.restartCount) restarts").font(.caption)
@@ -119,7 +119,7 @@ struct PodDetailView: View {
                     StatusBadge(text: event.type, color: event.type == "Warning" ? Theme.warning : Theme.accent)
                     Text(event.reason).font(.subheadline.weight(.semibold))
                 }
-                Text(event.message).font(.caption).foregroundStyle(.secondary)
+                Text(event.message).font(.caption).foregroundStyle(Theme.muted)
             }
         }
     }
@@ -163,7 +163,7 @@ struct PodDetailView: View {
 
     private func infoRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).foregroundStyle(.secondary)
+            Text(label).foregroundStyle(Theme.muted)
             Spacer()
             Text(value).fontWeight(.medium)
         }
@@ -275,7 +275,7 @@ struct AIAnalysisCard: View {
                 .font(.headline)
             Text(report.analysis)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.muted)
                 .textSelection(.enabled)
 
             if !report.actions.isEmpty {
