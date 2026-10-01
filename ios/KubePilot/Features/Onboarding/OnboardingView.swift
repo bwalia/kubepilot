@@ -103,8 +103,11 @@ struct OnboardingView: View {
 @MainActor
 @Observable
 final class OnboardingViewModel {
-    var serverURL = "http://localhost:8383"
-    var authMethod: ServerAccount.AuthMethod = .bearer
+    // Default to the hosted demo so App Review (and anyone trying the app for
+    // the first time) lands on a server that actually answers. localhost:8383
+    // only works for a developer running the backend on the same machine.
+    var serverURL = DemoFixtures.hostedURL.absoluteString
+    var authMethod: ServerAccount.AuthMethod = .basic
     var bearerToken = ""
     var username = ""
     var password = ""
