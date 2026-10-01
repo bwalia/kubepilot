@@ -127,6 +127,13 @@ Do not pass deliver `price_tier` — Apple removed the legacy `apps.prices` API.
 **One-time ASC UI:** App → App Privacy → select **Data Not Collected** → Publish, then re-run
 `target=app_store` so review submit can proceed.
 
+**Rejection / status emails:** App Store Connect sends review outcome mail to **Users and Access**
+members with App Store notifications enabled (Account Holder / Admin / App Manager), not only the
+App Review Information contact. To guarantee mail at `support@workstation.co.uk`, invite that
+address in ASC → Users and Access (Admin or App Manager) and enable App Store email notifications.
+The App Review contact fields (Deliverfile / `review_information/`) are still set to that address
+so reviewers can reply there during review.
+
 **Invalid Binary (no Resolution Center text):** If Activity shows Waiting for Review → Invalid Binary
 within minutes, Apple emails the reason to the account holder — check that first. Do not downgrade
 Xcode: since April 2026 uploads must use the iOS 26 SDK (Xcode 26+), so an Xcode 16.x build is
