@@ -226,13 +226,6 @@ platform :ios do
     sh("bundle", "exec", "ruby", script)
   end
 
-  desc "Upload worldwide Routing App Coverage GeoJSON to the editable ASC version"
-  lane :ensure_routing_coverage do
-    asc_api_key
-    script = File.expand_path("../scripts/ensure_routing_coverage.rb", __dir__)
-    sh("bundle", "exec", "ruby", script)
-  end
-
   desc "Submit for App Store review — free, all territories, auto-release on approval"
   lane :release do
     key = asc_api_key
@@ -259,7 +252,6 @@ platform :ios do
     ensure_free_worldwide
     # Best-effort: API key cannot publish iris App Privacy; soft-skips if unauthorized.
     ensure_app_privacy
-    ensure_routing_coverage
 
     deliver_args = {
       api_key: key,
