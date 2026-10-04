@@ -134,6 +134,12 @@ address in ASC → Users and Access (Admin or App Manager) and enable App Store 
 The App Review contact fields (Deliverfile / `review_information/`) are still set to that address
 so reviewers can reply there during review.
 
+**In-flight review guard:** `target=app_store` runs `ensure_not_in_review` before building. If a
+submission is already **Waiting for Review** or **In Review**, the run stops: resubmitting would
+cancel it (`reject_if_possible`) and put the app at the back of Apple's queue. Submissions Apple has
+resolved (Invalid Binary / Unresolved Issues) are still replaced automatically. To deliberately
+replace a healthy in-flight review, re-run with **force_resubmit = true**.
+
 **Invalid Binary (no Resolution Center text):** If Activity shows Waiting for Review → Invalid Binary
 within minutes, Apple emails the reason to the account holder — check that first. Do not downgrade
 Xcode: since April 2026 uploads must use the iOS 26 SDK (Xcode 26+), so an Xcode 16.x build is
