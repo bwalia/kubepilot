@@ -8,284 +8,307 @@
       name="description"
       content="KubePilot helps SRE and platform teams resolve Kubernetes cluster incidents faster with AI CoPilot, SRE Pilot browsing, and AutoPilot self-healing — from diagnosis to safe fix in one open-source cockpit."
     />
-    <meta name="theme-color" content="#0a0f1c" />
+    <meta name="theme-color" content="#F7F9FC" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Same key and default as the dashboard's _document no-flash script:
+      // Daylight unless the visitor has chosen Night.
+      (function(){try{var t=localStorage.getItem('kubepilot-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
+      /* ============================================================
+         THEME TOKENS — mirrored 1:1 from dashboard/styles/globals.css so the
+         marketing site and the product read as one system.
+         :root = DAYLIGHT (default). [data-theme="dark"] = NIGHT.
+         ============================================================ */
       :root {
-        --bg: #0a0f1c;
-        --surface: #111827;
-        --surface-2: #1f2937;
-        --surface-3: #283548;
-        --border: rgba(255,255,255,0.08);
-        --border-hover: rgba(255,255,255,0.16);
-        --text: #f1f5f9;
-        --text-secondary: #cbd5e1;
-        --muted: #94a3b8;
-        --brand: #3b82f6;
-        --brand-light: #60a5fa;
-        --brand-glow: rgba(59,130,246,0.15);
-        --green: #22c55e;
-        --green-bg: rgba(34,197,94,0.1);
-        --green-border: rgba(34,197,94,0.25);
-        --purple: #a78bfa;
-        --amber: #fbbf24;
+        --p-bg:              247 249 252;
+        --p-surface:         255 255 255;
+        --p-surface-2:       240 243 248;
+        --p-border:          215 221 231;
+        --p-border-hover:    185 194 209;
+        --p-accent:           13 111 138;
+        --p-accent-light:     11  98 122;
+        --p-accent-deep:       8  70  88;
+        --p-success:           4 120  87;
+        --p-warning:         180  83   9;
+        --p-danger:          200  32  40;
+        --p-info:            107  40 214;
+        --p-muted:            90 102 122;
+        --p-text-secondary:   51  65  85;
+        --p-text-primary:     15  23  42;
+        --p-hover:            15  23  42;
+
+        --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px -3px rgba(15,23,42,.09);
+        --shadow-card-hover: 0 8px 20px -6px rgba(15,23,42,.14), 0 20px 40px -12px rgba(15,23,42,.16);
+        --shadow-bar: 0 1px 0 0 rgb(215 221 231), 0 4px 16px -8px rgba(15,23,42,.12);
+        --glow-blue: 0 0 0 1px rgba(13,111,138,.45), 0 6px 22px -6px rgba(13,111,138,.45);
+        --shadow-inset: inset 0 1px 0 0 rgba(255,255,255,.7);
+        --atmo-1: rgba(13,111,138,.05);
+        --atmo-2: rgba(56,120,180,.04);
+        --code-bg: 240 243 248;
+
         --radius: 16px;
-        --radius-sm: 10px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        color-scheme: light;
       }
+      :root[data-theme="dark"] {
+        --p-bg:               11  16  23;
+        --p-surface:          20  27  38;
+        --p-surface-2:        28  38  52;
+        --p-border:           43  56  74;
+        --p-border-hover:     62  80 102;
+        --p-accent:           34 211 238;
+        --p-accent-light:    125 236 250;
+        --p-accent-deep:      14 116 144;
+        --p-success:          52 211 153;
+        --p-warning:         251 191  36;
+        --p-danger:          251 113 133;
+        --p-info:            167 139 250;
+        --p-muted:           133 148 168;
+        --p-text-secondary:  181 195 212;
+        --p-text-primary:    234 241 248;
+        --p-hover:           255 255 255;
+
+        --shadow-card: inset 0 1px 0 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.5), 0 10px 28px -16px rgba(0,0,0,.72);
+        --shadow-card-hover: inset 0 1px 0 0 rgba(255,255,255,.07), 0 2px 6px rgba(0,0,0,.55), 0 16px 40px -14px rgba(0,0,0,.82);
+        --shadow-bar: 0 1px 0 0 rgb(43 56 74), 0 4px 16px -8px rgba(0,0,0,.6);
+        --glow-blue: 0 0 0 1px rgba(34,211,238,.32), 0 0 26px -6px rgba(34,211,238,.48);
+        --shadow-inset: inset 0 1px 0 0 rgba(255,255,255,.05);
+        --atmo-1: rgba(34,211,238,.06);
+        --atmo-2: rgba(56,130,200,.05);
+        --code-bg: 11 16 23;
+        color-scheme: dark;
+      }
+
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+      html { font-size: 17px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; transition: background-color .3s ease, color .3s ease; }
+      html, body { background-color: rgb(var(--p-bg)); }
       body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: var(--text);
-        background: var(--bg);
-        line-height: 1.7;
+        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: rgb(var(--p-text-primary));
+        line-height: 1.65;
         overflow-x: hidden;
-        font-size: 18px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
+      /* Flight-deck atmosphere — the same faint phosphor wash as the dashboard. */
+      body::before {
+        content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background:
+          radial-gradient(120% 60% at 50% -10%, var(--atmo-1), transparent 60%),
+          radial-gradient(90% 50% at 100% 0%, var(--atmo-2), transparent 55%);
+      }
+      body > * { position: relative; z-index: 1; }
+      h1, h2, h3, h4 { letter-spacing: -0.01em; color: rgb(var(--p-text-primary)); }
+      strong { color: rgb(var(--p-text-primary)); font-weight: 600; }
       a { color: inherit; text-decoration: none; }
       img { max-width: 100%; height: auto; }
+      code, pre, .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+      ::selection { background: rgb(var(--p-accent) / 0.28); color: rgb(var(--p-text-primary)); }
+      a, button { transition: border-color .15s ease, background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease; }
+      a:focus-visible, button:focus-visible { outline: 2px solid rgb(var(--p-accent)); outline-offset: 2px; }
+      .ic { width: 1.15rem; height: 1.15rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+      /* Instrument-panel eyebrow — identical to the dashboard's .eyebrow */
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.8rem; font-weight: 600; line-height: 1.1;
+        letter-spacing: 0.09em; text-transform: uppercase;
+        color: rgb(var(--p-muted));
+      }
 
       /* ── Layout ── */
       .wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 28px; }
 
-      /* ── Nav ── */
+      /* ── Nav (mirrors GlobalNav) ── */
       .nav {
-        position: sticky; top: 0; z-index: 50;
-        background: rgba(10,15,28,0.88);
-        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 60;
+        background: rgb(var(--p-surface) / 0.9);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        box-shadow: var(--shadow-bar);
       }
-      .nav-inner {
-        display: flex; align-items: center; justify-content: space-between;
-        height: 72px; gap: 16px;
+      .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+      .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.015em; white-space: nowrap; color: rgb(var(--p-text-primary)); }
+      .logo-text span { color: rgb(var(--p-accent)); }
+      .logo-mark {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; border-radius: 12px;
+        background: rgb(var(--p-accent) / 0.12); border: 1px solid rgb(var(--p-accent) / 0.25);
+        color: rgb(var(--p-accent));
       }
-      .logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; white-space: nowrap; }
-      .logo span { color: var(--brand); }
-      .nav-links { display: flex; align-items: center; gap: 6px; }
+      .logo:hover .logo-mark { border-color: rgb(var(--p-accent) / 0.5); }
+      .logo-mark .ic { transform: rotate(-45deg); }
+      .nav-links { display: flex; align-items: center; gap: 4px; }
       .nav-links a {
-        font-size: 1rem; font-weight: 500; color: var(--muted);
-        padding: 8px 16px; border-radius: var(--radius-sm); transition: color 0.2s, background 0.2s;
+        display: inline-flex; align-items: center; height: 40px;
+        font-size: 0.95rem; font-weight: 600; color: rgb(var(--p-text-secondary));
+        padding: 0 12px; border-radius: 12px; border: 1px solid transparent; white-space: nowrap;
       }
-      .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+      .nav-links a:hover { color: rgb(var(--p-text-primary)); background: rgb(var(--p-hover) / 0.05); }
+      .nav-actions { display: flex; align-items: center; gap: 8px; }
 
-      /* ── Buttons ── */
+      /* Theme toggle — same control as dashboard ThemeToggle */
+      .theme-toggle {
+        display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 8px;
+        border-radius: 6px; border: 1px solid rgb(var(--p-border));
+        background: rgb(var(--p-surface-2)); color: rgb(var(--p-text-secondary));
+        font: 600 13px/1 'IBM Plex Sans', sans-serif; cursor: pointer;
+      }
+      .theme-toggle:hover { color: rgb(var(--p-text-primary)); border-color: rgb(var(--p-border-hover)); }
+      .theme-toggle .ic { width: 16px; height: 16px; color: rgb(var(--p-accent)); }
+      .theme-toggle .i-moon, :root[data-theme="dark"] .theme-toggle .i-sun { display: none; }
+      :root[data-theme="dark"] .theme-toggle .i-moon { display: block; }
+
+      /* ── Buttons (mirror ui/button variants) ── */
       .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        font-size: 1rem; font-weight: 600; padding: 12px 24px; border-radius: var(--radius-sm);
-        border: 1px solid var(--border); color: var(--text);
-        background: var(--surface); transition: all 0.2s; cursor: pointer;
-        white-space: nowrap;
+        font-size: 0.95rem; font-weight: 600; height: 40px; padding: 0 18px;
+        border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap;
+        border: 1px solid rgb(var(--p-border)); color: rgb(var(--p-text-secondary));
+        background: rgb(var(--p-surface));
       }
-      .btn:hover { border-color: var(--border-hover); background: var(--surface-2); transform: translateY(-1px); }
+      .btn:hover { border-color: rgb(var(--p-accent) / 0.5); color: rgb(var(--p-text-primary)); background: rgb(var(--p-surface-2)); }
       .btn-primary {
-        background: var(--brand); border-color: var(--brand); color: #fff;
-        box-shadow: 0 4px 24px var(--brand-glow);
+        background: rgb(var(--p-accent)); border-color: rgb(var(--p-accent)); color: rgb(var(--p-bg));
       }
-      .btn-primary:hover { background: #2563eb; border-color: #2563eb; box-shadow: 0 6px 32px rgba(59,130,246,0.25); }
-      .btn-lg { padding: 16px 32px; font-size: 1.1rem; border-radius: 12px; }
+      .btn-primary:hover { background: rgb(var(--p-accent-light)); border-color: rgb(var(--p-accent-light)); color: rgb(var(--p-bg)); box-shadow: var(--glow-blue); }
+      .btn-lg { height: 48px; padding: 0 24px; font-size: 1rem; border-radius: 10px; }
 
       /* ── Mobile menu ── */
-      .menu-toggle { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 8px; }
+      .menu-toggle { display: none; background: none; border: none; color: rgb(var(--p-text-primary)); cursor: pointer; padding: 8px; border-radius: 8px; }
+      .menu-toggle:hover { background: rgb(var(--p-hover) / 0.06); }
       .menu-toggle svg { display: block; }
 
       /* ── Hero ── */
-      .hero { padding: 100px 0 80px; text-align: center; }
+      .hero { padding: 88px 0 72px; text-align: center; }
       .hero-bg {
-        position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-        width: 800px; height: 600px;
-        background: radial-gradient(ellipse at center, var(--brand-glow) 0%, transparent 70%);
-        pointer-events: none; z-index: -1;
+        position: absolute; inset: 0; z-index: -1; pointer-events: none;
+        background-image: radial-gradient(circle, rgb(var(--p-border) / 0.9) 1px, transparent 1.4px);
+        background-size: 22px 22px; background-position: -1px -1px;
+        -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 25%, #000 20%, transparent 75%);
+                mask-image: radial-gradient(ellipse 70% 55% at 50% 25%, #000 20%, transparent 75%);
       }
       .badge {
-        display: inline-flex; align-items: center; gap: 6px;
-        font-size: 0.875rem; font-weight: 600;
-        letter-spacing: 0.04em; text-transform: uppercase; color: var(--green);
-        background: var(--green-bg); border: 1px solid var(--green-border);
-        padding: 8px 18px; border-radius: 999px; margin-bottom: 28px;
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+        color: rgb(var(--p-success));
+        background: rgb(var(--p-success) / 0.12); border: 1px solid rgb(var(--p-success) / 0.25);
+        padding: 6px 14px; border-radius: 6px; margin-bottom: 28px;
       }
-      .badge::before { content: ''; width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+      .badge::before {
+        content: ''; width: 8px; height: 8px; background: rgb(var(--p-success)); border-radius: 50%;
+        animation: pulseDot 2s ease-in-out infinite;
+      }
+      @keyframes pulseDot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.82); } }
       .hero h1 {
-        font-size: clamp(2.5rem, 6vw, 4rem);
-        line-height: 1.1; margin-bottom: 24px; font-weight: 900;
-        letter-spacing: -0.03em;
+        font-size: clamp(2.4rem, 5.6vw, 3.75rem);
+        line-height: 1.08; margin-bottom: 22px; font-weight: 700; letter-spacing: -0.025em;
       }
-      .hero h1 .gradient {
-        background: linear-gradient(135deg, var(--brand-light) 0%, var(--purple) 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
+      .hero h1 .gradient { color: rgb(var(--p-accent)); }
       .hero .subtitle {
-        color: var(--text-secondary); font-size: clamp(1.15rem, 2.5vw, 1.35rem);
-        max-width: 720px; margin: 0 auto 40px; line-height: 1.7;
+        color: rgb(var(--p-text-secondary)); font-size: clamp(1.08rem, 2.2vw, 1.25rem);
+        max-width: 720px; margin: 0 auto 36px; line-height: 1.7;
       }
-      .hero-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
-      .hero-video {
-        margin: 44px auto 0;
-        max-width: 920px;
-        text-align: center;
-      }
+      .hero-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+      .hero-video { margin: 56px auto 0; max-width: 920px; text-align: center; }
       .hero-video-header { margin-bottom: 18px; }
-      .hero-video-header h2 {
-        font-size: clamp(1.35rem, 3vw, 1.75rem);
-        font-weight: 800;
-        margin-bottom: 8px;
-        letter-spacing: -0.02em;
-      }
-      .hero-video-header p {
-        color: var(--muted);
-        font-size: 1rem;
-        max-width: 640px;
-        margin: 0 auto;
-        line-height: 1.6;
-      }
+      .hero-video-header h2 { font-size: clamp(1.3rem, 3vw, 1.6rem); font-weight: 700; margin-bottom: 6px; }
+      .hero-video-header p { color: rgb(var(--p-muted)); font-size: 1rem; max-width: 640px; margin: 0 auto; line-height: 1.6; }
 
       /* ── Trust bar ── */
-      .trust-bar {
-        padding: 32px 0 0;
-        text-align: center; color: var(--muted); font-size: 0.95rem;
+      .trust-bar { padding: 32px 0 0; text-align: center; color: rgb(var(--p-muted)); font-size: 1rem; max-width: 900px; }
+
+      /* ── Shared card surface (bg-pilot-surface border rounded-xl shadow-card) ── */
+      .highlight, .feature, .mode, .step, .screenshot, .video-card, .install-block, .benefit, .cta-card {
+        background: rgb(var(--p-surface)); border: 1px solid rgb(var(--p-border));
+        box-shadow: var(--shadow-card);
       }
-      .trust-bar strong { color: var(--text-secondary); font-weight: 600; }
+      .highlight:hover, .feature:hover, .mode:hover, .step:hover, .screenshot:hover, .benefit:hover {
+        border-color: rgb(var(--p-border-hover)); box-shadow: var(--shadow-card-hover); transform: translateY(-2px);
+      }
+      .highlight, .feature, .mode, .step, .screenshot, .benefit { transition: border-color .2s, box-shadow .2s, transform .2s; }
+
+      /* Icon tile — same as the brand mark / KPI icon chips in the dashboard */
+      .icon-tile {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 40px; height: 40px; border-radius: 10px;
+        background: rgb(var(--p-accent) / 0.12); border: 1px solid rgb(var(--p-accent) / 0.22);
+        color: rgb(var(--p-accent)); margin-bottom: 16px;
+      }
+      .icon-tile .ic { width: 20px; height: 20px; }
 
       /* ── Highlights ── */
-      .highlights {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-        padding: 56px 0;
-      }
-      .highlight {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 28px 24px; text-align: center;
-        transition: border-color 0.2s, transform 0.2s;
-      }
-      .highlight:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-      .highlight-icon {
-        font-size: 2.25rem; margin-bottom: 14px; display: block;
-        line-height: 1;
-      }
-      .highlight h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
-      .highlight p { font-size: 1rem; color: var(--muted); line-height: 1.6; }
+      .highlights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 56px 0; }
+      .highlight { border-radius: var(--radius-md); padding: 24px 22px; }
+      .highlight-icon { display: none; }
+      .highlight h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; }
+      .highlight p { font-size: 0.93rem; color: rgb(var(--p-muted)); line-height: 1.6; }
 
       /* ── Section ── */
       .section { padding: 80px 0; }
-      .section-header { text-align: center; margin-bottom: 48px; }
-      .section-header h2 {
-        font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 900;
-        margin-bottom: 12px; letter-spacing: -0.02em;
-      }
-      .section-header p { color: var(--text-secondary); font-size: 1.15rem; max-width: 600px; margin: 0 auto; }
-      .section-divider {
-        width: 60px; height: 4px; background: var(--brand);
-        border-radius: 2px; margin: 0 auto 20px;
-      }
+      .section-alt { background: rgb(var(--p-surface)); border-top: 1px solid rgb(var(--p-border)); border-bottom: 1px solid rgb(var(--p-border)); }
+      .section-alt .step, .section-alt .install-block { background: rgb(var(--p-bg)); }
+      .section-header { text-align: center; margin-bottom: 44px; }
+      .section-header .eyebrow { color: rgb(var(--p-accent-light)); margin-bottom: 14px; }
+      .section-header h2 { font-size: clamp(1.7rem, 3.6vw, 2.3rem); font-weight: 700; margin-bottom: 12px; letter-spacing: -0.02em; line-height: 1.2; }
+      .section-header p { color: rgb(var(--p-text-secondary)); font-size: 1.08rem; max-width: 620px; margin: 0 auto; }
 
       /* ── Feature cards ── */
-      .features { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-      .feature {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 32px;
-        transition: border-color 0.2s, transform 0.2s;
-      }
-      .feature:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-      .feature-icon {
-        display: flex; align-items: center; justify-content: center;
-        width: 48px; height: 48px; border-radius: 12px;
-        background: var(--brand-glow); margin-bottom: 18px;
-        font-size: 1.5rem;
-      }
-      .feature h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; }
-      .feature p { font-size: 1.05rem; color: var(--muted); line-height: 1.7; }
+      .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .feature { border-radius: var(--radius-md); padding: 26px; }
+      .feature-icon { display: none; }
+      .feature h3 { font-size: 1.08rem; font-weight: 600; margin-bottom: 8px; line-height: 1.35; }
+      .feature p { font-size: 0.95rem; color: rgb(var(--p-muted)); line-height: 1.65; }
 
       /* ── Product modes (CoPilot / Pilot / AutoPilot) ── */
-      .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-      .mode {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 32px 28px;
-        display: flex; flex-direction: column; gap: 16px;
-        transition: border-color 0.2s, transform 0.2s;
-      }
-      .mode:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .mode { border-radius: var(--radius); padding: 28px 26px; display: flex; flex-direction: column; gap: 14px; }
       .mode-eyebrow {
-        display: inline-flex; align-items: center; gap: 8px;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em;
-        text-transform: uppercase; color: var(--brand-light);
+        display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+        height: 34px; padding: 0 12px; border-radius: 10px;
+        font-size: 0.9rem; font-weight: 600;
+        color: rgb(var(--p-accent-light));
+        background: rgb(var(--p-accent) / 0.12); border: 1px solid rgb(var(--p-accent) / 0.3);
       }
-      .mode-eyebrow::before {
-        content: ''; width: 8px; height: 8px; border-radius: 50%;
-        background: var(--brand);
-      }
-      .mode h3 {
-        font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em;
-        line-height: 1.25;
-      }
-      .mode .mode-tagline {
-        color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6;
-      }
+      .mode-eyebrow .ic { color: rgb(var(--p-accent)); width: 1rem; height: 1rem; }
+      .mode h3 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.3; }
+      .mode .mode-tagline { color: rgb(var(--p-text-secondary)); font-size: 0.98rem; line-height: 1.6; }
       .mode-benefit {
-        margin-top: 4px; padding: 14px 16px;
-        background: var(--brand-glow); border: 1px solid rgba(59,130,246,0.22);
+        margin-top: 2px; padding: 12px 14px;
+        background: rgb(var(--p-surface-2)); border: 1px solid rgb(var(--p-border));
+        border-left: 3px solid rgb(var(--p-accent));
         border-radius: var(--radius-sm);
-        color: var(--text-secondary); font-size: 0.98rem; line-height: 1.55;
+        color: rgb(var(--p-text-secondary)); font-size: 0.93rem; line-height: 1.55;
       }
-      .mode-benefit strong { color: var(--text); font-weight: 700; }
-      .mode ul {
-        list-style: none; display: flex; flex-direction: column; gap: 10px;
-        margin-top: auto;
-      }
-      .mode li {
-        position: relative; padding-left: 22px;
-        color: var(--muted); font-size: 0.98rem; line-height: 1.55;
-      }
+      .mode ul { list-style: none; display: flex; flex-direction: column; gap: 9px; padding-top: 4px; }
+      .mode li { position: relative; padding-left: 20px; color: rgb(var(--p-muted)); font-size: 0.93rem; line-height: 1.55; }
       .mode li::before {
         content: ''; position: absolute; left: 0; top: 0.55em;
-        width: 8px; height: 8px; border-radius: 2px;
-        background: var(--brand);
+        width: 7px; height: 7px; border-radius: 2px; background: rgb(var(--p-accent));
       }
 
-      .benefits {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-        margin-top: 28px;
-      }
-      .benefit {
-        text-align: left; padding: 22px 20px;
-        background: rgba(255,255,255,0.02); border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-      }
-      .benefit h4 {
-        font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;
-      }
-      .benefit p { font-size: 0.98rem; color: var(--muted); line-height: 1.55; }
+      .benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+      .benefit { text-align: left; padding: 22px 20px; border-radius: var(--radius-md); }
+      .benefit h4 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+      .benefit p { font-size: 0.93rem; color: rgb(var(--p-muted)); line-height: 1.55; }
 
       /* ── Screenshots ── */
-      .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-      .screenshot {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); overflow: hidden;
-        transition: border-color 0.2s, transform 0.2s;
-      }
-      .screenshot:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-      .screenshot img { width: 100%; display: block; background: #050b18; }
+      .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .screenshot { border-radius: var(--radius-md); overflow: hidden; }
+      .screenshot img { width: 100%; display: block; background: rgb(var(--p-surface-2)); border-bottom: 1px solid rgb(var(--p-border)); }
       .screenshot-wide { grid-column: 1 / -1; }
       .screenshot-wide img { max-height: 620px; object-fit: contain; }
-      .screenshot figcaption {
-        padding: 16px 20px; font-size: 0.95rem; color: var(--muted); line-height: 1.6;
-      }
+      .screenshot figcaption { padding: 14px 18px; font-size: 0.93rem; color: rgb(var(--p-muted)); line-height: 1.6; }
 
       /* ── Video ── */
-      .video-card {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-      }
-      .video-frame {
-        position: relative; width: 100%; padding-top: 56.25%;
-        background: #000;
-      }
-      .video-frame iframe {
-        position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
-      }
+      .video-card { border-radius: var(--radius-md); overflow: hidden; }
+      .video-frame { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
+      .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
       /* Click-to-play facade: no YouTube iframe until the user asks for it.
          Avoids player error 153 on file:// and keeps the page fast. */
       .video-facade {
@@ -293,162 +316,157 @@
         display: block; padding: 0; border: 0; background: #000;
         cursor: pointer; font: inherit; color: inherit; overflow: hidden;
       }
-      .video-facade img {
-        width: 100%; height: 100%; object-fit: cover; display: block;
-        opacity: 0.78; transition: opacity 0.25s, transform 0.4s;
-      }
+      .video-facade img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.8; transition: opacity 0.25s, transform 0.4s; }
       .video-facade:hover img, .video-facade:focus-visible img { opacity: 1; transform: scale(1.02); }
-      .video-facade:focus-visible { outline: 2px solid var(--brand-light); outline-offset: -4px; }
+      .video-facade:focus-visible { outline: 2px solid rgb(var(--p-accent)); outline-offset: -4px; }
       .video-play {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         display: flex; align-items: center; justify-content: center;
-        width: 84px; height: 84px; border-radius: 50%;
-        background: var(--brand); color: #fff;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 0 0 10px rgba(59,130,246,0.18);
+        width: 76px; height: 76px; border-radius: 50%;
+        background: rgb(var(--p-accent)); color: rgb(var(--p-bg));
+        box-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 0 0 10px rgb(var(--p-accent) / 0.2);
         transition: transform 0.25s, background 0.25s;
       }
-      .video-facade:hover .video-play, .video-facade:focus-visible .video-play {
-        transform: translate(-50%, -50%) scale(1.08); background: #2563eb;
-      }
+      .video-facade:hover .video-play, .video-facade:focus-visible .video-play { transform: translate(-50%, -50%) scale(1.08); background: rgb(var(--p-accent-light)); }
       .video-play svg { display: block; margin-left: 4px; }
       .video-caption {
-        padding: 20px 24px; border-top: 1px solid var(--border);
+        padding: 16px 20px; border-top: 1px solid rgb(var(--p-border));
         display: flex; align-items: center; justify-content: space-between;
         gap: 16px; flex-wrap: wrap; text-align: left;
       }
-      .video-caption p {
-        color: var(--text-secondary); font-size: 1rem; line-height: 1.7;
-      }
-      .video-caption .credit { color: var(--muted); font-size: 0.9rem; }
-      .video-caption .credit a { color: var(--brand-light); }
-      .video-caption .credit a:hover { text-decoration: underline; }
-      .watch-link {
-        font-size: 0.95rem; font-weight: 600; color: var(--brand-light); white-space: nowrap;
-      }
-      .watch-link:hover { text-decoration: underline; }
+      .video-caption p { color: rgb(var(--p-text-secondary)); font-size: 0.95rem; line-height: 1.6; }
+      .video-caption .credit { color: rgb(var(--p-muted)); font-size: 0.9rem; }
+      .video-caption .credit a, .watch-link { color: rgb(var(--p-accent-light)); }
+      .video-caption .credit a:hover, .watch-link:hover { text-decoration: underline; }
+      .watch-link { font-size: 0.93rem; font-weight: 600; white-space: nowrap; }
 
       /* ── Steps ── */
       .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: step; }
-      .step {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 28px 22px; counter-increment: step; position: relative;
-        transition: border-color 0.2s, transform 0.2s;
-      }
-      .step:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+      .step { border-radius: var(--radius-md); padding: 24px 22px; counter-increment: step; position: relative; }
       .step::before {
-        content: counter(step); display: flex; align-items: center; justify-content: center;
-        width: 36px; height: 36px; border-radius: 50%; font-size: 1rem; font-weight: 800;
-        background: var(--brand); color: #fff; margin-bottom: 14px;
+        content: counter(step, decimal-leading-zero); display: inline-flex; align-items: center; justify-content: center;
+        height: 28px; padding: 0 10px; border-radius: 6px;
+        font: 600 0.85rem/1 'IBM Plex Mono', monospace;
+        color: rgb(var(--p-accent-light)); background: rgb(var(--p-accent) / 0.12); border: 1px solid rgb(var(--p-accent) / 0.25);
+        margin-bottom: 14px;
       }
-      .step h4 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
-      .step p { font-size: 1rem; color: var(--muted); line-height: 1.6; }
+      .step h4 { font-size: 1.02rem; font-weight: 600; margin-bottom: 6px; }
+      .step p { font-size: 0.93rem; color: rgb(var(--p-muted)); line-height: 1.6; }
 
-      /* ── Install ── */
-      .install-block {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 32px; overflow-x: auto;
-      }
+      /* ── Install (mirrors ui/tabs: underline triggers) ── */
+      .install-block { border-radius: var(--radius-md); padding: 8px 24px 24px; overflow-x: auto; }
       .install-block pre {
-        margin: 0; color: var(--text-secondary); font-size: 0.95rem;
+        margin: 0; padding: 20px; border-radius: var(--radius-sm);
+        background: rgb(var(--code-bg)); border: 1px solid rgb(var(--p-border));
+        color: rgb(var(--p-text-secondary)); font-size: 0.88rem;
         line-height: 1.8; white-space: pre-wrap; word-break: break-all;
       }
-      .install-block code {
-        font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
-      }
-      .install-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+      .install-tabs { display: flex; gap: 4px; margin-bottom: 18px; flex-wrap: wrap; border-bottom: 1px solid rgb(var(--p-border)); }
       .install-tab {
-        font-size: 0.95rem; font-weight: 600; padding: 10px 20px; border-radius: var(--radius-sm);
-        background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer;
-        transition: all 0.2s; font-family: inherit;
+        font: 500 0.93rem 'IBM Plex Sans', sans-serif; padding: 12px 14px; margin-bottom: -1px;
+        background: transparent; border: 0; border-bottom: 2px solid transparent;
+        color: rgb(var(--p-muted)); cursor: pointer;
       }
-      .install-tab:hover, .install-tab.active {
-        color: var(--text); background: var(--surface-2); border-color: var(--border-hover);
-      }
+      .install-tab:hover { color: rgb(var(--p-text-secondary)); }
+      .install-tab.active { color: rgb(var(--p-text-primary)); border-bottom-color: rgb(var(--p-accent)); }
       .install-content { display: none; }
       .install-content.active { display: block; }
 
       /* ── CTA Section ── */
-      .cta-section {
-        text-align: center; padding: 80px 0;
-      }
-      .cta-card {
-        background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
-        border: 1px solid var(--border); border-radius: 24px;
-        padding: 64px 40px; position: relative; overflow: hidden;
-      }
+      .cta-section { text-align: center; padding: 80px 0; }
+      .cta-card { border-radius: 20px; padding: 64px 40px; position: relative; overflow: hidden; }
       .cta-card::before {
-        content: ''; position: absolute; top: -50%; left: -50%;
-        width: 200%; height: 200%;
-        background: radial-gradient(circle at 50% 50%, var(--brand-glow) 0%, transparent 50%);
-        pointer-events: none;
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background-image: radial-gradient(circle, rgb(var(--p-border) / 0.9) 1px, transparent 1.4px);
+        background-size: 22px 22px;
+        -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 50%, #000, transparent 75%);
+                mask-image: radial-gradient(ellipse 60% 70% at 50% 50%, #000, transparent 75%);
       }
-      .cta-card h2 {
-        font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 900;
-        margin-bottom: 16px; position: relative;
-      }
-      .cta-card p {
-        color: var(--text-secondary); font-size: 1.15rem;
-        max-width: 540px; margin: 0 auto 32px; position: relative;
-      }
+      .cta-card h2 { font-size: clamp(1.7rem, 3.6vw, 2.2rem); font-weight: 700; margin-bottom: 14px; position: relative; letter-spacing: -0.02em; }
+      .cta-card p { color: rgb(var(--p-text-secondary)); font-size: 1.08rem; max-width: 560px; margin: 0 auto 30px; position: relative; }
       .cta-card .hero-actions { position: relative; }
 
       /* ── Footer ── */
       .footer {
-        border-top: 1px solid var(--border); margin-top: 0; padding: 32px 0;
-        text-align: center; color: var(--muted); font-size: 0.95rem;
-        line-height: 2;
+        border-top: 1px solid rgb(var(--p-border)); background: rgb(var(--p-surface));
+        padding: 28px 0; text-align: center; color: rgb(var(--p-muted)); font-size: 0.9rem; line-height: 2;
       }
-      .footer a { color: var(--brand-light); transition: color 0.2s; }
-      .footer a:hover { text-decoration: underline; color: var(--text); }
+      .footer a { color: rgb(var(--p-accent-light)); }
+      .footer a:hover { text-decoration: underline; color: rgb(var(--p-text-primary)); }
 
-      /* ── Mobile responsive ── */
+      /* ── Responsive ── */
       @media (max-width: 1024px) {
         .highlights { grid-template-columns: repeat(2, 1fr); }
+        .features { grid-template-columns: 1fr 1fr; }
         .steps { grid-template-columns: repeat(2, 1fr); }
         .modes { grid-template-columns: 1fr; }
         .benefits { grid-template-columns: 1fr; }
       }
-      @media (max-width: 768px) {
-        body { font-size: 17px; }
+      @media (max-width: 1180px) {
         .wrap { padding: 0 20px; }
         .menu-toggle { display: block; }
         .nav-links {
-          display: none; position: absolute; top: 72px; left: 0; right: 0;
-          flex-direction: column; background: var(--bg); border-bottom: 1px solid var(--border);
-          padding: 16px 20px; gap: 4px;
+          display: none; position: absolute; top: 64px; left: 0; right: 0;
+          flex-direction: column; align-items: stretch;
+          background: rgb(var(--p-surface)); box-shadow: var(--shadow-bar);
+          padding: 12px 16px; gap: 2px;
         }
         .nav-links.open { display: flex; }
-        .nav-links a { padding: 14px 16px; width: 100%; font-size: 1.1rem; }
-        .hero { padding: 64px 0 48px; }
-        .hero h1 { font-size: clamp(2rem, 8vw, 2.75rem); }
-        .highlights { grid-template-columns: 1fr 1fr; gap: 12px; }
-        .features { grid-template-columns: 1fr; }
-        .screenshots { grid-template-columns: 1fr; }
-        .steps { grid-template-columns: 1fr 1fr; gap: 12px; }
+        .nav-links a { height: 46px; font-size: 1.02rem; }
+        .theme-toggle .label { display: none; }
+      }
+      @media (max-width: 768px) {
+        html { font-size: 16px; }
+        .hero { padding: 60px 0 44px; }
+        .features, .screenshots { grid-template-columns: 1fr; }
         .section { padding: 56px 0; }
-        .cta-card { padding: 48px 24px; }
+        .cta-card { padding: 48px 22px; }
       }
       @media (max-width: 480px) {
-        body { font-size: 16px; }
-        .highlights { grid-template-columns: 1fr; }
-        .steps { grid-template-columns: 1fr; }
+        .wrap { padding: 0 16px; }
+        .highlights, .steps { grid-template-columns: 1fr; }
         .hero-actions { flex-direction: column; align-items: stretch; }
         .hero-actions .btn { width: 100%; }
-        .hero { padding: 48px 0 40px; }
-        .feature { padding: 24px; }
-        .install-block { padding: 20px; }
+        .install-block { padding: 4px 14px 16px; }
+        .nav-actions .btn-gh { display: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
       }
     </style>
   </head>
   <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="i-navigation" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+      <symbol id="i-brain-circuit" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M9 13a4.5 4.5 0 0 0 3-4"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M6 18a4 4 0 0 1-1.967-.516"/><path d="M12 13h4"/><path d="M12 18h6a2 2 0 0 1 2 2v1"/><path d="M12 8h8"/><path d="M16 8V5a2 2 0 0 1 2-2"/><circle cx="16" cy="13" r=".5"/><circle cx="18" cy="3" r=".5"/><circle cx="20" cy="21" r=".5"/><circle cx="20" cy="8" r=".5"/></symbol>
+      <symbol id="i-layout-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol>
+      <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+      <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+      <symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+      <symbol id="i-network" viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></symbol>
+      <symbol id="i-scroll-text" viewBox="0 0 24 24"><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M15 8h-5"/><path d="M15 12h-5"/></symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
+      <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+      <symbol id="i-cable" viewBox="0 0 24 24"><path d="M4 9a2 2 0 0 1-2-2V5h6v2a2 2 0 0 1-2 2Z"/><path d="M3 5V3"/><path d="M7 5V3"/><path d="M19 15V6.5a3.5 3.5 0 0 0-7 0v11a3.5 3.5 0 0 1-7 0V9"/><path d="M17 21v-2"/><path d="M21 21v-2"/><path d="M22 19h-6v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2Z"/></symbol>
+      <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></symbol>
+      <symbol id="i-bell-ring" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/><path d="M22 8c0-2.3-.8-4.3-2-6"/></symbol>
+      <symbol id="i-workflow" viewBox="0 0 24 24"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></symbol>
+      <symbol id="i-clipboard-copy" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M16 4h2a2 2 0 0 1 2 2v4"/><path d="M21 14H11"/><path d="m15 10-4 4 4 4"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+      <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
+      <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    </svg>
 
     <!-- Nav -->
     <header class="nav">
       <div class="wrap nav-inner">
-        <div class="logo">Kube<span>Pilot</span></div>
-        <button class="menu-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
-          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-        </button>
+        <a href="#" class="logo" aria-label="KubePilot home"><span class="logo-mark"><svg class="ic" aria-hidden="true"><use href="#i-navigation"/></svg></span><span class="logo-text">Kube<span>Pilot</span></span></a>
         <nav class="nav-links">
           <a href="#modes">Modes</a>
           <a href="#features">Features</a>
@@ -458,8 +476,17 @@
           <a href="#install">Install</a>
           <a href="../blog/index.html">Blog</a>
           <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
-          <a href="https://github.com/bwalia/kubepilot" class="btn" style="margin-left:4px">GitHub</a>
         </nav>
+        <div class="nav-actions">
+          <button type="button" class="theme-toggle" id="theme-toggle">
+            <svg class="ic i-sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="ic i-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+            <span class="label">Daylight</span>
+          </button>
+          <a href="https://github.com/bwalia/kubepilot" class="btn btn-gh"><svg class="ic" aria-hidden="true"><use href="#i-github"/></svg>GitHub</a>
+          <button class="menu-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -478,7 +505,7 @@
             so teams move from noisy signals to safe action without juggling kubectl tabs.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Get Started Free</a>
+            <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Get Started Free<svg class="ic" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
             <a class="btn btn-lg" href="#modes">Explore Modes</a>
           </div>
           <div id="video" class="hero-video">
@@ -529,13 +556,13 @@
       <section id="modes" class="section">
         <div class="wrap">
           <div class="section-header">
-            <div class="section-divider"></div>
+            <span class="eyebrow">Product modes</span>
             <h2>Three Modes. One Faster Incident Loop.</h2>
             <p>Use AI CoPilot, Pilot, and AutoPilot together to diagnose, inspect, and remediate Kubernetes cluster incidents in minutes instead of hours.</p>
           </div>
           <div class="modes">
             <article class="mode">
-              <span class="mode-eyebrow">AI CoPilot</span>
+              <span class="mode-eyebrow"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>AI CoPilot</span>
               <h3>Kubernetes CoPilot<br>(AI-Assisted Troubleshooting)</h3>
               <p class="mode-tagline">Ask what is broken in plain English. Get root-cause analysis, evidence, and next steps without writing kubectl scripts first.</p>
               <div class="mode-benefit"><strong>Benefit:</strong> Cut triage time when the cluster is noisy — jump straight from symptoms to a confident diagnosis.</div>
@@ -549,7 +576,7 @@
               </ul>
             </article>
             <article class="mode">
-              <span class="mode-eyebrow">Pilot</span>
+              <span class="mode-eyebrow"><svg class="ic" aria-hidden="true"><use href="#i-layout-dashboard"/></svg>Pilot</span>
               <h3>Kubernetes Pilot<br>(SRE Troubleshooting)</h3>
               <p class="mode-tagline">A Lens/Rancher-style read-only browser for workloads, nodes, logs, YAML, topology, and LAN/WAN visibility when you need to verify the AI.</p>
               <div class="mode-benefit"><strong>Benefit:</strong> Keep SRE muscle memory in one place — inspect before you act, without switching tools mid-incident.</div>
@@ -563,7 +590,7 @@
               </ul>
             </article>
             <article class="mode">
-              <span class="mode-eyebrow">AutoPilot</span>
+              <span class="mode-eyebrow"><svg class="ic" aria-hidden="true"><use href="#i-bot"/></svg>AutoPilot</span>
               <h3>Kubernetes AutoPilot<br>(AI Fixer)</h3>
               <p class="mode-tagline">Closed-loop self-healing with dry-run, confidence floors, rate limits, cooldowns, and a kill switch — so automation stays auditable.</p>
               <div class="mode-benefit"><strong>Benefit:</strong> Fix recurring issues faster after hours — with human-grade safety rails and a full decision ledger.</div>
@@ -598,42 +625,42 @@
       <div class="wrap">
         <div class="highlights">
           <div class="highlight">
-            <span class="highlight-icon">&#129504;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-brain-circuit"/></svg></span>
             <h3>AI CoPilot RCA</h3>
             <p>Ask in plain English, run AI Analyze, and get evidence-backed root cause plus remediation steps</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#128202;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-layout-dashboard"/></svg></span>
             <h3>Pilot SRE Browser</h3>
             <p>Workloads, nodes, logs, YAML, topology, and resource gauges for hands-on verification</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#129302;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-bot"/></svg></span>
             <h3>AutoPilot AI Fixer</h3>
             <p>Dry-run or active self-healing with confidence floors, rate limits, cooldowns, and kill switch</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#128203;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-book-open"/></svg></span>
             <h3>Pre-Built Runbooks</h3>
             <p>7 opinionated diagnostic workflows out of the box, plus custom YAML runbooks with live hot-reload</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#128241;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-smartphone"/></svg></span>
             <h3>Native iOS Companion</h3>
             <p>SwiftUI mobile app for alerts, pods, logs, RCA, Face ID, widgets, and Siri shortcuts</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#127760;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-network"/></svg></span>
             <h3>LAN / WAN Node IPs</h3>
             <p>See real LAN, WAN, and WireGuard tunnel addresses instead of only the k3s overlay IP</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#128225;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-scroll-text"/></svg></span>
             <h3>Live Logs &amp; Events</h3>
             <p>Fast pod log access, cluster event timelines, anomaly detection, and RCA drill-downs</p>
           </div>
           <div class="highlight">
-            <span class="highlight-icon">&#128274;</span>
+            <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg></span>
             <h3>Security-First Defaults</h3>
             <p>Optional auth, read-only browsing, mutation gates, and CORS policies for production use</p>
           </div>
@@ -644,88 +671,88 @@
       <section id="features" class="section">
         <div class="wrap">
           <div class="section-header">
-            <div class="section-divider"></div>
+            <span class="eyebrow">Capabilities</span>
             <h2>Full Feature Set for Faster Incidents</h2>
             <p>Everything behind CoPilot, Pilot, and AutoPilot — observability, AI diagnosis, and safer remediation in one open-source platform.</p>
           </div>
           <div class="features">
             <article class="feature">
-              <div class="feature-icon">&#10024;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>
               <h3>CoPilot — AI-Assisted Troubleshooting</h3>
               <p>Ask operational questions, run AI Analyze on problem pods, and get root cause, evidence, confidence, risk, commands, YAML fixes, and next steps from your local LLM.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128269;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span>
               <h3>Pilot — SRE Troubleshooting Browser</h3>
               <p>Browse Deployments, StatefulSets, DaemonSets, Jobs, Services, Ingresses, ConfigMaps, Secrets, and PVCs across namespaces with live YAML and log viewers.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#129302;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-bot"/></svg></span>
               <h3>AutoPilot — AI Fixer Self-Healing</h3>
               <p>Policy-gated remediation in off, dry-run, or active mode. Confidence floors, namespace blocklists, action allow-lists, cooldowns, hourly caps, and a pause kill switch keep automation auditable.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128202;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg></span>
               <h3>Cluster Resource Gauges</h3>
               <p>Live CPU, memory, and storage usage with per-StorageClass breakdown. Longhorn-aware for accurate physical disk readings, not just bound PVC totals.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128241;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-smartphone"/></svg></span>
               <h3>Native iOS Troubleshooting</h3>
               <p>A SwiftUI mobile app connects to the same KubePilot APIs for health cards, pod search, pod detail tabs, live logs, events, RCA reports, Face ID, widgets, and Siri/App Intents.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128203;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-book-open"/></svg></span>
               <h3>Runbooks &amp; YAML Workflows</h3>
               <p>7 pre-built diagnostic workflows ship in the box. Drop YAML runbooks into a directory for fsnotify-driven hot reload — user runbooks override builtins by ID.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#127760;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-network"/></svg></span>
               <h3>LAN, WAN &amp; Tunnel Node IPs</h3>
               <p>Node views classify private LAN/VPC addresses, public WAN addresses, and WireGuard or flannel tunnel endpoints using Kubernetes addresses plus k3s and flannel annotations.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128220;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-file-text"/></svg></span>
               <h3>Pod Detail Workbench</h3>
               <p>Open a pod to inspect overview, containers, events, logs, sanitized YAML, metrics context, restart counts, uptime, and AI analysis without jumping between kubectl commands.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128279;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-cable"/></svg></span>
               <h3>Pod &amp; Service Port-Forwarding</h3>
               <p>Open a tunnel into the cluster directly from the UI and reach the forwarded port through the dashboard reverse-proxy. Sessions are listed, cancellable, and auditable.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128190;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-database"/></svg></span>
               <h3>Durable RCA History (SQLite)</h3>
               <p>Optional embedded SQLite store persists RCA reports and anomalies across restarts. Configurable retention, WAL journaling, no CGO — same single binary.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128276;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-bell-ring"/></svg></span>
               <h3>Alerts, Events &amp; RCA Timeline</h3>
               <p>Review warnings, normal events, anomalies, and RCA reports as a searchable operational timeline. Slack notifications can post formatted incident cards for high-severity findings.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128268;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-workflow"/></svg></span>
               <h3>Service Topology Map</h3>
               <p>ArgoCD-style canvas links Ingress to Service to Workload to Pod with status colours, ports, and external IPs. Switch namespaces without leaving the page.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#129305;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-clipboard-copy"/></svg></span>
               <h3>Copy Prompt &amp; AI Health</h3>
               <p>Copy the exact CoPilot prompt from any analysis surface, and check the AI health chip so you know Ollama is ready before an incident depends on it.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#9729;&#65039;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg></span>
               <h3>Multi-Cluster Switching</h3>
               <p>Upload kubeconfigs, switch contexts, and route every dashboard query to the new cluster — no restart required.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128274;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg></span>
               <h3>Security-First Design</h3>
               <p>Optional auth, read-only defaults, mutation gates, CR-code approval for risky actions, and CORS policies. Safe for production from day one.</p>
             </article>
             <article class="feature">
-              <div class="feature-icon">&#128640;</div>
+              <span class="icon-tile"><svg class="ic" aria-hidden="true"><use href="#i-rocket"/></svg></span>
               <h3>MCP Agent Protocol</h3>
               <p>Built-in MCP server for multi-cluster agent orchestration, remote AI coordination, and programmatic access.</p>
             </article>
@@ -734,10 +761,10 @@
       </section>
 
       <!-- How it works -->
-      <section id="how-it-works" class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <section id="how-it-works" class="section section-alt">
         <div class="wrap">
           <div class="section-header">
-            <div class="section-divider"></div>
+            <span class="eyebrow">How it works</span>
             <h2>From Signal to Fix in Four Steps</h2>
             <p>CoPilot diagnoses, Pilot verifies, AutoPilot remediates — a clear loop that reduces mean-time-to-resolution.</p>
           </div>
@@ -766,7 +793,7 @@
       <section id="screenshots" class="section">
         <div class="wrap">
           <div class="section-header">
-            <div class="section-divider"></div>
+            <span class="eyebrow">Screenshots</span>
             <h2>See It in Action</h2>
             <p>The KubePilot dashboard and native app keep incident context in one place.</p>
           </div>
@@ -788,10 +815,10 @@
       </section>
 
       <!-- Install -->
-      <section id="install" class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <section id="install" class="section section-alt">
         <div class="wrap">
           <div class="section-header">
-            <div class="section-divider"></div>
+            <span class="eyebrow">Install</span>
             <h2>Up and Running in Minutes</h2>
             <p>Choose the installation method that fits your workflow.</p>
           </div>
@@ -841,7 +868,7 @@ open KubePilot.xcodeproj
             <h2>Ready to Troubleshoot Kubernetes Faster?</h2>
             <p>Use AI CoPilot, Pilot, and AutoPilot to resolve cluster incidents faster — open source, local-LLM friendly, and built for teams that want diagnosis and safe automation without vendor lock-in.</p>
             <div class="hero-actions">
-              <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Star on GitHub</a>
+              <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot"><svg class="ic" aria-hidden="true"><use href="#i-github"/></svg>Star on GitHub</a>
               <a class="btn btn-lg" href="https://github.com/bwalia/kubepilot/issues/new">Request a Feature</a>
             </div>
           </div>
@@ -904,6 +931,28 @@ open KubePilot.xcodeproj
 
         frame.appendChild(button);
       });
+
+      // Theme toggle — label shows the CURRENT theme, like the dashboard's.
+      (function () {
+        var root = document.documentElement;
+        var btn = document.getElementById('theme-toggle');
+        var meta = document.querySelector('meta[name="theme-color"]');
+        function sync() {
+          var dark = root.getAttribute('data-theme') === 'dark';
+          btn.querySelector('.label').textContent = dark ? 'Night' : 'Daylight';
+          var next = dark ? 'Daylight' : 'Night';
+          btn.setAttribute('aria-label', 'Switch to ' + next + ' mode');
+          btn.title = 'Switch to ' + next + ' mode';
+          meta.setAttribute('content', dark ? '#0B1017' : '#F7F9FC');
+        }
+        btn.addEventListener('click', function () {
+          var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          try { localStorage.setItem('kubepilot-theme', next); } catch (e) {}
+          sync();
+        });
+        sync();
+      })();
 
       function switchTab(name) {
         document.querySelectorAll('.install-tab').forEach(function(t) { t.classList.remove('active'); });
