@@ -25,6 +25,11 @@ on:
         options:
           - testflight
           - app_store
+      force_resubmit:
+        description: "app_store only: cancel a submission that is Waiting for Review / In Review and replace it (restarts Apple's queue)"
+        required: false
+        type: boolean
+        default: false
   push:
     tags:
       - "v*.*.*"
@@ -140,6 +145,12 @@ jobs:
             fi
           fi
 
+      - name: Guard against replacing an in-flight review
+        if: github.event_name == 'workflow_dispatch' && inputs.target == 'app_store'
+        env:
+          FORCE_RESUBMIT: ${{ inputs.force_resubmit }}
+        run: bundle exec fastlane ios ensure_not_in_review
+
       - name: Compute next build number
         id: build
         run: bundle exec fastlane ios ci_build_number
@@ -160,6 +171,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.target == 'app_store'
         env:
           BUILD_NUMBER: ${{ steps.build.outputs.build_number }}
+          FORCE_RESUBMIT: ${{ inputs.force_resubmit }}
         run: bundle exec fastlane ios release
 
       - name: Archive IPA artifact
