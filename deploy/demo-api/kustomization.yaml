@@ -4,6 +4,5 @@ namespace: kubepilot-demo
 resources:
   - namespace.yaml
   - deployment.yaml
-images:
-  - name: docker.io/bwalia/kubepilot-demo-api
-    newTag: latest
+# No images: override — deployment.yaml pins tag@digest, and a newTag here
+# would replace that pin with a floating tag.
