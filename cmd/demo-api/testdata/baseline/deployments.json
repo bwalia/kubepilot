@@ -1,0 +1,1 @@
+[{"AvailableReplicas":1,"Image":"ghcr.io/demo/checkout:1.4.2","Name":"checkout-api","Namespace":"payments","ReadyReplicas":1,"Replicas":2},{"AvailableReplicas":1,"Image":"redis:7.2","Name":"redis-cart","Namespace":"payments","ReadyReplicas":1,"Replicas":1}]

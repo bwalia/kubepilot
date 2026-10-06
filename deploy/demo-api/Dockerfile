@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 
 FROM gcr.io/distroless/static:nonroot
 LABEL org.opencontainers.image.title="KubePilot Demo API" \
-      org.opencontainers.image.description="Fixture KubePilot API for Apple App Review"
+      org.opencontainers.image.description="Mock KubePilot API backed by a simulated cluster"
 
 COPY --from=build /demo-api /demo-api
 USER nonroot:nonroot
