@@ -1,0 +1,1 @@
+[{"Name":"checkout-api-7d9f8c","Namespace":"payments","NodeName":"demo-worker-1","Phase":"Running","Ready":false,"Reason":"CrashLoopBackOff","Restarts":3,"Uptime":"12m"},{"Name":"metrics-server","Namespace":"kube-system","NodeName":"","Phase":"Pending","Ready":false,"Reason":"ImagePullBackOff","Restarts":2,"Uptime":"8m"}]

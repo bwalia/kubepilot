@@ -1,0 +1,1 @@
+[{"description":"Pod restart rate exceeded threshold","detected_at":"2026-10-06T09:21:09.686144Z","id":"anom-demo-1","rca_report_id":"rca-demo-checkout","resource":{"kind":"Pod","name":"checkout-api-7d9f8c","namespace":"payments"},"rule":"crashloop_threshold","severity":"critical"}]

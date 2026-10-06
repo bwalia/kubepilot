@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KubePilot Demo API — mock Kubernetes cluster</title>
+    <meta name="description" content="A mock KubePilot API that simulates a production Kubernetes cluster for trying the KubePilot app. It is not a real cluster: connect KubePilot to your own clusters to manage them." />
+    <meta name="robots" content="noindex" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#F7F9FC" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Same key and default as the dashboard and kubepilot.org.
+      (function(){try{var t=localStorage.getItem('kubepilot-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();
+    </script>
+    <style>
+      /* ============================================================
+         THEME TOKENS — mirrored 1:1 from dashboard/styles/globals.css so the
+         marketing site and the product read as one system.
+         :root = DAYLIGHT (default). [data-theme="dark"] = NIGHT.
+         ============================================================ */
+      :root {
+        --p-bg:              247 249 252;
+        --p-surface:         255 255 255;
+        --p-surface-2:       240 243 248;
+        --p-border:          215 221 231;
+        --p-border-hover:    185 194 209;
+        --p-accent:           13 111 138;
+        --p-accent-light:     11  98 122;
+        --p-accent-deep:       8  70  88;
+        --p-success:           4 120  87;
+        --p-warning:         180  83   9;
+        --p-danger:          200  32  40;
+        --p-info:            107  40 214;
+        --p-muted:            90 102 122;
+        --p-text-secondary:   51  65  85;
+        --p-text-primary:     15  23  42;
+        --p-hover:            15  23  42;
+
+        --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px -3px rgba(15,23,42,.09);
+        --shadow-card-hover: 0 8px 20px -6px rgba(15,23,42,.14), 0 20px 40px -12px rgba(15,23,42,.16);
+        --shadow-bar: 0 1px 0 0 rgb(215 221 231), 0 4px 16px -8px rgba(15,23,42,.12);
+        --glow-blue: 0 0 0 1px rgba(13,111,138,.45), 0 6px 22px -6px rgba(13,111,138,.45);
+        --shadow-inset: inset 0 1px 0 0 rgba(255,255,255,.7);
+        --atmo-1: rgba(13,111,138,.05);
+        --atmo-2: rgba(56,120,180,.04);
+        --code-bg: 240 243 248;
+
+        --radius: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        color-scheme: light;
+      }
+      :root[data-theme="dark"] {
+        --p-bg:               11  16  23;
+        --p-surface:          20  27  38;
+        --p-surface-2:        28  38  52;
+        --p-border:           43  56  74;
+        --p-border-hover:     62  80 102;
+        --p-accent:           34 211 238;
+        --p-accent-light:    125 236 250;
+        --p-accent-deep:      14 116 144;
+        --p-success:          52 211 153;
+        --p-warning:         251 191  36;
+        --p-danger:          251 113 133;
+        --p-info:            167 139 250;
+        --p-muted:           133 148 168;
+        --p-text-secondary:  181 195 212;
+        --p-text-primary:    234 241 248;
+        --p-hover:           255 255 255;
+
+        --shadow-card: inset 0 1px 0 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.5), 0 10px 28px -16px rgba(0,0,0,.72);
+        --shadow-card-hover: inset 0 1px 0 0 rgba(255,255,255,.07), 0 2px 6px rgba(0,0,0,.55), 0 16px 40px -14px rgba(0,0,0,.82);
+        --shadow-bar: 0 1px 0 0 rgb(43 56 74), 0 4px 16px -8px rgba(0,0,0,.6);
+        --glow-blue: 0 0 0 1px rgba(34,211,238,.32), 0 0 26px -6px rgba(34,211,238,.48);
+        --shadow-inset: inset 0 1px 0 0 rgba(255,255,255,.05);
+        --atmo-1: rgba(34,211,238,.06);
+        --atmo-2: rgba(56,130,200,.05);
+        --code-bg: 11 16 23;
+        color-scheme: dark;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 17px; -webkit-text-size-adjust: 100%; }
+      html, body { background-color: rgb(var(--p-bg)); }
+      body {
+        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: rgb(var(--p-text-primary)); line-height: 1.6; overflow-x: hidden;
+        -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      }
+      body::before {
+        content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background: radial-gradient(120% 60% at 50% -10%, var(--atmo-1), transparent 60%), radial-gradient(90% 50% at 100% 0%, var(--atmo-2), transparent 55%);
+      }
+      body > * { position: relative; z-index: 1; }
+      a { color: inherit; text-decoration: none; }
+      strong { font-weight: 600; color: rgb(var(--p-text-primary)); }
+      code, pre, .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+      a, button { transition: border-color .15s, background-color .15s, color .15s, box-shadow .15s; }
+      a:focus-visible, button:focus-visible { outline: 2px solid rgb(var(--p-accent)); outline-offset: 2px; }
+      ::selection { background: rgb(var(--p-accent) / .28); }
+      .ic { width: 1.1rem; height: 1.1rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+      .eyebrow { font-size: .8rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: rgb(var(--p-muted)); }
+
+      /* Nav */
+      .nav { position: sticky; top: 0; z-index: 60; background: rgb(var(--p-surface) / .9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-bar); }
+      .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 12px; }
+      .logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; letter-spacing: -.015em; white-space: nowrap; }
+      .logo-text span { color: rgb(var(--p-accent)); }
+      .logo-mark { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: rgb(var(--p-accent) / .12); border: 1px solid rgb(var(--p-accent) / .25); color: rgb(var(--p-accent)); }
+      .logo-mark .ic { transform: rotate(-45deg); }
+      .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-size: .78rem; font-weight: 600; letter-spacing: .02em; }
+      .pill-warn { color: rgb(var(--p-warning)); background: rgb(var(--p-warning) / .12); border: 1px solid rgb(var(--p-warning) / .3); }
+      .pill-ok { color: rgb(var(--p-success)); background: rgb(var(--p-success) / .12); border: 1px solid rgb(var(--p-success) / .28); }
+      .pill-ok::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--p-success)); animation: pulse 2s ease-in-out infinite; }
+      @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
+      .nav-actions { display: flex; align-items: center; gap: 8px; }
+      .nav-link { display: inline-flex; align-items: center; height: 38px; padding: 0 12px; border-radius: 12px; font-size: .93rem; font-weight: 600; color: rgb(var(--p-text-secondary)); }
+      .nav-link:hover { color: rgb(var(--p-text-primary)); background: rgb(var(--p-hover) / .05); }
+      .theme-toggle { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 8px; border-radius: 6px; border: 1px solid rgb(var(--p-border)); background: rgb(var(--p-surface-2)); color: rgb(var(--p-text-secondary)); font: 600 13px/1 'IBM Plex Sans', sans-serif; cursor: pointer; }
+      .theme-toggle:hover { color: rgb(var(--p-text-primary)); border-color: rgb(var(--p-border-hover)); }
+      .theme-toggle .ic { width: 16px; height: 16px; color: rgb(var(--p-accent)); }
+      .theme-toggle .i-moon, :root[data-theme="dark"] .theme-toggle .i-sun { display: none; }
+      :root[data-theme="dark"] .theme-toggle .i-moon { display: block; }
+
+      /* Buttons */
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 8px; font-size: .95rem; font-weight: 600; white-space: nowrap; border: 1px solid rgb(var(--p-border)); color: rgb(var(--p-text-secondary)); background: rgb(var(--p-surface)); cursor: pointer; }
+      .btn:hover { border-color: rgb(var(--p-accent) / .5); color: rgb(var(--p-text-primary)); background: rgb(var(--p-surface-2)); }
+      .btn-primary { background: rgb(var(--p-accent)); border-color: rgb(var(--p-accent)); color: rgb(var(--p-bg)); }
+      .btn-primary:hover { background: rgb(var(--p-accent-light)); border-color: rgb(var(--p-accent-light)); color: rgb(var(--p-bg)); box-shadow: var(--glow-blue); }
+
+      /* Mock banner */
+      .banner { margin-top: 24px; display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 12px; background: rgb(var(--p-warning) / .08); border: 1px solid rgb(var(--p-warning) / .3); border-left: 4px solid rgb(var(--p-warning)); }
+      .banner .ic { color: rgb(var(--p-warning)); width: 22px; height: 22px; margin-top: 2px; }
+      .banner p { color: rgb(var(--p-text-secondary)); font-size: .95rem; }
+      .banner strong { display: block; font-size: 1rem; margin-bottom: 2px; }
+
+      /* Hero */
+      .hero { padding: 48px 0 28px; display: grid; grid-template-columns: 1.15fr 1fr; gap: 40px; align-items: center; }
+      .hero h1 { font-size: clamp(2rem, 4.6vw, 3rem); line-height: 1.1; font-weight: 700; letter-spacing: -.025em; margin: 14px 0 16px; }
+      .hero h1 span { color: rgb(var(--p-accent)); }
+      .hero p.lead { color: rgb(var(--p-text-secondary)); font-size: 1.1rem; max-width: 560px; }
+      .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+      .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+
+      /* Cards */
+      .card { background: rgb(var(--p-surface)); border: 1px solid rgb(var(--p-border)); border-radius: 12px; box-shadow: var(--shadow-card); }
+      .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid rgb(var(--p-border)); }
+      .card-head h3 { font-size: .98rem; font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+      #cluster-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+      .card-head h3 .ic { color: rgb(var(--p-accent)); }
+      .card-body { padding: 16px 18px; }
+      .muted { color: rgb(var(--p-muted)); }
+      .small { font-size: .85rem; }
+
+      /* KPIs */
+      .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 18px; }
+      .kpi { padding: 12px 12px 10px; border-radius: 10px; background: rgb(var(--p-surface-2)); border: 1px solid rgb(var(--p-border)); }
+      .kpi .eyebrow { font-size: .7rem; }
+      .kpi .val { font: 600 1.45rem/1.2 'IBM Plex Mono', monospace; margin-top: 6px; letter-spacing: -.02em; }
+      .kpi .val small { font-size: .8rem; color: rgb(var(--p-muted)); font-weight: 500; }
+      .bar { height: 5px; border-radius: 3px; background: rgb(var(--p-border)); margin-top: 8px; overflow: hidden; }
+      .bar i { display: block; height: 100%; background: rgb(var(--p-accent)); border-radius: 3px; transition: width .6s ease; }
+      .val.bad { color: rgb(var(--p-danger)); }
+
+      .incident { display: flex; gap: 12px; padding: 12px 18px; border-top: 1px solid rgb(var(--p-border)); }
+      .incident:first-child { border-top: 0; }
+      .sev { flex-shrink: 0; height: 22px; padding: 0 8px; border-radius: 5px; font: 600 .7rem/22px 'IBM Plex Sans', sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+      .sev-critical { color: rgb(var(--p-danger)); background: rgb(var(--p-danger) / .12); border: 1px solid rgb(var(--p-danger) / .3); }
+      .sev-high { color: rgb(var(--p-warning)); background: rgb(var(--p-warning) / .12); border: 1px solid rgb(var(--p-warning) / .3); }
+      .incident h4 { font-size: .95rem; font-weight: 600; line-height: 1.35; }
+      .incident .mono { font-size: .8rem; color: rgb(var(--p-muted)); }
+
+      .events { list-style: none; }
+      .events li { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 9px 18px; border-top: 1px solid rgb(var(--p-border)); font-size: .85rem; }
+      .events li:first-child { border-top: 0; }
+      .events .t { font-family: 'IBM Plex Mono', monospace; font-size: .78rem; color: rgb(var(--p-muted)); padding-top: 1px; }
+      .events .r { font-weight: 600; }
+      .events .warn { color: rgb(var(--p-warning)); }
+      .events .msg { color: rgb(var(--p-text-secondary)); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+      /* Sections */
+      .section { padding: 56px 0 8px; }
+      .section-head { margin-bottom: 22px; max-width: 680px; }
+      .section-head .eyebrow { color: rgb(var(--p-accent-light)); }
+      .section-head h2 { font-size: clamp(1.5rem, 3vw, 1.9rem); font-weight: 700; letter-spacing: -.02em; margin: 10px 0 8px; line-height: 1.2; }
+      .section-head p { color: rgb(var(--p-text-secondary)); }
+
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .hero > *, .grid-2 > *, .grid-3 > *, .incident > div { min-width: 0; }
+      .incident .mono, .events .mono { overflow-wrap: anywhere; }
+
+      .step { padding: 22px; }
+      .step .num { display: inline-flex; align-items: center; height: 26px; padding: 0 9px; border-radius: 6px; font: 600 .8rem/1 'IBM Plex Mono', monospace; color: rgb(var(--p-accent-light)); background: rgb(var(--p-accent) / .12); border: 1px solid rgb(var(--p-accent) / .25); }
+      .step h3 { font-size: 1.02rem; font-weight: 600; margin: 12px 0 6px; }
+      .step p { color: rgb(var(--p-muted)); font-size: .92rem; }
+
+      pre.code { position: relative; margin-top: 12px; padding: 14px 16px; border-radius: 8px; background: rgb(var(--code-bg)); border: 1px solid rgb(var(--p-border)); color: rgb(var(--p-text-secondary)); font-size: .82rem; line-height: 1.7; white-space: pre; overflow-x: auto; padding-top: 44px; }
+      .copy { position: absolute; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid rgb(var(--p-border)); background: rgb(var(--p-surface)); color: rgb(var(--p-muted)); cursor: pointer; }
+      .copy:hover { color: rgb(var(--p-text-primary)); border-color: rgb(var(--p-border-hover)); }
+      .copy .ic { width: 15px; height: 15px; }
+
+      .compare { width: 100%; border-collapse: collapse; font-size: .92rem; }
+      .compare th, .compare td { text-align: left; padding: 12px 16px; border-top: 1px solid rgb(var(--p-border)); vertical-align: top; }
+      .compare thead th { border-top: 0; border-bottom: 2px solid rgb(var(--p-border)); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: rgb(var(--p-muted)); }
+      .compare td:first-child { font-weight: 600; white-space: nowrap; }
+      .compare td { color: rgb(var(--p-text-secondary)); }
+
+      .endpoints { list-style: none; columns: 2 300px; column-gap: 28px; padding: 6px 18px 14px; }
+      .endpoints li { break-inside: avoid; display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dashed rgb(var(--p-border)); font-size: .86rem; }
+      .endpoints .m { font: 600 .72rem/20px 'IBM Plex Mono', monospace; color: rgb(var(--p-accent-light)); min-width: 36px; }
+      .endpoints li > div { min-width: 0; }
+      .endpoints code { color: rgb(var(--p-text-primary)); font-size: .82rem; overflow-wrap: anywhere; }
+      .endpoints span { color: rgb(var(--p-muted)); }
+
+      .footer { margin-top: 56px; border-top: 1px solid rgb(var(--p-border)); background: rgb(var(--p-surface)); padding: 24px 0; text-align: center; color: rgb(var(--p-muted)); font-size: .88rem; }
+      .footer a { color: rgb(var(--p-accent-light)); }
+      .footer a:hover { text-decoration: underline; }
+
+      @media (max-width: 920px) {
+        .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 32px; }
+        .grid-3 { grid-template-columns: 1fr; }
+        .grid-2 { grid-template-columns: 1fr; }
+        .endpoints { columns: 1; }
+      }
+      @media (max-width: 560px) {
+        html { font-size: 16px; }
+        .wrap { padding: 0 16px; }
+        .nav-link { display: none; }
+        .theme-toggle .label { display: none; }
+        .kpis { grid-template-columns: 1fr 1fr; }
+        .hero-actions .btn { flex: 1 1 100%; }
+        .compare td:first-child { white-space: normal; }
+        .compare th, .compare td { padding: 10px 12px; }
+      }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="i-navigation" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+      <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+      <symbol id="i-flask-conical" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></symbol>
+      <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+      <symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol>
+      <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+      <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-boxes" viewBox="0 0 24 24"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></symbol>
+      <symbol id="i-cpu" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></symbol>
+      <symbol id="i-memory-stick" viewBox="0 0 24 24"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M8 11V9"/><path d="M16 11V9"/><path d="M12 11V9"/><path d="M2 15h20"/><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"/></symbol>
+      <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+    </svg>
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a href="https://kubepilot.org/" class="logo" aria-label="KubePilot home"><span class="logo-mark"><svg class="ic"><use href="#i-navigation"/></svg></span><span class="logo-text">Kube<span>Pilot</span></span></a>
+        <div class="nav-actions">
+          <a class="nav-link" href="https://kubepilot.org/">kubepilot.org</a>
+          <a class="nav-link" href="https://github.com/bwalia/kubepilot#readme">Docs</a>
+          <button type="button" class="theme-toggle" id="theme-toggle">
+            <svg class="ic i-sun" aria-hidden="true"><use href="#i-sun"/></svg><svg class="ic i-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+            <span class="label">Daylight</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <div class="banner" role="note">
+        <svg class="ic" aria-hidden="true"><use href="#i-triangle-alert"/></svg>
+        <p><strong>This is a mock API with simulated data — not a real Kubernetes cluster.</strong>
+          Every node, pod, log line and incident here is invented. It exists so you can try the KubePilot app without access to a cluster.
+          To see and fix <em>your</em> workloads, run KubePilot against your own cluster and connect the app to it — <a href="#connect" style="color:rgb(var(--p-accent-light));font-weight:600">here's how</a>.</p>
+      </div>
+
+      <section class="hero">
+        <div>
+          <div class="hero-badges">
+            <span class="pill pill-ok" id="svc-status">Mock API online</span>
+            <span class="pill pill-warn"><svg class="ic" style="width:14px;height:14px" aria-hidden="true"><use href="#i-flask-conical"/></svg>Simulated data</span>
+          </div>
+          <h1>KubePilot <span>Demo API</span></h1>
+          <p class="lead">A simulated production cluster: 8 nodes, about 60 pods across 10 namespaces, live metrics, real-looking logs, and incidents that rotate every 30 minutes. Use it to explore CoPilot, Pilot and AutoPilot before connecting your own cluster.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#connect">Connect your own cluster<svg class="ic" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
+            <a class="btn" href="#try">Try the mock API</a>
+          </div>
+        </div>
+
+        <div class="card" aria-live="polite">
+          <div class="card-head">
+            <h3><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg>Simulated cluster</h3>
+            <span class="mono small muted" id="cluster-name">kp-demo-prod-eu-west-2</span>
+          </div>
+          <div class="kpis">
+            <div class="kpi"><div class="eyebrow">Nodes ready</div><div class="val" id="k-nodes">–</div></div>
+            <div class="kpi"><div class="eyebrow">Pods running</div><div class="val" id="k-pods">–</div></div>
+            <div class="kpi"><div class="eyebrow">Failing pods</div><div class="val" id="k-failing">–</div></div>
+            <div class="kpi"><div class="eyebrow">CPU</div><div class="val" id="k-cpu">–</div><div class="bar"><i id="b-cpu" style="width:0"></i></div></div>
+            <div class="kpi"><div class="eyebrow">Memory</div><div class="val" id="k-mem">–</div><div class="bar"><i id="b-mem" style="width:0"></i></div></div>
+            <div class="kpi"><div class="eyebrow">Next incident</div><div class="val" id="k-next">–</div></div>
+          </div>
+          <div class="card-head" style="border-top:1px solid rgb(var(--p-border))"><h3><svg class="ic" aria-hidden="true"><use href="#i-triangle-alert"/></svg>Active incidents</h3><span class="small muted">invented</span></div>
+          <div id="incidents"><div class="incident"><span class="muted small">Loading…</span></div></div>
+        </div>
+      </section>
+
+      <section class="grid-2">
+        <div class="card">
+          <div class="card-head"><h3><svg class="ic" aria-hidden="true"><use href="#i-boxes"/></svg>Recent events</h3><span class="small muted">refreshes every 10s</span></div>
+          <ul class="events" id="events"><li><span class="t">—</span><span class="muted">Loading…</span></li></ul>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3><svg class="ic" aria-hidden="true"><use href="#i-flask-conical"/></svg>What the simulation does</h3></div>
+          <div class="card-body" style="color:rgb(var(--p-text-secondary));font-size:.93rem">
+            <p style="margin-bottom:10px"><strong>Always on:</strong> one <span class="mono small">checkout-api</span> replica crash-loops after a bad config change, with kubelet back-off timing and restart counts that keep climbing.</p>
+            <p style="margin-bottom:10px"><strong>Rotating every 30 minutes:</strong> an OOMKilled indexer, a rollout stuck on ImagePullBackOff, a node under disk pressure, or a worker node going NotReady.</p>
+            <p><strong>Live:</strong> node CPU and memory drift over time, logs stream new lines, pods roll weekly, and resolved incidents stay in RCA history. Every replica of this API shows the same cluster at the same moment.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="connect">
+        <div class="section-head">
+          <span class="eyebrow">Your own cluster</span>
+          <h2>Connect KubePilot to your Kubernetes clusters</h2>
+          <p>The demo can't see your cluster, and your cluster's data never passes through demo.kubepilot.org. KubePilot runs next to your cluster, and the app connects to it directly.</p>
+        </div>
+        <div class="grid-3">
+          <div class="card step">
+            <span class="num">01</span>
+            <h3>Run KubePilot against your cluster</h3>
+            <p>Install the Helm chart into the cluster, or run the binary with your kubeconfig.</p>
+            <pre class="code"><button class="copy" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button>git clone https://github.com/bwalia/kubepilot
+helm upgrade --install kubepilot \
+  kubepilot/charts/kubepilot \
+  -n kubepilot --create-namespace</pre>
+          </div>
+          <div class="card step">
+            <span class="num">02</span>
+            <h3>Make it reachable — securely</h3>
+            <p>Use a port-forward to try it, or an Ingress with TLS and auth for your team. Keep it off the public internet without auth.</p>
+            <pre class="code"><button class="copy" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button>kubectl -n kubepilot port-forward \
+  svc/kubepilot 8080:8080</pre>
+          </div>
+          <div class="card step">
+            <span class="num">03</span>
+            <h3>Point the app at your server</h3>
+            <p>In the KubePilot app, choose <strong>Add server</strong> (not Try demo), enter your KubePilot URL and credentials, and tap Connect. Add more clusters any time.</p>
+            <pre class="code"><button class="copy" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button>https://kubepilot.example.com</pre>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;overflow-x:auto">
+          <table class="compare">
+            <thead><tr><th></th><th>This demo</th><th>Your own KubePilot</th></tr></thead>
+            <tbody>
+              <tr><td>Data</td><td>Invented — the same simulated cluster for everyone</td><td>Your real nodes, pods, events and logs</td></tr>
+              <tr><td>Fixes</td><td>Previewed only; every action returns “skipped”</td><td>Applied through policy gates, dry-run, and CR-code approval</td></tr>
+              <tr><td>AI analysis</td><td>Pre-written root-cause reports</td><td>Generated by your LLM (e.g. Ollama), so data stays in your network</td></tr>
+              <tr><td>Access</td><td>Shared demo login, read-only</td><td>Your own auth, RBAC and network policy</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="try">
+        <div class="section-head">
+          <span class="eyebrow">Try the mock API</span>
+          <h2>Use it from the app or from a terminal</h2>
+          <p>In the iOS app, tap <strong>Try demo</strong> on the Welcome screen and the URL and login below are filled in for you. You can also call the API directly — it's the same <span class="mono small">/api/v1</span> surface a real KubePilot server exposes.</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3><svg class="ic" aria-hidden="true"><use href="#i-terminal"/></svg>Quick start</h3></div>
+            <div class="card-body">
+              <p class="small muted">Shared demo login (read-only, synthetic data): <span class="mono">apple</span> / <span class="mono">review</span></p>
+              <pre class="code"><button class="copy" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button>curl -u apple:review \
+  https://demo.kubepilot.org/api/v1/troubleshooting/summary</pre>
+              <pre class="code"><button class="copy" aria-label="Copy"><svg class="ic"><use href="#i-copy"/></svg></button>curl -u apple:review \
+  "https://demo.kubepilot.org/api/v1/clusters/pods?namespace=payments"</pre>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3><svg class="ic" aria-hidden="true"><use href="#i-server"/></svg>Endpoints</h3><span class="small muted">Basic auth</span></div>
+            <ul class="endpoints">
+              <li><span class="m">GET</span><div><code>/clusters/pods</code> <span>pods</span></div></li>
+              <li><span class="m">GET</span><div><code>/clusters/nodes</code> <span>nodes</span></div></li>
+              <li><span class="m">GET</span><div><code>/clusters/deployments</code></div></li>
+              <li><span class="m">GET</span><div><code>/clusters/services</code></div></li>
+              <li><span class="m">GET</span><div><code>/events</code> <span>timeline</span></div></li>
+              <li><span class="m">GET</span><div><code>/troubleshooting/summary</code></div></li>
+              <li><span class="m">GET</span><div><code>/clusters/pods/{ns}/{pod}/logs</code></div></li>
+              <li><span class="m">GET</span><div><code>/resource/{kind}/{ns}/{name}/yaml</code></div></li>
+              <li><span class="m">GET</span><div><code>/ai/troubleshoot/{ns}/{pod}</code></div></li>
+              <li><span class="m">GET</span><div><code>/rca</code> <span>reports</span></div></li>
+              <li><span class="m">GET</span><div><code>/anomalies</code></div></li>
+              <li><span class="m">GET</span><div><code>/autopilot</code> <span>decisions</span></div></li>
+            </ul>
+            <p class="small muted" style="padding:0 18px 16px">All paths are under <span class="mono">/api/v1</span>. Writes are accepted but never change anything. Public: <a class="mono" style="color:rgb(var(--p-accent-light))" href="/healthz">/healthz</a>, <a class="mono" style="color:rgb(var(--p-accent-light))" href="/demo/status.json">/demo/status.json</a>.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        KubePilot Demo API &middot; mock data only &middot;
+        <a href="https://kubepilot.org/">kubepilot.org</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot">GitHub</a> &middot;
+        <a href="https://pages.kubepilot.org/privacy.html">Privacy</a>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var root = document.documentElement, btn = document.getElementById('theme-toggle');
+        var meta = document.querySelector('meta[name="theme-color"]');
+        function sync() {
+          var dark = root.getAttribute('data-theme') === 'dark', next = dark ? 'Daylight' : 'Night';
+          btn.querySelector('.label').textContent = dark ? 'Night' : 'Daylight';
+          btn.setAttribute('aria-label', 'Switch to ' + next + ' mode'); btn.title = 'Switch to ' + next + ' mode';
+          meta.setAttribute('content', dark ? '#0B1017' : '#F7F9FC');
+        }
+        btn.addEventListener('click', function () {
+          var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          try { localStorage.setItem('kubepilot-theme', next); } catch (e) {}
+          sync();
+        });
+        sync();
+
+        document.querySelectorAll('.copy').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var text = b.parentElement.textContent.trim();
+            if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () {
+              b.innerHTML = '<svg class="ic"><use href="#i-check"/></svg>';
+              setTimeout(function () { b.innerHTML = '<svg class="ic"><use href="#i-copy"/></svg>'; }, 1500);
+            });
+          });
+        });
+
+        function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+        function ago(iso) {
+          var s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+          if (s < 60) return Math.round(s) + 's ago';
+          if (s < 3600) return Math.round(s / 60) + 'm ago';
+          return Math.round(s / 3600) + 'h ago';
+        }
+        function until(iso) { var m = Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 60000)); return m + '<small> min</small>'; }
+        function set(id, html) { document.getElementById(id).innerHTML = html; }
+
+        function render(d) {
+          set('cluster-name', esc(d.cluster) + ' · ' + esc(d.kubernetes_version));
+          set('k-nodes', d.nodes.ready + '<small>/' + d.nodes.total + '</small>');
+          document.getElementById('k-nodes').classList.toggle('bad', d.nodes.ready < d.nodes.total);
+          set('k-pods', d.pods.running + '<small>/' + d.pods.total + '</small>');
+          set('k-failing', String(d.pods.failing));
+          document.getElementById('k-failing').classList.toggle('bad', d.pods.failing > 0);
+          set('k-cpu', d.cpu_percent + '<small>%</small>');
+          set('k-mem', d.memory_percent + '<small>%</small>');
+          document.getElementById('b-cpu').style.width = d.cpu_percent + '%';
+          document.getElementById('b-mem').style.width = d.memory_percent + '%';
+          set('k-next', until(d.next_rotation));
+          set('incidents', d.incidents.map(function (i) {
+            return '<div class="incident"><span class="sev sev-' + esc(i.severity) + '">' + esc(i.severity) + '</span><div><h4>' + esc(i.title) +
+              '</h4><div class="mono">' + esc(i.resource) + ' · since ' + ago(i.since) + '</div></div></div>';
+          }).join('') || '<div class="incident muted small">No active incidents</div>');
+          set('events', d.events.map(function (e) {
+            return '<li><span class="t">' + ago(e.last_seen) + '</span><div><span class="r ' + (e.type === 'Warning' ? 'warn' : '') + '">' + esc(e.reason) +
+              '</span> <span class="mono small muted">' + esc(e.object) + '</span><div class="msg">' + esc(e.message) + '</div></div></li>';
+          }).join(''));
+          var st = document.getElementById('svc-status'); st.className = 'pill pill-ok'; st.textContent = 'Mock API online';
+        }
+        function load() {
+          fetch('/demo/status.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+            .then(render).catch(function () { var st = document.getElementById('svc-status'); st.className = 'pill pill-warn'; st.textContent = 'Status unavailable'; });
+        }
+        load(); setInterval(load, 10000);
+      })();
+    </script>
+  </body>
+</html>

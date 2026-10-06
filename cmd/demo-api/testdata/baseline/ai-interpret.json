@@ -1,0 +1,1 @@
+{"actions":[{"command":"kubectl -n payments get pods -l app=checkout-api","explanation":"List checkout pods","namespace":"payments","requires_cr_code":false,"resource":"checkout-api","type":"kubectl"}]}
