@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
         - name: demo-api
-          image: docker.io/bwalia/kubepilot-demo-api:latest@sha256:e9571823d845494b1689271039ffd04c1716acd6bcf52134cf74d292eeb68702
+          image: docker.io/bwalia/kubepilot-demo-api:8a521e7@sha256:5729ad866718f553b5c5d2ea185c9372e10b47115b18bbdbcb1c382fdf58ff7a
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
