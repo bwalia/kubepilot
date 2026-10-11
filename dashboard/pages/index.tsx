@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import { Activity, Cpu, AlertTriangle, Terminal, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen, CheckCircle } from "lucide-react";
 import {
+  listPods,
   listCrashingPods,
   listNodes,
   listDeployments,
@@ -76,6 +77,14 @@ export default function DashboardHome() {
     queryFn: listNodes,
   });
 
+  // Total Pods counts the pods that actually exist (Deployments, StatefulSets,
+  // DaemonSets, Jobs and bare pods) in the selected namespace — the same list
+  // the iOS app reads — not the desired replicas of Deployments alone.
+  const { data: pods = [] } = useQuery({
+    queryKey: qk.pods(nsForQuery),
+    queryFn: () => listPods(nsForQuery),
+  });
+
   const { data: deployments = [] } = useQuery({
     queryKey: qk.deployments(""),
     queryFn: () => listDeployments(),
@@ -116,7 +125,7 @@ export default function DashboardHome() {
     }
   };
 
-  const totalPods = deployments.reduce((acc, d) => acc + d.Replicas, 0);
+  const totalPods = pods.length;
   const readyNodes = nodes.filter((n) => n.Ready).length;
   const pressureNodes = nodes.filter(
     (n) => n.MemoryPressure || n.DiskPressure || n.PIDPressure

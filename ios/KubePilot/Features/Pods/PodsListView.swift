@@ -158,8 +158,8 @@ final class PodsListViewModel {
             guard matchesSearch else { return false }
             switch filter {
             case .all: return true
-            case .healthy: return pod.ready && pod.reason.isEmpty
-            case .failing: return !pod.ready || !pod.reason.isEmpty
+            case .healthy: return pod.isHealthy
+            case .failing: return !pod.isHealthy
             case .crashloop: return pod.reason == "CrashLoopBackOff"
             case .pending: return pod.phase == "Pending"
             case .oom: return pod.reason == "OOMKilled"

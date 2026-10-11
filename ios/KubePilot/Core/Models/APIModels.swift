@@ -29,6 +29,12 @@ struct PodSummary: Codable, Identifiable, Hashable, Sendable {
         return phase
     }
 
+    /// A pod that finished successfully (a Job that ran to completion) is never
+    /// Ready and reports Reason "Completed", but it is not failing.
+    var isCompleted: Bool { phase == "Succeeded" }
+
+    var isHealthy: Bool { isCompleted || (ready && reason.isEmpty) }
+
     var severity: HealthScore {
         switch reason {
         case "CrashLoopBackOff", "OOMKilled", "Error", "ImagePullBackOff", "ErrImagePull":
@@ -36,7 +42,7 @@ struct PodSummary: Codable, Identifiable, Hashable, Sendable {
         case "Pending":
             return .degraded
         default:
-            return ready ? .healthy : .degraded
+            return isHealthy || ready ? .healthy : .degraded
         }
     }
 }

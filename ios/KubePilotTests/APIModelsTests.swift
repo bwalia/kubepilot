@@ -23,6 +23,38 @@ final class APIModelsTests: XCTestCase {
         XCTAssertTrue(pod.ready)
     }
 
+    func testCompletedJobPodIsHealthyNotFailing() throws {
+        // Shape the API returns for a Job pod that ran to completion.
+        let json = """
+        {
+          "Name": "backup-29311200-x7k2p",
+          "Namespace": "ops",
+          "Phase": "Succeeded",
+          "Reason": "Completed",
+          "NodeName": "worker-1",
+          "Restarts": 0,
+          "Ready": false,
+          "Uptime": "2h"
+        }
+        """.data(using: .utf8)!
+
+        let pod = try JSONDecoder.kubePilot.decode(PodSummary.self, from: json)
+        XCTAssertTrue(pod.isCompleted)
+        XCTAssertTrue(pod.isHealthy)
+        XCTAssertEqual(pod.severity, .healthy)
+    }
+
+    func testErroredAndUnreadyPodsAreNotHealthy() throws {
+        let errored = try JSONDecoder.kubePilot.decode(PodSummary.self, from: """
+        {"Name":"a","Namespace":"n","Phase":"Failed","Reason":"Error","NodeName":"w","Restarts":0,"Ready":false,"Uptime":"1m"}
+        """.data(using: .utf8)!)
+        let unready = try JSONDecoder.kubePilot.decode(PodSummary.self, from: """
+        {"Name":"b","Namespace":"n","Phase":"Running","Reason":"","NodeName":"w","Restarts":0,"Ready":false,"Uptime":"1m"}
+        """.data(using: .utf8)!)
+        XCTAssertFalse(errored.isHealthy)
+        XCTAssertFalse(unready.isHealthy)
+    }
+
     func testNodeSummaryLANWANTunnel() {
         let node = NodeSummary(
             name: "n1",
