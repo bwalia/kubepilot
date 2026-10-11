@@ -268,11 +268,11 @@ final class DashboardViewModel {
     var alertCount: Int { anomalies.count + (summary?.healthSummary.warningEvents ?? 0) }
 
     var healthyPods: Int {
-        pods.filter { $0.ready && $0.reason.isEmpty }.count
+        pods.filter(\.isHealthy).count
     }
 
     var failingPods: Int {
-        pods.filter { !$0.ready || !$0.reason.isEmpty }.count
+        pods.count - healthyPods
     }
 
     func refresh(namespace: String) async {
