@@ -1,18 +1,20 @@
 name: Deploy Landing Page
 
-# Publishes docs/landing to GitHub Pages:
-#   https://bwalia.github.io/kubepilot/
+# Publishes docs/landing + docs/blog to GitHub Pages:
+#   https://pages.kubepilot.org/
+#   https://pages.kubepilot.org/blog/
 #
-# S3 (kubepilot.org) is deployed separately via:
-#   AWS_PROFILE=kubepilot aws s3 cp docs/landing/index.html s3://kubepilot-docs/landing/index.html
-#   AWS_PROFILE=kubepilot aws s3 sync docs/screenshots/ s3://kubepilot-docs/screenshots/
+# Blog HTML is generated from local post packs (+ opsapi CMS when available)
+# via scripts/cms/build-blog.mjs — same authoring model as workstation-website.
 
 on:
   push:
     branches: [master]
     paths:
       - "docs/landing/**"
+      - "docs/blog/**"
       - "docs/screenshots/**"
+      - "scripts/cms/**"
       - ".github/workflows/landing-pages.yml"
   workflow_dispatch:
 
@@ -35,11 +37,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build blog (local posts + opsapi CMS)
+        env:
+          # Optional repo Variables; scripts/cms/build-blog.mjs has built-in defaults.
+          OPSAPI_URL: ${{ vars.OPSAPI_URL }}
+          CMS_NAMESPACE: ${{ vars.CMS_NAMESPACE }}
+        run: node scripts/cms/build-blog.mjs --out docs/blog
+
       - name: Prepare static site
         run: |
-          mkdir -p _site/screenshots
+          mkdir -p _site/screenshots _site/blog/assets
           sed 's|\.\./screenshots/|screenshots/|g' docs/landing/index.html > _site/index.html
           cp docs/landing/privacy.html _site/privacy.html
+          # Generated blog pages + assets only (not posts/ source packs).
+          cp docs/blog/index.html _site/blog/index.html
+          for f in docs/blog/*.html; do
+            base=$(basename "$f")
+            [ "$base" = "index.html" ] && continue
+            cp "$f" "_site/blog/$base"
+          done
+          cp -R docs/blog/assets/. _site/blog/assets/
           cp docs/screenshots/*.svg _site/screenshots/ 2>/dev/null || true
           cp docs/screenshots/README.md _site/screenshots/ 2>/dev/null || true
 

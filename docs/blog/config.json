@@ -1,0 +1,9 @@
+{
+  "siteName": "KubePilot",
+  "siteUrl": "https://pages.kubepilot.org",
+  "opsapiUrl": "https://int-opsapi.workstation.co.uk/",
+  "namespace": "kubepilot",
+  "category": "blog",
+  "categoryName": "Blog",
+  "authorDefault": "Balinder Walia"
+}

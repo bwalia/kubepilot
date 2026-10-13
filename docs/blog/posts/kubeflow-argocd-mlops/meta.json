@@ -1,0 +1,14 @@
+{
+  "title": "Kubeflow + Argo CD: Making MLOps Work Like Charm",
+  "slug": "kubeflow-argocd-mlops",
+  "excerpt": "Why ML in production is mostly plumbing, what Kubeflow and Argo CD each solve, a reference GitOps architecture, and a step-by-step guide to deploying Kubeflow with Argo CD.",
+  "published_at": "2025-07-21",
+  "reading_minutes": 12,
+  "author_name": "Balinder Walia",
+  "tags": ["MLOps", "GitOps", "Tutorial", "Kubernetes"],
+  "seo_title": "Kubeflow + Argo CD: Making MLOps Work Like Charm | KubePilot Blog",
+  "seo_description": "What Kubeflow and Argo CD each solve, and a step-by-step GitOps guide to deploying Kubeflow with Argo CD.",
+  "seo_keywords": "Kubeflow, Argo CD, MLOps, GitOps, Kubernetes, KServe, pipelines",
+  "featured_image_url": null,
+  "status": "published"
+}
