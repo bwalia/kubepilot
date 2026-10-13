@@ -1103,3 +1103,165 @@ export const listPortForwards = (): Promise<PortForwardSession[]> =>
 
 export const stopPortForward = (id: string): Promise<void> =>
   http.delete(`/portforward/${encodeURIComponent(id)}`).then(() => undefined);
+
+// ── OTLP Autopilot: trace-derived service map, traces and AI insights ───────
+
+export type OTELHealth = "healthy" | "degraded" | "critical" | "unknown";
+export type OTELNodeKind = "service" | "database" | "messaging" | "external" | "clients";
+
+export interface OTELRed {
+  requests: number;
+  errors: number;
+  error_rate: number;
+  rate_per_min: number;
+  p50_ms: number;
+  p95_ms: number;
+  p99_ms: number;
+}
+
+export interface OTELGraphPod {
+  name: string;
+  node?: string;
+  phase?: string;
+  reason?: string;
+  ready: boolean;
+  restarts: number;
+  known: boolean;
+}
+
+export interface OTELGraphNode {
+  id: string;
+  name: string;
+  kind: OTELNodeKind;
+  namespace?: string;
+  workload?: string;
+  language?: string;
+  version?: string;
+  system?: string;
+  pods?: OTELGraphPod[];
+  stats: OTELRed;
+  baseline?: OTELRed;
+  health: OTELHealth;
+  operations?: Array<OTELRed & { name: string }>;
+  top_errors?: string[];
+  insight_id?: string;
+}
+
+export interface OTELGraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  protocol?: string;
+  stats: OTELRed;
+  baseline?: OTELRed;
+  health: OTELHealth;
+}
+
+export interface OTELServiceGraph {
+  generated_at: string;
+  from: string;
+  to: string;
+  window: string;
+  span_count: number;
+  trace_count: number;
+  nodes: OTELGraphNode[];
+  edges: OTELGraphEdge[];
+}
+
+export interface OTELTraceSummary {
+  trace_id: string;
+  root_service: string;
+  root_name: string;
+  start: string;
+  duration_ms: number;
+  span_count: number;
+  error_count: number;
+  services: string[];
+  error?: string;
+}
+
+export interface OTELSpan {
+  trace_id: string;
+  span_id: string;
+  parent_id?: string;
+  name: string;
+  service?: string;
+  status?: string;
+  status_message?: string;
+  kind?: string;
+  duration: number; // nanoseconds
+  labels?: Record<string, string>;
+  timestamp: string;
+}
+
+export interface OTELLogRecord {
+  timestamp: string;
+  severity?: string;
+  body: string;
+  labels?: Record<string, string>;
+  service?: string;
+}
+
+export interface OTELTraceDetail extends OTELTraceSummary {
+  spans: OTELSpan[];
+  logs?: OTELLogRecord[];
+}
+
+export interface OTELInsight {
+  id: string;
+  kind: "error_spike" | "latency_regression" | "new_error";
+  status: "open" | "resolved";
+  severity: "critical" | "high" | "medium";
+  title: string;
+  summary: string;
+  node_id: string;
+  service: string;
+  namespace?: string;
+  workload?: string;
+  root_cause_node?: string;
+  caller?: string;
+  cause_path?: string[];
+  affected?: string[];
+  signals: Array<{ label: string; current: string; baseline: string }>;
+  errors?: string[];
+  trace_ids?: string[];
+  pods?: OTELGraphPod[];
+  first_seen: string;
+  last_seen: string;
+  resolved_at?: string;
+  ai: {
+    status: "pending" | "running" | "done" | "failed" | "unavailable";
+    summary?: string;
+    root_cause?: string;
+    impact?: string;
+    confidence?: number;
+    next_steps?: string[];
+    commands?: string[];
+    model?: string;
+    error?: string;
+    generated_at?: string;
+    attempts?: number;
+  };
+}
+
+export const getOTELServiceGraph = (params: { window?: string; namespace?: string }): Promise<OTELServiceGraph> =>
+  http.get("/otel/servicegraph", { params }).then((r) => r.data);
+
+export const getOTELTraceSummaries = (params: {
+  window?: string;
+  service?: string;
+  edge?: string;
+  errors?: boolean;
+  min_ms?: number;
+  limit?: number;
+}): Promise<{ traces: OTELTraceSummary[] }> =>
+  http.get("/otel/trace-summaries", { params }).then((r) => r.data);
+
+export const getOTELTrace = (traceId: string): Promise<OTELTraceDetail> =>
+  http.get(`/otel/traces/${encodeURIComponent(traceId)}`).then((r) => r.data);
+
+export const getOTELInsights = (): Promise<{ insights: OTELInsight[] }> =>
+  http.get("/otel/insights").then((r) => r.data);
+
+export const reanalyzeOTELInsight = (id: string): Promise<OTELInsight> =>
+  http.post(`/otel/insights/${encodeURIComponent(id)}/analyze`).then((r) => r.data);

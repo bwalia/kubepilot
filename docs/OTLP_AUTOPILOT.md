@@ -54,7 +54,35 @@ KubePilot UI — Metrics, Logs & Traces
 - `GET /api/v1/otel/apps` — discovered apps + capability
 - `GET /api/v1/otel/metrics|logs|traces` — overview queries (`plane`, `service`, `limit`)
 - `GET /api/v1/otel/services/{id}` — service drill-down
-- `POST /api/v1/otel/ingest` — push samples into the managed store (collector path)
+- `POST /api/v1/otel/ingest` — push samples into the managed store (simple JSON)
+- `POST /api/v1/otel/v1/{traces,metrics,logs}` — standard **OTLP/HTTP** receiver (protobuf or JSON, gzip). Point a collector's `otlphttp` exporter at `<kubepilot>/api/v1/otel`
+- `GET /api/v1/otel/servicegraph?window=15m&namespace=` — trace-derived topology: nodes (services + inferred databases/queues/external hosts), edges, RED stats vs the previous window, live pod state
+- `GET /api/v1/otel/trace-summaries?window=&service=&edge=&errors=true&min_ms=` — trace explorer list
+- `GET /api/v1/otel/traces/{traceId}` — one trace with spans and trace-correlated logs
+- `GET /api/v1/otel/insights` — AI incident insights (open first)
+- `POST /api/v1/otel/insights/{id}/analyze` — re-run the AI analysis
+
+## Proactive AI insights
+
+Every 30s KubePilot compares the last 5 minutes of spans with the previous 30 and flags error-rate spikes, p95 latency regressions and new error signatures (messages with digits normalised, so `timed out after 1692ms` and `…1733ms` are one signature). Each signal is walked downstream along unhealthy edges to its **origin** — a failing database is one incident however many callers report it — and the upstream blast radius is computed. The incident is then explained by the configured model (`--ollama-model`) with sample failing traces, their logs and live pod state as evidence; failed analyses retry up to 3 times. New incidents are added to the anomaly timeline and sent to Slack when configured. Insights run whenever spans arrive, independent of the Autopilot mode.
+
+## Connecting a collector
+
+KubePilot's dashboard auth also covers ingest. Give the collector an ingest-only token instead of dashboard credentials:
+
+```bash
+kubepilot serve --otel-ingest-token "$TOKEN"     # or KUBEPILOT_OTEL_INGEST_TOKEN
+```
+
+```yaml
+exporters:
+  otlphttp/kubepilot:
+    endpoint: http://kubepilot.kubepilot-system.svc:8080/api/v1/otel
+    headers:
+      Authorization: "Bearer ${env:KUBEPILOT_OTEL_INGEST_TOKEN}"
+```
+
+Add it next to existing exporters (X-Ray, Loki, Prometheus…) — nothing else changes. With Helm, set `kubepilot.auth.ingestToken` (or an `ingestToken` key in `existingSecret`) and the bundled collector picks it up.
 
 ## Install
 
@@ -87,4 +115,9 @@ Raw manifests: `manifests/otel-autopilot/`.
 
 ## UI
 
-Open **OTLP** in the top nav (`/otel`) for coverage, cluster vs application planes, and Metrics / Logs / Traces overview.
+Open **OTLP** in the top nav (`/otel`):
+
+- **Incidents** — AI-detected problems with failure path, before/after signals, top errors, AI root cause, next steps and copyable commands.
+- **Service map** — layered topology (callers → services → databases/queues/external); node ring = health, edge width = traffic, failing edges animate; hover to focus a neighbourhood, click for RED vs baseline, operations, pods and errors.
+- **Traces** — filter by service, edge, errors or duration; waterfall with span attributes and trace-correlated logs.
+- **Coverage & signals** — Autopilot discovery/enablement and raw Metrics / Logs / Traces.

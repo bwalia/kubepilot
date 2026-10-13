@@ -216,6 +216,16 @@ func (s *Server) Start(ctx context.Context) error {
 	api.HandleFunc("/otel/traces", s.handleOTELTraces).Methods(http.MethodGet)
 	api.HandleFunc("/otel/services/{id}", s.handleOTELService).Methods(http.MethodGet)
 	api.HandleFunc("/otel/ingest", s.handleOTELIngest).Methods(http.MethodPost)
+	// Standard OTLP/HTTP receiver: point a collector's otlphttp exporter at
+	// <dashboard>/api/v1/otel and it appends /v1/{traces,metrics,logs}.
+	api.HandleFunc("/otel/v1/traces", s.handleOTLPTraces).Methods(http.MethodPost)
+	api.HandleFunc("/otel/v1/metrics", s.handleOTLPMetrics).Methods(http.MethodPost)
+	api.HandleFunc("/otel/v1/logs", s.handleOTLPLogs).Methods(http.MethodPost)
+	api.HandleFunc("/otel/servicegraph", s.handleOTELServiceGraph).Methods(http.MethodGet)
+	api.HandleFunc("/otel/trace-summaries", s.handleOTELTraceSummaries).Methods(http.MethodGet)
+	api.HandleFunc("/otel/traces/{traceId}", s.handleOTELTrace).Methods(http.MethodGet)
+	api.HandleFunc("/otel/insights", s.handleOTELInsights).Methods(http.MethodGet)
+	api.HandleFunc("/otel/insights/{id}/analyze", s.handleOTELInsightAnalyze).Methods(http.MethodPost)
 
 	if s.cfg.EnableActionMutationEndpoints {
 		api.HandleFunc("/remediate", s.handleRemediate).Methods(http.MethodPost)

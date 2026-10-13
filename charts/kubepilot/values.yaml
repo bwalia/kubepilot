@@ -93,6 +93,10 @@ kubepilot:
     username: "admin"
     password: ""
     token: ""
+    # Bearer token accepted ONLY on the OTLP ingest routes (key "ingestToken"
+    # in existingSecret). The bundled collector uses it, so it never holds
+    # dashboard credentials. Without it, ingest needs the dashboard token.
+    ingestToken: ""
 
   # Enable action mutation endpoints (execute-action / remediate / port-forward
   # start+stop). Required for the dashboard's port-forwarding feature.

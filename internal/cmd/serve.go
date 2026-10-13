@@ -92,6 +92,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("otel-autopilot-blocked-namespaces", "kube-system,kube-public,kube-node-lease,kubepilot-system", "Comma-separated namespaces OTLP Autopilot must never touch")
 	cmd.Flags().String("otel-autopilot-supported-runtimes", "java,nodejs,python,dotnet,go", "Runtimes eligible for auto-instrumentation")
 	cmd.Flags().Duration("otel-autopilot-retention", 24*time.Hour, "Retention for KubePilot-managed OTEL store")
+	cmd.Flags().String("otel-ingest-token", "", "Bearer token accepted only on the OTLP ingest routes, so a collector can push without dashboard credentials")
 	cmd.Flags().String("otel-export-metrics-remote-write-url", "", "Optional Prometheus/Thanos/Cortex remote_write URL (Hybrid export)")
 	cmd.Flags().String("otel-export-otlp-endpoint", "", "Optional external OTLP endpoint for dual-write export")
 	cmd.Flags().Bool("otel-export-otlp-insecure", false, "Disable TLS for optional OTLP export endpoint")
@@ -141,6 +142,7 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("otel_autopilot_blocked_namespaces", cmd.Flags().Lookup("otel-autopilot-blocked-namespaces"))
 	_ = viper.BindPFlag("otel_autopilot_supported_runtimes", cmd.Flags().Lookup("otel-autopilot-supported-runtimes"))
 	_ = viper.BindPFlag("otel_autopilot_retention", cmd.Flags().Lookup("otel-autopilot-retention"))
+	_ = viper.BindPFlag("otel_ingest_token", cmd.Flags().Lookup("otel-ingest-token"))
 	_ = viper.BindPFlag("otel_export_metrics_remote_write_url", cmd.Flags().Lookup("otel-export-metrics-remote-write-url"))
 	_ = viper.BindPFlag("otel_export_otlp_endpoint", cmd.Flags().Lookup("otel-export-otlp-endpoint"))
 	_ = viper.BindPFlag("otel_export_otlp_insecure", cmd.Flags().Lookup("otel-export-otlp-insecure"))
@@ -287,6 +289,28 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		K8s:    k8sClient,
 	}, log)
 	aiEngine.RCA().SetEvidenceContributor(otelCtl)
+	// Trace insights: detect incidents from incoming spans and have the AI
+	// explain them before anyone asks. New insights join the anomaly
+	// timeline and, at high severity, Slack.
+	otelCtl.SetAnalyzer(aiEngine)
+	otelCtl.SetInsightHook(func(hookCtx context.Context, in otelautopilot.Insight, analysed bool) {
+		if analysed {
+			return
+		}
+		anomaly := &observability.Anomaly{
+			ID:          "otel-" + in.ID,
+			DetectedAt:  in.FirstSeen,
+			Rule:        "otel-" + in.Kind,
+			Resource:    ai.ResourceRef{Kind: "Service", Name: in.Service, Namespace: in.Namespace},
+			Severity:    ai.Severity(in.Severity),
+			Description: in.Title + ". " + in.Summary,
+		}
+		rcaStore.AddAnomaly(anomaly)
+		if notifier != nil {
+			notifier.NotifyAnomaly(hookCtx, anomaly)
+		}
+	})
+	go otelCtl.RunInsights(ctx, 30*time.Second)
 	if otelPolicy.Mode != otelautopilot.ModeOff {
 		log.Info("OTLP Autopilot enabled",
 			zap.String("mode", string(otelPolicy.Mode)),
@@ -368,6 +392,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 			Username:           authUsername,
 			Password:           authPassword,
 			MetricsRequireAuth: viper.GetBool("metrics_require_auth"),
+			IngestToken:        strings.TrimSpace(viper.GetString("otel_ingest_token")),
 		},
 		EnableKubeconfigMutationEndpoints: viper.GetBool("enable_kubeconfig_mutations"),
 		EnableActionMutationEndpoints:     viper.GetBool("enable_action_mutations"),
