@@ -1,0 +1,197 @@
+<h2>The 2am problem</h2>
+          <p>
+            Every Kubernetes incident starts the same way. Something pages you, maybe a Slack alert or a
+            customer, and you open a terminal and start typing: <code>kubectl get pods -A</code>,
+            <code>describe</code>, <code>logs --previous</code>, <code>get events --sort-by</code>. Ten
+            tabs later you're still trying to connect a <code>CrashLoopBackOff</code> to the ConfigMap
+            someone changed an hour ago, while node memory pressure quietly evicts the neighbours.
+          </p>
+          <p>
+            Most of an incident is spent <strong>working out what is actually wrong</strong>, not
+            fixing it. KubePilot targets that gap. It's an open-source troubleshooting cockpit that
+            correlates events, pods, nodes and logs, explains the failure in plain English, and can
+            safely apply the fix.
+          </p>
+
+          <h2>Watch: KubePilot in action</h2>
+          <p>
+            A short walkthrough of troubleshooting a real cluster with KubePilot, from noisy symptoms
+            to an AI-backed diagnosis and a safe fix.
+          </p>
+          <div class="video-frame">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/CsiJWpfncqA?rel=0"
+              title="KubePilot - Troubleshooting Kubernetes using AI"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+          </div>
+          <p class="video-cap">“KubePilot — Troubleshooting Kubernetes using AI” by <a href="https://www.youtube.com/@BalinderWalia">Balinder Walia</a>. <a href="https://www.youtube.com/watch?v=CsiJWpfncqA">Watch on YouTube →</a></p>
+
+          <h2>Three modes, one incident loop</h2>
+          <p>
+            KubePilot is built around three modes that match how SREs actually work an incident:
+            <strong>ask</strong>, <strong>verify</strong>, <strong>act</strong>.
+          </p>
+          <div class="grid2">
+            <div class="card">
+              <h3>🧠 CoPilot: diagnose</h3>
+              <p style="font-size:0.98rem;">AI-assisted troubleshooting. Ask what's broken in plain English, or hit <strong>AI Analyze</strong> on a failing pod.</p>
+              <ul style="font-size:0.95rem;">
+                <li>Automated RCA with evidence chains, a confidence score, risk, commands and YAML fixes</li>
+                <li>Anomaly detection for CrashLoop, OOMKilled, ImagePull and node pressure</li>
+                <li>Runs on <strong>Ollama and local models</strong>, so your cluster data stays yours</li>
+                <li><strong>Copy Prompt</strong> to reuse a diagnosis with any LLM you like</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>🔎 Pilot: verify</h3>
+              <p style="font-size:0.98rem;">A Lens/Rancher-style, read-only SRE browser for checking what the AI told you.</p>
+              <ul style="font-size:0.95rem;">
+                <li>Deployments, StatefulSets, DaemonSets, Jobs, Services, Ingresses, ConfigMaps, Secrets and PVCs</li>
+                <li>Pod workbench: containers, events, live logs and sanitized YAML</li>
+                <li>Topology canvas: Ingress → Service → Workload → Pod</li>
+                <li>Multi-cluster kubeconfig switching with no restart</li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <h3>🛠️ AutoPilot: remediate</h3>
+            <p style="font-size:0.98rem;">Closed-loop self-healing with real safety rails, so you can trust automation after hours.</p>
+            <ul style="font-size:0.95rem;">
+              <li>Three modes: <strong>off</strong>, <strong>dry-run</strong> (preview only) and <strong>active</strong></li>
+              <li>Policy gates: namespace blocklists, action allow-lists and confidence floors</li>
+              <li>Cooldowns and hourly caps to prevent remediation storms, plus a one-click <strong>pause</strong> kill switch</li>
+              <li>A decision ledger of every executed, skipped, escalated and failed action</li>
+            </ul>
+          </div>
+          <div class="callout">
+            <span class="ico">🔁</span>
+            <p><strong>The loop:</strong> CoPilot explains, Pilot verifies, AutoPilot remediates. Each mode feeds the next, so there's no copy-pasting pod names between a chatbot, a terminal and a runbook wiki.</p>
+          </div>
+
+          <h2>What's new in KubePilot</h2>
+          <p>Recent releases focused on making the incident loop faster, more trustworthy and easier to reach:</p>
+
+          <h3>Durable RCA history</h3>
+          <p>
+            An optional embedded <strong>SQLite</strong> store keeps RCA reports and anomalies across
+            restarts, with configurable retention and WAL journaling. It needs no CGO and still ships as a single binary.
+            When the same pod crash-loops again next week, the previous root cause is already there.
+          </p>
+
+          <h3>Pre-built and custom runbooks</h3>
+          <p>
+            Seven opinionated diagnostic workflows ship out of the box. Drop your own YAML runbooks into a
+            directory and they hot-reload via fsnotify. A user runbook overrides a built-in one with the same ID,
+            so your team's tribal knowledge becomes executable.
+          </p>
+
+          <h3>Cluster resource gauges and real node IPs</h3>
+          <p>
+            Live CPU, memory and storage gauges with a per-StorageClass breakdown. They're Longhorn-aware, so you
+            see physical disk usage, not just bound PVC totals. Node views now classify <strong>LAN</strong>,
+            <strong>WAN</strong> and <strong>WireGuard/flannel tunnel</strong> addresses instead of showing
+            only the k3s overlay IP, which matters when the incident is a networking one.
+          </p>
+
+          <h3>Port-forwarding from the UI</h3>
+          <p>
+            Open a tunnel to a pod or service directly from the dashboard and reach it through the
+            built-in reverse proxy. Sessions are listed, cancellable and auditable, with no stray
+            <code>kubectl port-forward</code> left running in a forgotten terminal.
+          </p>
+
+          <h3>Accurate health numbers everywhere</h3>
+          <p>
+            Pod counts and health classification now match exactly between the web dashboard, the iOS app
+            and the cluster itself. Completed Jobs count as completed, not failing, so the "failing" number
+            you act on during an incident is the real one.
+          </p>
+
+          <h3>Slack incident cards</h3>
+          <p>
+            Built in and off by default. Set a webhook and a minimum severity, and KubePilot posts
+            <em>anomaly detected</em> and <em>RCA finalized</em> cards with summary, confidence and a
+            deep link back to the dashboard.
+          </p>
+          <pre><code>KUBEPILOT_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+KUBEPILOT_SLACK_MIN_SEVERITY=high
+KUBEPILOT_NOTIFIER_DASHBOARD_URL=http://your-host:8383</code></pre>
+
+          <h3>Native iOS companion</h3>
+          <p>
+            A SwiftUI app talks to the same KubePilot APIs: health cards, pod search, live logs, events and
+            RCA reports, plus Face ID, home-screen widgets and Siri/App Intents. You can triage from your
+            phone before you reach a laptop.
+          </p>
+
+          <h3>MCP for agents</h3>
+          <p>
+            A built-in <strong>MCP server</strong> exposes KubePilot to AI agents for multi-cluster
+            orchestration and programmatic access, so your own agents get the same diagnostics the dashboard uses.
+          </p>
+
+          <h2>How it resolves incidents faster: a worked example</h2>
+          <div class="step-head"><span class="step-num">1</span><h3>Signal</h3></div>
+          <p>
+            The anomaly detector flags <code>payments-api</code> crash-looping in <code>prod</code>.
+            A Slack card arrives with severity <strong>HIGH</strong> and a dashboard link. You open it on your phone.
+          </p>
+          <div class="step-head"><span class="step-num">2</span><h3>Diagnose (CoPilot)</h3></div>
+          <p>
+            CoPilot has already run RCA: the container exits non-zero on startup because a required
+            env var from a recently edited ConfigMap is missing. The report shows the evidence chain (events → logs → config diff)
+            and a confidence of 95%.
+          </p>
+          <div class="step-head"><span class="step-num">3</span><h3>Verify (Pilot)</h3></div>
+          <p>
+            In Pilot you open the pod workbench, check the previous container logs and the ConfigMap YAML,
+            and use the topology view to confirm the blast radius: one Service, two Ingress routes.
+          </p>
+          <div class="step-head"><span class="step-num">4</span><h3>Fix (AutoPilot)</h3></div>
+          <p>
+            AutoPilot in <strong>dry-run</strong> previews the remediation. Once you're happy, switch to
+            active or apply the suggested YAML fix. Risky actions need CR-code approval. Every
+            decision lands in the ledger for the post-incident review.
+          </p>
+          <div class="step-head"><span class="step-num">5</span><h3>Remember</h3></div>
+          <p>
+            The RCA is stored in SQLite. Next time the pattern shows up, the history is one click away,
+            and your custom runbook can encode the fix.
+          </p>
+          <div class="callout tip">
+            <span class="ico">⏱️</span>
+            <p><strong>The result:</strong> you don't start triage by gathering context. KubePilot correlates events, node pressure and pod failures for you, and the AI summary gives the next engineer the full picture without a long handoff.</p>
+          </div>
+
+          <h2>Safe by default</h2>
+          <ul>
+            <li>Optional dashboard auth (basic or bearer token) and strict CORS origins</li>
+            <li>Read-only Pilot browsing; kubeconfig and action mutations are gated behind explicit flags</li>
+            <li>AutoPilot defaults to off or dry-run, with confidence floors and a kill switch</li>
+            <li>Local LLMs via Ollama, so cluster logs don't have to leave your network</li>
+          </ul>
+          <pre><code>KUBEPILOT_DASHBOARD_AUTH_ENABLED=true \
+KUBEPILOT_ENABLE_KUBECONFIG_MUTATIONS=false \
+KUBEPILOT_ENABLE_ACTION_MUTATIONS=false \
+./dist/kubepilot serve --dashboard-port=8383</code></pre>
+
+          <h2>Get started in minutes</h2>
+          <p>Install with Helm, Docker, plain manifests or systemd. The Helm route:</p>
+          <pre><code>helm repo add kubepilot https://bwalia.github.io/kubepilot
+helm repo update
+helm upgrade --install kubepilot kubepilot/kubepilot -n kubepilot --create-namespace
+kubectl port-forward svc/kubepilot -n kubepilot 8080:8080
+# open http://localhost:8080</code></pre>
+          <p>
+            Full options are in the <a href="https://github.com/bwalia/kubepilot#installation-options">README</a>.
+            For a deeper look at the three modes, see the <a href="../index.html#modes">KubePilot home page</a>.
+          </p>
+
+          <div class="cta">
+            <h3>Stop debugging blind</h3>
+            <p>KubePilot gives you AI root-cause analysis, an SRE browser and policy-gated self-healing on web and iOS. It's open source and runs on your own LLMs.</p>
+            <a href="https://github.com/bwalia/kubepilot" class="btn btn-primary">Get KubePilot on GitHub</a>
+          </div>

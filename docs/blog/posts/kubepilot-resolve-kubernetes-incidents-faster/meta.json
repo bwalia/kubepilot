@@ -1,0 +1,14 @@
+{
+  "title": "KubePilot: Resolve Kubernetes Incidents Faster with CoPilot, Pilot and AutoPilot",
+  "slug": "kubepilot-resolve-kubernetes-incidents-faster",
+  "excerpt": "What's new in KubePilot: AI root-cause analysis on local LLMs, an SRE browser, policy-gated AutoPilot fixes, durable RCA history, runbooks and a native iOS companion. Here's how they work together to cut time-to-resolution.",
+  "published_at": "2026-10-13",
+  "reading_minutes": 9,
+  "author_name": "Balinder Walia",
+  "tags": ["KubePilot", "Kubernetes", "SRE", "Incident Response", "AI"],
+  "seo_title": "KubePilot: Resolve Kubernetes Incidents Faster | KubePilot Blog",
+  "seo_description": "How KubePilot's CoPilot, Pilot and AutoPilot modes, along with RCA history, runbooks, Slack alerts and the iOS app, take you from alert to fix in minutes.",
+  "seo_keywords": "KubePilot, Kubernetes troubleshooting, AI RCA, incident response, SRE, AutoPilot, self-healing, Ollama, MTTR",
+  "featured_image_url": null,
+  "status": "published"
+}
