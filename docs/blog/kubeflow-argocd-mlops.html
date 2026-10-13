@@ -4,207 +4,54 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kubeflow + Argo CD: Making MLOps Work Like Charm | KubePilot Blog</title>
-    <meta
-      name="description"
-      content="Why ML in production breaks, what Kubeflow and Argo CD each solve, a reference GitOps architecture, and a step-by-step guide to deploying Kubeflow with Argo CD so your MLOps runs like charm."
-    />
-    <meta name="theme-color" content="#0a0f1c" />
-    <link rel="canonical" href="https://kubepilot.io/blog/kubeflow-argocd-mlops.html" />
-    <!-- Open Graph -->
-    <meta property="og:type" content="article" />
-    <meta property="og:title" content="Kubeflow + Argo CD: Making MLOps Work Like Charm" />
-    <meta property="og:description" content="What Kubeflow and Argo CD each solve, and a step-by-step GitOps guide to deploying Kubeflow with Argo CD." />
+    <meta name="description" content="What Kubeflow and Argo CD each solve, and a step-by-step GitOps guide to deploying Kubeflow with Argo CD." />
+    <meta name="keywords" content="Kubeflow, Argo CD, MLOps, GitOps, Kubernetes, KServe, pipelines" />
+    <link rel="canonical" href="https://pages.kubepilot.org/blog/kubeflow-argocd-mlops.html" />
+    <meta name="theme-color" content="#F7F9FC" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function(){try{var t=localStorage.getItem('kubepilot-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <style>
-      :root {
-        --bg: #0a0f1c;
-        --surface: #111827;
-        --surface-2: #1f2937;
-        --surface-3: #283548;
-        --border: rgba(255,255,255,0.08);
-        --border-hover: rgba(255,255,255,0.16);
-        --text: #f1f5f9;
-        --text-secondary: #cbd5e1;
-        --muted: #94a3b8;
-        --brand: #3b82f6;
-        --brand-light: #60a5fa;
-        --brand-glow: rgba(59,130,246,0.15);
-        --green: #22c55e;
-        --green-bg: rgba(34,197,94,0.1);
-        --green-border: rgba(34,197,94,0.25);
-        --purple: #a78bfa;
-        --amber: #fbbf24;
-        --radius: 16px;
-        --radius-sm: 10px;
-      }
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-      body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: var(--text); background: var(--bg); line-height: 1.75;
-        overflow-x: hidden; font-size: 18px;
-        -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
-      }
-      a { color: var(--brand-light); text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      img { max-width: 100%; height: auto; }
-
-      .wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 28px; }
-
-      /* Nav */
-      .nav {
-        position: sticky; top: 0; z-index: 50;
-        background: rgba(10,15,28,0.88);
-        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid var(--border);
-      }
-      .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 16px; }
-      .logo { font-weight: 900; font-size: 1.5rem; letter-spacing: -0.02em; white-space: nowrap; color: var(--text); }
-      .logo span { color: var(--brand); }
-      .nav-links { display: flex; align-items: center; gap: 6px; }
-      .nav-links a {
-        font-size: 1rem; font-weight: 500; color: var(--muted);
-        padding: 8px 16px; border-radius: var(--radius-sm); transition: color 0.2s, background 0.2s;
-      }
-      .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.06); text-decoration: none; }
-      .btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        font-size: 1rem; font-weight: 600; padding: 12px 24px; border-radius: var(--radius-sm);
-        border: 1px solid var(--border); color: var(--text); background: var(--surface);
-        transition: all 0.2s; cursor: pointer; white-space: nowrap;
-      }
-      .btn:hover { border-color: var(--border-hover); background: var(--surface-2); transform: translateY(-1px); text-decoration: none; }
-      .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: 0 4px 24px var(--brand-glow); }
-      .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
-
-      /* Article */
-      .article { padding: 56px 0 40px; }
-      .article-wrap { max-width: 780px; margin: 0 auto; padding: 0 28px; }
-      .eyebrow {
-        display: inline-flex; align-items: center; gap: 8px;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-        color: var(--brand-light); margin-bottom: 20px;
-      }
-      .eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
-      h1.title {
-        font-size: clamp(2.1rem, 5vw, 3.2rem); line-height: 1.1; font-weight: 900;
-        letter-spacing: -0.03em; margin-bottom: 20px;
-      }
-      h1.title .gradient {
-        background: linear-gradient(135deg, var(--brand-light) 0%, var(--purple) 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-      }
-      .lede { font-size: 1.25rem; color: var(--text-secondary); margin-bottom: 24px; }
-      .meta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; color: var(--muted); font-size: 0.95rem; margin-bottom: 8px; }
-      .tag { font-size: 0.8rem; font-weight: 600; color: var(--purple); background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.25); padding: 4px 12px; border-radius: 999px; }
-      hr.rule { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
-
-      .prose h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em; margin: 48px 0 14px; }
-      .prose h3 { font-size: 1.25rem; font-weight: 700; margin: 32px 0 10px; color: var(--text); }
-      .prose p { color: var(--text-secondary); margin-bottom: 18px; }
-      .prose ul, .prose ol { color: var(--text-secondary); margin: 0 0 18px 1.2em; }
-      .prose li { margin-bottom: 8px; }
-      .prose strong { color: var(--text); font-weight: 700; }
-      .prose code {
-        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.86em; background: var(--surface-2); border: 1px solid var(--border);
-        padding: 2px 6px; border-radius: 6px; color: #e2e8f0;
-      }
-      pre {
-        background: #0d1424; border: 1px solid var(--border); border-radius: var(--radius-sm);
-        padding: 18px 20px; overflow-x: auto; margin: 0 0 22px;
-      }
-      pre code {
-        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.82rem; line-height: 1.7; background: none; border: none; padding: 0; color: #cbd5e1;
-      }
-      .code-label {
-        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-        color: var(--muted); margin-bottom: 8px; display: block;
-      }
-
-      /* Callout */
-      .callout {
-        display: flex; gap: 14px; background: var(--brand-glow); border: 1px solid rgba(59,130,246,0.25);
-        border-radius: var(--radius-sm); padding: 18px 20px; margin: 0 0 24px;
-      }
-      .callout.tip { background: var(--green-bg); border-color: var(--green-border); }
-      .callout .ico { flex: 0 0 auto; font-size: 1.2rem; line-height: 1.6; }
-      .callout p { margin: 0; color: var(--text-secondary); font-size: 0.98rem; }
-      .callout strong { color: var(--text); }
-
-      /* Two-column compare */
-      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 8px 0 24px; }
-      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
-      .card h3 { margin-top: 0; }
-      .card .pill { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 999px; display: inline-block; margin-bottom: 12px; }
-      .pill.kf { color: var(--brand-light); background: var(--brand-glow); border: 1px solid rgba(59,130,246,0.25); }
-      .pill.argo { color: #fb923c; background: rgba(251,146,60,0.12); border: 1px solid rgba(251,146,60,0.25); }
-      .card ul { margin: 0 0 0 1.1em; }
-
-      /* Video */
-      .video-frame { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); background: #000; margin-bottom: 12px; }
-      .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-      .video-cap { color: var(--muted); font-size: 0.9rem; text-align: center; margin-bottom: 24px; }
-
-      /* Steps */
-      .step-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 10px; }
-      .step-num { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: var(--brand); box-shadow: 0 4px 16px var(--brand-glow); }
-      .step-head h3 { margin: 0; }
-
-      /* CTA */
-      .cta { margin: 48px 0 8px; background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(167,139,250,0.10)); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; text-align: center; }
-      .cta h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
-      .cta p { color: var(--text-secondary); margin-bottom: 18px; }
-
-      /* Footer */
-      .footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; color: var(--muted); font-size: 0.95rem; margin-top: 32px; }
-      .footer a { color: var(--muted); }
-      .footer a:hover { color: var(--text); }
-
-      @media (max-width: 720px) {
-        .nav-links a:not(.btn) { display: none; }
-        .grid2 { grid-template-columns: 1fr; }
-        body { font-size: 17px; }
-      }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/blog.css" />
   </head>
   <body>
+    
     <header class="nav">
       <div class="wrap nav-inner">
-        <a href="../landing/index.html" class="logo">Kube<span>Pilot</span></a>
+        <a href="../index.html" class="logo" aria-label="KubePilot home"><span class="logo-text">Kube<span>Pilot</span></span></a>
         <nav class="nav-links">
-          <a href="../landing/index.html#features">Features</a>
-          <a href="./index.html">Blog</a>
+          <a href="../index.html#modes">Modes</a>
+          <a href="../index.html#features">Features</a>
+          <a href="../index.html#install">Install</a>
+          <a href="./index.html" aria-current="page">Blog</a>
           <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
-          <a href="https://github.com/bwalia/kubepilot" class="btn">GitHub</a>
         </nav>
+        <div class="nav-actions">
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+            <span class="label">Daylight</span>
+          </button>
+          <a href="https://github.com/bwalia/kubepilot" class="btn btn-gh">GitHub</a>
+        </div>
       </div>
     </header>
-
-    <main class="article">
-      <div class="article-wrap">
-        <span class="eyebrow">MLOps &middot; GitOps</span>
-        <h1 class="title">Kubeflow + Argo CD: Making MLOps Work <span class="gradient">Like Charm</span></h1>
-        <p class="lede">
-          Training a model is the easy part. Getting it to production — reproducibly, safely, and
-          without a human babysitting <code>kubectl</code> — is where most ML projects stall. Here's
-          how Kubeflow and Argo CD divide that problem cleanly, and a step-by-step guide to wiring
-          them together with GitOps.
-        </p>
+    <main>
+      <article class="wrap article">
+        <a class="back" href="./index.html">&larr; All posts</a>
+        <div class="tags"><span class="tag">MLOps</span><span class="tag">GitOps</span><span class="tag">Tutorial</span><span class="tag">Kubernetes</span></div>
+        <h1>Kubeflow + Argo CD: Making MLOps Work Like Charm</h1>
         <div class="meta">
-          <span class="tag">Tutorial</span>
-          <span>By the KubePilot team</span>
+          <span>Balinder Walia</span>
+          <span>&middot;</span>
+          <span>21 Jul 2025</span>
           <span>&middot;</span>
           <span>~12 min read</span>
         </div>
-
-        <hr class="rule" />
-
+        
         <div class="prose">
-          <h2>The problem: ML in production is mostly plumbing</h2>
+<h2>The problem: ML in production is mostly plumbing</h2>
           <p>
             A data scientist gets a model to 0.94 F1 in a notebook. Then reality hits. That notebook
             has to become a repeatable <strong>training pipeline</strong>, the resulting artifact has
@@ -419,7 +266,7 @@ spec:
 
           <div class="callout tip">
             <span class="ico">🚀</span>
-            <p><strong>Where KubePilot fits.</strong> GitOps tells you <em>what</em> is deployed; it doesn't tell you <em>why</em> a Kubeflow pipeline pod is in <code>CrashLoopBackOff</code> at 2am. That's exactly what <a href="../landing/index.html">KubePilot</a> is for — AI root-cause analysis over pod events and logs, cluster-wide health, and safe, dry-run-first remediation for your ML workloads, from the dashboard or your phone.</p>
+            <p><strong>Where KubePilot fits.</strong> GitOps tells you <em>what</em> is deployed; it doesn't tell you <em>why</em> a Kubeflow pipeline pod is in <code>CrashLoopBackOff</code> at 2am. That's exactly what <a href="../index.html">KubePilot</a> is for — AI root-cause analysis over pod events and logs, cluster-wide health, and safe, dry-run-first remediation for your ML workloads, from the dashboard or your phone.</p>
           </div>
 
           <h2>Keep watching</h2>
@@ -436,18 +283,19 @@ spec:
             <p>KubePilot brings AI root-cause analysis, dry-run remediation, and Autopilot self-healing to your Kubeflow + Argo CD clusters — on web and iOS.</p>
             <a href="https://github.com/bwalia/kubepilot" class="btn btn-primary">Get KubePilot on GitHub</a>
           </div>
-        </div>
-      </div>
-    </main>
 
+        </div>
+      </article>
+    </main>
+    
     <footer class="footer">
       <div class="wrap">
         KubePilot &copy; 2025&ndash;2026 &middot;
         <a href="./index.html">Blog</a> &middot;
-        <a href="https://github.com/bwalia/kubepilot">GitHub</a> &middot;
-        <a href="https://github.com/bwalia/kubepilot#readme">Documentation</a> &middot;
-        <a href="https://github.com/bwalia/kubepilot/issues">Issues</a>
+        <a href="../privacy.html">Privacy</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot">GitHub</a>
       </div>
     </footer>
+    <script src="assets/theme.js"></script>
   </body>
 </html>

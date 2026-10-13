@@ -1,0 +1,232 @@
+<h2>The problem: ML in production is mostly plumbing</h2>
+          <p>
+            A data scientist gets a model to 0.94 F1 in a notebook. Then reality hits. That notebook
+            has to become a repeatable <strong>training pipeline</strong>, the resulting artifact has
+            to be <strong>versioned</strong>, a <strong>serving endpoint</strong> has to be stood up,
+            and the whole thing has to be <strong>re-runnable</strong> when data drifts next month.
+            Along the way you accumulate a pile of bash scripts, hand-run <code>kubectl apply</code>s,
+            and tribal knowledge that lives in one engineer's terminal history.
+          </p>
+          <p>The failure modes are always the same:</p>
+          <ul>
+            <li><strong>Non-reproducibility</strong> — "it worked when I ran it" — no record of what was deployed, when, or from which commit.</li>
+            <li><strong>Configuration drift</strong> — someone hotfixes the cluster live; the next deploy silently reverts it.</li>
+            <li><strong>Fragile handoffs</strong> — the gap between "notebook" and "production" is a manual, error-prone relay race.</li>
+            <li><strong>No easy rollback</strong> — a bad model or config is a scramble, not a one-line revert.</li>
+          </ul>
+          <p>
+            Two CNCF-ecosystem tools solve two halves of this. <strong>Kubeflow</strong> gives you the
+            ML workloads. <strong>Argo CD</strong> gives you a disciplined, Git-driven way to deploy and
+            keep them in sync. Used together, they turn the mess above into a system.
+          </p>
+
+          <h2>What each tool actually solves</h2>
+          <div class="grid2">
+            <div class="card">
+              <span class="pill kf">Kubeflow</span>
+              <h3>The ML platform</h3>
+              <p style="font-size:0.98rem;">Kubernetes-native machine learning. It answers "how do I run ML workloads?"</p>
+              <ul style="font-size:0.95rem;">
+                <li><strong>Pipelines</strong> — DAGs of containerized steps (prep → train → evaluate → register) with lineage.</li>
+                <li><strong>Notebooks</strong> — managed Jupyter environments on the cluster.</li>
+                <li><strong>Training operators</strong> — distributed PyTorch/TensorFlow/XGBoost jobs.</li>
+                <li><strong>Katib</strong> — hyperparameter tuning &amp; AutoML.</li>
+                <li><strong>KServe</strong> — scalable, standardized model serving with canary rollouts.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="pill argo">Argo CD</span>
+              <h3>The delivery engine</h3>
+              <p style="font-size:0.98rem;">Declarative GitOps CD for Kubernetes. It answers "how does anything get deployed — safely?"</p>
+              <ul style="font-size:0.95rem;">
+                <li><strong>Git is the source of truth</strong> — the cluster is reconciled to match a repo.</li>
+                <li><strong>Drift detection</strong> — shows and corrects anything that diverges from Git.</li>
+                <li><strong>Self-healing</strong> — reverts out-of-band changes automatically.</li>
+                <li><strong>Instant rollback</strong> — <code>git revert</code> is your rollback.</li>
+                <li><strong>Audit &amp; approvals</strong> — every change is a reviewed pull request.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout">
+            <span class="ico">🧩</span>
+            <p><strong>The key insight:</strong> Kubeflow is <em>what</em> you run; Argo CD is <em>how</em> it gets there and stays there. Kubeflow itself is just a large set of Kubernetes manifests — which makes it a perfect thing to manage <em>with</em> Argo CD.</p>
+          </div>
+
+          <h2>Watch: operationalizing ML with Kubeflow + GitOps</h2>
+          <p>
+            Before the hands-on, this KubeCon + CloudNativeCon talk is the best 30-minute overview of the
+            exact journey this post describes — going from ad-hoc bash scripts to Kubeflow pipelines
+            delivered through GitOps, at real scale.
+          </p>
+          <div class="video-frame">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/dwt-MBEUGpQ"
+              title="From Bash Scripts to Kubeflow and GitOps: Our Journey to Operationalizing ML at Scale (KubeCon + CloudNativeCon)"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+          </div>
+          <p class="video-cap">“From Bash Scripts to Kubeflow and GitOps: Our Journey to Operationalizing ML at Scale” — KubeCon + CloudNativeCon (CNCF).</p>
+
+          <h2>Reference architecture</h2>
+          <p>
+            The pattern is a GitOps loop. You never <code>kubectl apply</code> to production by hand.
+            You change YAML in Git; Argo CD notices and reconciles the cluster. Kubeflow and every ML
+            app it hosts are just Applications in that loop.
+          </p>
+          <pre><code>          commit / PR
+   You ─────────────────────▶  Git repo (source of truth)
+                                     │  kubeflow/            (platform manifests)
+                                     │  pipelines/           (your ML pipelines)
+                                     │  serving/             (KServe InferenceServices)
+                                     │  apps/                (app-of-apps root)
+                                     ▼
+                              ┌─────────────┐   watches &amp; reconciles
+                              │   Argo CD   │ ───────────────────────▶  Kubernetes cluster
+                              └─────────────┘   (self-heal + drift)          │
+                                     ▲                                       ▼
+                                     │        Kubeflow: Pipelines · KServe · Katib · Notebooks
+                                     └──────────────  status / health  ──────────────┘</code></pre>
+
+          <h2>Deploy it, step by step</h2>
+          <p>
+            The following gets you from an empty cluster to Kubeflow delivered by Argo CD via GitOps.
+            You'll need a Kubernetes cluster (v1.29+ recommended for current Kubeflow), <code>kubectl</code>,
+            and <code>kustomize</code>.
+          </p>
+
+          <div class="step-head"><span class="step-num">1</span><h3>Install Argo CD</h3></div>
+          <p>Argo CD goes in first — it will deploy everything else.</p>
+          <pre><span class="code-label">bash</span><code>kubectl create namespace argocd
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Wait for it to come up
+kubectl -n argocd rollout status deploy/argocd-server</code></pre>
+          <p>Grab the initial admin password and log in (port-forward for local access):</p>
+          <pre><span class="code-label">bash</span><code>kubectl -n argocd port-forward svc/argocd-server 8080:443 &amp;
+argocd admin initial-password -n argocd            # prints the password
+argocd login localhost:8080 --username admin --insecure</code></pre>
+
+          <div class="step-head"><span class="step-num">2</span><h3>Put Kubeflow's manifests in Git</h3></div>
+          <p>
+            Fork or vendor the official <a href="https://github.com/kubeflow/manifests">kubeflow/manifests</a>
+            repo into your own Git repo. Pin a release tag — never track <code>main</code> for a platform
+            this large. Your repo layout might look like:
+          </p>
+          <pre><span class="code-label">repo layout</span><code>my-mlops-platform/
+├── kubeflow/            # vendored kubeflow/manifests @ v1.9.x (the "example" overlay)
+├── pipelines/           # your compiled KFP pipelines
+├── serving/             # KServe InferenceServices
+└── apps/                # Argo CD Application definitions (app-of-apps)</code></pre>
+          <div class="callout tip">
+            <span class="ico">💡</span>
+            <p><strong>Why vendor it?</strong> GitOps means the repo is the source of truth. Pointing Argo CD at someone else's fast-moving <code>main</code> makes your deploys non-reproducible — the exact thing we're trying to eliminate.</p>
+          </div>
+
+          <div class="step-head"><span class="step-num">3</span><h3>Define Kubeflow as an Argo CD Application</h3></div>
+          <p>Now tell Argo CD to reconcile the cluster to your Kubeflow manifests:</p>
+          <pre><span class="code-label">kubeflow-app.yaml</span><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeflow
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/&lt;you&gt;/my-mlops-platform.git
+    targetRevision: main
+    path: kubeflow          # the kustomize overlay
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true           # delete what Git no longer declares
+      selfHeal: true        # revert out-of-band changes
+    syncOptions:
+      - ServerSideApply=true # required — Kubeflow CRDs are large
+      - CreateNamespace=true
+    retry:
+      limit: 10             # Kubeflow's CRDs+CRs need a few passes to settle
+      backoff: { duration: 20s, factor: 2, maxDuration: 5m }</code></pre>
+          <pre><span class="code-label">bash</span><code>kubectl apply -f kubeflow-app.yaml
+argocd app sync kubeflow
+argocd app wait kubeflow --health</code></pre>
+          <div class="callout">
+            <span class="ico">⚠️</span>
+            <p><strong>Expect a couple of retries.</strong> Kubeflow installs CRDs and the custom resources that use them in one shot, so the first sync often partially fails until the CRDs register. <code>ServerSideApply=true</code> plus the <code>retry</code> block above (or Argo CD <em>sync waves</em>) handles this — it's normal, not a bug.</p>
+          </div>
+
+          <div class="step-head"><span class="step-num">4</span><h3>Adopt the app-of-apps pattern</h3></div>
+          <p>
+            Rather than manage each piece by hand, create one <strong>root</strong> Application that points
+            at your <code>apps/</code> directory. Every child — Kubeflow, your pipelines, model serving,
+            monitoring — becomes a versioned, self-healing Application. Add a new capability by adding a
+            file and merging a PR.
+          </p>
+          <pre><span class="code-label">apps/root.yaml</span><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlops-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/&lt;you&gt;/my-mlops-platform.git
+    targetRevision: main
+    path: apps              # a directory full of Application manifests
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }</code></pre>
+
+          <div class="step-head"><span class="step-num">5</span><h3>Ship a model the GitOps way</h3></div>
+          <p>
+            With the platform live, deploying a model is a pull request. Compile a Kubeflow pipeline,
+            commit it, and declare a KServe <code>InferenceService</code> that Argo CD will roll out —
+            with canary traffic splitting built in:
+          </p>
+          <pre><span class="code-label">serving/fraud-model.yaml</span><code>apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: fraud-detector
+  namespace: kubeflow-user
+spec:
+  predictor:
+    canaryTrafficPercent: 20        # send 20% to the new model first
+    model:
+      modelFormat: { name: sklearn }
+      storageUri: gs://my-models/fraud/v7/</code></pre>
+          <p>Bump <code>v7</code> to <code>v8</code> in a PR, merge, and Argo CD does the canary rollout. Roll back with <code>git revert</code>. That's the whole point.</p>
+
+          <h2>Making it run like charm</h2>
+          <p>Getting it working is step one. These practices are what keep it boring — in the best way:</p>
+          <ul>
+            <li><strong>Sync waves for ordering.</strong> Annotate resources with <code>argocd.argoproj.io/sync-wave</code> so CRDs, then controllers, then workloads apply in order.</li>
+            <li><strong>Separate environments as overlays.</strong> <code>overlays/dev</code>, <code>overlays/staging</code>, <code>overlays/prod</code> — each its own Application, each promoted by a PR.</li>
+            <li><strong>Never commit secrets.</strong> Use Sealed Secrets, External Secrets Operator, or SOPS. Git is public-by-accident-prone; encrypt what matters.</li>
+            <li><strong>Automate image bumps.</strong> Argo CD Image Updater can open PRs when a new model or component image is published — GitOps all the way down.</li>
+            <li><strong>Watch the pipelines, not just the deploys.</strong> A green Argo CD sync means the manifest applied — not that the training job succeeded or the model is healthy. Monitor pipeline runs and serving latency separately.</li>
+            <li><strong>Make rollback a reflex.</strong> Because Git is the source of truth, a bad model version, a broken CRD upgrade, or a runaway job are all one <code>git revert</code> away.</li>
+          </ul>
+
+          <div class="callout tip">
+            <span class="ico">🚀</span>
+            <p><strong>Where KubePilot fits.</strong> GitOps tells you <em>what</em> is deployed; it doesn't tell you <em>why</em> a Kubeflow pipeline pod is in <code>CrashLoopBackOff</code> at 2am. That's exactly what <a href="../index.html">KubePilot</a> is for — AI root-cause analysis over pod events and logs, cluster-wide health, and safe, dry-run-first remediation for your ML workloads, from the dashboard or your phone.</p>
+          </div>
+
+          <h2>Keep watching</h2>
+          <p>Hands-on follow-ups from the wider community:</p>
+          <ul>
+            <li><a href="https://www.youtube.com/watch?v=5iOQcGfcZe4">KubeFlow Pipelines Zero to Hero — a realtime MLOps project</a></li>
+            <li><a href="https://www.youtube.com/watch?v=OzjjpeoY-LE">Kubeflow MLOps: from notebook development to production inference</a></li>
+            <li><a href="https://www.youtube.com/watch?v=MeU5_k9ssrs">Argo CD Tutorial for Beginners — GitOps CD for Kubernetes</a></li>
+            <li><a href="https://www.youtube.com/watch?v=Vwzp_jTNaZI">CNCF Projects Tour: Mastering GitOps with Argo (Kostis Kapelonis)</a></li>
+          </ul>
+
+          <div class="cta">
+            <h3>Troubleshoot your ML platform with AI</h3>
+            <p>KubePilot brings AI root-cause analysis, dry-run remediation, and Autopilot self-healing to your Kubeflow + Argo CD clusters — on web and iOS.</p>
+            <a href="https://github.com/bwalia/kubepilot" class="btn btn-primary">Get KubePilot on GitHub</a>
+          </div>
