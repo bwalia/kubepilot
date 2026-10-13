@@ -201,3 +201,12 @@ select option {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* OTLP service map: animated flow on failing edges, pulse on failing nodes. */
+@keyframes otel-flow { to { stroke-dashoffset: -20; } }
+.otel-flow { animation: otel-flow 0.8s linear infinite; }
+@keyframes otel-pulse { 0%, 100% { stroke-opacity: 0.1; } 50% { stroke-opacity: 0.5; } }
+.otel-pulse { animation: otel-pulse 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .otel-flow, .otel-pulse { animation: none; }
+}

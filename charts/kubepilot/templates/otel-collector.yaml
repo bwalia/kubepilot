@@ -33,6 +33,10 @@ data:
         endpoint: http://{{ include "kubepilot.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.dashboardPort }}/api/v1/otel
         tls:
           insecure: true
+        {{- if .Values.kubepilot.auth.enabled }}
+        headers:
+          Authorization: "Bearer ${env:KUBEPILOT_OTEL_INGEST_TOKEN}"
+        {{- end }}
       {{- if .Values.otelAutopilot.export.metrics.remoteWrite.url }}
       prometheusremotewrite:
         endpoint: {{ .Values.otelAutopilot.export.metrics.remoteWrite.url | quote }}
@@ -79,6 +83,15 @@ spec:
         - name: otel-collector
           image: {{ .Values.otelAutopilot.collector.image | quote }}
           args: ["--config=/conf/relay.yaml"]
+          {{- if .Values.kubepilot.auth.enabled }}
+          env:
+            - name: KUBEPILOT_OTEL_INGEST_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kubepilot.auth.existingSecret | default (printf "%s-auth" (include "kubepilot.fullname" .)) }}
+                  key: ingestToken
+                  optional: true
+          {{- end }}
           ports:
             - name: otlp-grpc
               containerPort: 4317

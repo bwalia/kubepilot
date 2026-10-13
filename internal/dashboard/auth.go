@@ -27,12 +27,28 @@ type AuthConfig struct {
 	// MetricsRequireAuth closes /metrics behind the same credentials as the
 	// rest of the API. Scrapers then need matching credentials configured.
 	MetricsRequireAuth bool
+	// IngestToken is a Bearer token accepted only for POSTs to the OTLP
+	// ingest routes. A collector then never holds dashboard credentials.
+	IngestToken string
+}
+
+// isOTLPIngest matches the routes a collector pushes telemetry to.
+func isOTLPIngest(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+	switch r.URL.Path {
+	case "/api/v1/otel/ingest", "/api/v1/otel/v1/traces", "/api/v1/otel/v1/metrics", "/api/v1/otel/v1/logs":
+		return true
+	}
+	return false
 }
 
 func withAuth(next http.Handler, cfg AuthConfig) http.Handler {
 	token := strings.TrimSpace(cfg.Token)
 	username := strings.TrimSpace(cfg.Username)
 	password := strings.TrimSpace(cfg.Password)
+	ingestToken := strings.TrimSpace(cfg.IngestToken)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/healthz" {
@@ -50,9 +66,13 @@ func withAuth(next http.Handler, cfg AuthConfig) http.Handler {
 
 		authz := strings.TrimSpace(r.Header.Get("Authorization"))
 		if authz != "" {
-			if token != "" && hasAuthPrefix(authz, "Bearer ") {
+			if hasAuthPrefix(authz, "Bearer ") {
 				provided := strings.TrimSpace(authz[len("Bearer "):])
-				if secureEqual(provided, token) {
+				if token != "" && secureEqual(provided, token) {
+					next.ServeHTTP(w, r)
+					return
+				}
+				if ingestToken != "" && isOTLPIngest(r) && secureEqual(provided, ingestToken) {
 					next.ServeHTTP(w, r)
 					return
 				}

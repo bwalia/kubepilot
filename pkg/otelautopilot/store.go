@@ -30,25 +30,37 @@ type LogRecord struct {
 
 // SpanRecord is a short-retention span for the managed store.
 type SpanRecord struct {
-	TraceID   string            `json:"trace_id"`
-	SpanID    string            `json:"span_id"`
-	ParentID  string            `json:"parent_id,omitempty"`
-	Name      string            `json:"name"`
-	Service   string            `json:"service,omitempty"`
-	Status    string            `json:"status,omitempty"`
+	TraceID  string `json:"trace_id"`
+	SpanID   string `json:"span_id"`
+	ParentID string `json:"parent_id,omitempty"`
+	Name     string `json:"name"`
+	Service  string `json:"service,omitempty"`
+	Status   string `json:"status,omitempty"`
+	// StatusMessage carries the span status description or exception message.
+	StatusMessage string `json:"status_message,omitempty"`
+	// Kind is the OTLP span kind: server, client, producer, consumer or internal.
+	Kind      string            `json:"kind,omitempty"`
 	Duration  time.Duration     `json:"duration"`
 	Labels    map[string]string `json:"labels,omitempty"`
 	Plane     Plane             `json:"plane"`
 	Timestamp time.Time         `json:"timestamp"`
 }
 
+// Caps bound memory regardless of retention: a busy collector can push far
+// more than a day of spans would comfortably fit in the dashboard process.
+const (
+	maxStoredMetrics = 50_000
+	maxStoredLogs    = 50_000
+	maxStoredSpans   = 100_000
+)
+
 // Store is the KubePilot-managed short-retention signal store.
 type Store struct {
-	mu        sync.RWMutex
-	retention time.Duration
-	metrics   []MetricSample
-	logs      []LogRecord
-	spans     []SpanRecord
+	mu         sync.RWMutex
+	retention  time.Duration
+	metrics    []MetricSample
+	logs       []LogRecord
+	spans      []SpanRecord
 	lastIngest *time.Time
 }
 
@@ -130,6 +142,65 @@ func (s *Store) pruneLocked(now time.Time) {
 		}
 	}
 	s.spans = spans
+
+	if n := len(s.metrics) - maxStoredMetrics; n > 0 {
+		s.metrics = append(s.metrics[:0], s.metrics[n:]...)
+	}
+	if n := len(s.logs) - maxStoredLogs; n > 0 {
+		s.logs = append(s.logs[:0], s.logs[n:]...)
+	}
+	if n := len(s.spans) - maxStoredSpans; n > 0 {
+		s.spans = append(s.spans[:0], s.spans[n:]...)
+	}
+}
+
+// SpansSince returns a copy of every span that started at or after since.
+func (s *Store) SpansSince(since time.Time) []SpanRecord {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	// Spans are appended roughly in arrival order, so scan from the end.
+	i := len(s.spans)
+	for i > 0 && !s.spans[i-1].Timestamp.Before(since) {
+		i--
+	}
+	out := make([]SpanRecord, 0, len(s.spans)-i)
+	for _, sp := range s.spans[i:] {
+		out = append(out, sp)
+	}
+	// Late arrivals can sit before i; pick them up with a bounded rescan.
+	for j := i - 1; j >= 0 && j >= i-2000; j-- {
+		if !s.spans[j].Timestamp.Before(since) {
+			out = append(out, s.spans[j])
+		}
+	}
+	return out
+}
+
+// Trace returns every stored span for one trace ID, ordered by start time.
+func (s *Store) Trace(traceID string) []SpanRecord {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []SpanRecord
+	for _, sp := range s.spans {
+		if sp.TraceID == traceID {
+			out = append(out, sp)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Timestamp.Before(out[j].Timestamp) })
+	return out
+}
+
+// LogsForTraces returns up to limit log records that carry one of the trace IDs.
+func (s *Store) LogsForTraces(traceIDs map[string]bool, limit int) []LogRecord {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []LogRecord
+	for i := len(s.logs) - 1; i >= 0 && len(out) < limit; i-- {
+		if traceIDs[s.logs[i].Labels["trace_id"]] {
+			out = append(out, s.logs[i])
+		}
+	}
+	return out
 }
 
 // Status returns counts and last ingest time.

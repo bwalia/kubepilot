@@ -117,6 +117,12 @@ spec:
                   name: {{ $authSecret }}
                   key: token
                   optional: true
+            - name: KUBEPILOT_OTEL_INGEST_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $authSecret }}
+                  key: ingestToken
+                  optional: true
             {{- end }}
           ports:
             - name: dashboard

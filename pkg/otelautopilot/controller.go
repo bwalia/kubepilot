@@ -31,6 +31,12 @@ type Controller struct {
 	enabled  map[string]bool // app ID → enabled in ledger
 	paused   bool
 	prevMode Mode
+
+	insights *insightEngine
+
+	podsMu    sync.Mutex
+	podsAt    time.Time
+	podsCache map[string]k8s.PodSummary // "namespace/name" → pod
 }
 
 // New creates an OTLP Autopilot controller.
@@ -53,6 +59,8 @@ func New(cfg Config, log *zap.Logger) *Controller {
 		enabled:  map[string]bool{},
 		prevMode: policy.Mode,
 	}
+	c.insights = newInsightEngine(c.store, log)
+	c.insights.k8s = cfg.K8s
 	// Seed cluster-plane baseline signals so the UI is never empty.
 	c.seedClusterSignals()
 	return c
@@ -221,44 +229,139 @@ func (c *Controller) seedClusterSignals() {
 	})
 }
 
+// ingestSyntheticAppSignals records that Autopilot enabled an app. It used
+// to also write placeholder metrics and spans; those polluted the service
+// graph with fake traffic, so only the audit log line remains. Real signals
+// arrive through the OTLP receiver.
 func (c *Controller) ingestSyntheticAppSignals(app AppCoverage) {
-	now := time.Now().UTC()
-	labels := map[string]string{
-		"k8s.namespace.name": app.Namespace,
-		"service.name":       app.ServiceName,
-		"kubepilot.capability": string(app.Capability),
-	}
-	c.store.IngestMetrics(
-		MetricSample{
-			Name: "http.server.request.duration", Value: 42, Unit: "ms",
-			Plane: PlaneApp, Service: app.ServiceName, Timestamp: now, Labels: labels,
-		},
-		MetricSample{
-			Name: "http.server.active_requests", Value: 1, Unit: "1",
-			Plane: PlaneApp, Service: app.ServiceName, Timestamp: now, Labels: labels,
-		},
-	)
 	c.store.IngestLogs(LogRecord{
-		Timestamp: now,
+		Timestamp: time.Now().UTC(),
 		Severity:  "INFO",
 		Body:      fmt.Sprintf("OTLP Autopilot enabled %s/%s via %s", app.Namespace, app.Name, app.Capability),
 		Plane:     PlaneApp,
 		Service:   app.ServiceName,
-		Labels:    labels,
+		Labels: map[string]string{
+			"k8s.namespace.name":   app.Namespace,
+			"service.name":         app.ServiceName,
+			"kubepilot.capability": string(app.Capability),
+		},
 	})
-	if contains(app.Signals, "traces") {
-		c.store.IngestSpans(SpanRecord{
-			TraceID:   fmt.Sprintf("trace-%s", app.Name),
-			SpanID:    fmt.Sprintf("span-%d", now.UnixNano()%1_000_000),
-			Name:      "GET /healthz",
-			Service:   app.ServiceName,
-			Status:    "OK",
-			Duration:  12 * time.Millisecond,
-			Plane:     PlaneApp,
-			Timestamp: now,
-			Labels:    labels,
-		})
+}
+
+// SetAnalyzer gives the insight engine an AI model for automatic analysis.
+func (c *Controller) SetAnalyzer(a Analyzer) {
+	c.insights.mu.Lock()
+	defer c.insights.mu.Unlock()
+	c.insights.analyzer = a
+}
+
+// SetInsightHook registers a callback for newly opened and analysed insights.
+func (c *Controller) SetInsightHook(h InsightHook) {
+	c.insights.mu.Lock()
+	defer c.insights.mu.Unlock()
+	c.insights.hook = h
+}
+
+// RunInsights detects incidents from incoming traces until ctx is done. It
+// runs regardless of Autopilot mode: spans pushed by an existing collector
+// deserve analysis even when discovery is off.
+func (c *Controller) RunInsights(ctx context.Context, every time.Duration) {
+	if every <= 0 {
+		every = 30 * time.Second
 	}
+	ticker := time.NewTicker(every)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.insights.tick(ctx)
+		}
+	}
+}
+
+// Insights returns open insights first, then recently resolved ones.
+func (c *Controller) Insights(ctx context.Context) []Insight {
+	out := c.insights.list()
+	pods := c.livePods(ctx)
+	for i := range out {
+		joinPods(out[i].Namespace, out[i].Pods, pods)
+	}
+	return out
+}
+
+// Insight returns one insight by ID.
+func (c *Controller) Insight(id string) *Insight { return c.insights.byID(id) }
+
+// ReanalyzeInsight queues a fresh AI analysis.
+func (c *Controller) ReanalyzeInsight(id string) bool {
+	in := c.insights.byID(id)
+	if in == nil {
+		return false
+	}
+	c.insights.analyseAsync(in.Key)
+	return true
+}
+
+// ServiceGraph builds the trace-derived topology, joined with live pod state
+// and linked to any open insight per node.
+func (c *Controller) ServiceGraph(ctx context.Context, window time.Duration, namespace string) ServiceGraph {
+	if window <= 0 {
+		window = 15 * time.Minute
+	}
+	g := BuildServiceGraph(c.store, time.Now().UTC(), window, 2*window, namespace)
+	pods := c.livePods(ctx)
+	open := map[string]string{}
+	for _, in := range c.insights.list() {
+		if in.Status != InsightOpen {
+			continue
+		}
+		for _, id := range append([]string{in.RootCause, in.NodeID}, in.CausePath...) {
+			if _, ok := open[id]; !ok {
+				open[id] = in.ID
+			}
+		}
+	}
+	for i := range g.Nodes {
+		joinPods(g.Nodes[i].Namespace, g.Nodes[i].Pods, pods)
+		g.Nodes[i].Insight = open[g.Nodes[i].ID]
+	}
+	return g
+}
+
+func joinPods(namespace string, pods []GraphPod, live map[string]k8s.PodSummary) {
+	if live == nil {
+		return
+	}
+	for i := range pods {
+		if p, ok := live[namespace+"/"+pods[i].Name]; ok {
+			pods[i] = GraphPod{Name: p.Name, Node: p.NodeName, Phase: string(p.Phase), Reason: p.Reason, Ready: p.Ready, Restarts: p.Restarts, Known: true}
+		}
+	}
+}
+
+// livePods lists cluster pods at most every 20s; the graph refreshes far
+// more often than pod state meaningfully changes.
+func (c *Controller) livePods(ctx context.Context) map[string]k8s.PodSummary {
+	if c.k8s == nil {
+		return nil
+	}
+	c.podsMu.Lock()
+	defer c.podsMu.Unlock()
+	if c.podsCache != nil && time.Since(c.podsAt) < 20*time.Second {
+		return c.podsCache
+	}
+	pods, err := c.k8s.ListPods(ctx, "")
+	if err != nil {
+		return c.podsCache
+	}
+	m := make(map[string]k8s.PodSummary, len(pods))
+	for _, p := range pods {
+		m[p.Namespace+"/"+p.Name] = p
+	}
+	c.podsCache, c.podsAt = m, time.Now()
+	return m
 }
 
 func contains(items []string, want string) bool {

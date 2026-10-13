@@ -310,3 +310,34 @@ func (e *Engine) buildClusterContext(ctx context.Context) (string, error) {
 	}
 	return string(raw), nil
 }
+
+// Complete runs one system+user prompt through the configured model and
+// returns the raw reply. It is the entry point for features outside this
+// package (such as OTLP Autopilot insights) that bring their own prompts.
+func (e *Engine) Complete(ctx context.Context, task, system, user string) (string, error) {
+	e.mu.RLock()
+	model := e.cfg.Model
+	e.mu.RUnlock()
+	resp, err := e.chatCompletion(ctx, task, openai.ChatCompletionRequest{
+		Model: model,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: openai.ChatMessageRoleSystem, Content: system},
+			{Role: openai.ChatMessageRoleUser, Content: user},
+		},
+		Temperature: 0.2,
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(resp.Choices) == 0 {
+		return "", fmt.Errorf("empty LLM response")
+	}
+	return resp.Choices[0].Message.Content, nil
+}
+
+// ModelName returns the configured model, for attributing AI output in the UI.
+func (e *Engine) ModelName() string {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.cfg.Model
+}
