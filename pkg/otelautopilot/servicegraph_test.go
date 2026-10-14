@@ -2,6 +2,7 @@ package otelautopilot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -241,6 +242,16 @@ func TestEarlyOutageGroupsSymptomsAtOrigin(t *testing.T) {
 	}
 	if list[0].RootCause != "db:postgresql:payments" {
 		t.Errorf("root = %s", list[0].RootCause)
+	}
+}
+
+// The dashboard maps over nodes/edges; an empty store must encode them as
+// [] rather than null, or the page crashes on first load.
+func TestEmptyServiceGraphEncodesEmptyLists(t *testing.T) {
+	g := BuildServiceGraph(NewStore(time.Hour), time.Now(), 15*time.Minute, 30*time.Minute, "")
+	b, _ := json.Marshal(g)
+	if !strings.Contains(string(b), `"nodes":[]`) || !strings.Contains(string(b), `"edges":[]`) {
+		t.Fatalf("empty graph JSON = %s", b)
 	}
 }
 

@@ -779,7 +779,7 @@ func sampleTraces(spans []SpanRecord, root, focus string, n int) []string {
 // any other distinct signal (e.g. latency alongside an error spike).
 func mergeSignals(cs []candidate) []InsightSignal {
 	seen := map[string]bool{}
-	var out []InsightSignal
+	out := []InsightSignal{}
 	for _, c := range cs {
 		for _, sig := range c.signals {
 			if !seen[sig.Label] && len(out) < 4 {
