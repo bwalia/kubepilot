@@ -304,6 +304,8 @@ func BuildServiceGraph(store *Store, to time.Time, window, baseline time.Duratio
 	out := ServiceGraph{
 		GeneratedAt: time.Now().UTC(), From: from, To: to, Window: window.String(),
 		SpanCount: g.spans, TraceCount: len(g.traces),
+		// Empty lists, never null: the dashboard maps over them.
+		Nodes: []GraphNode{}, Edges: []GraphEdge{},
 	}
 	for id, n := range g.nodes {
 		node := n.GraphNode

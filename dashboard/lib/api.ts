@@ -1244,8 +1244,16 @@ export interface OTELInsight {
   };
 }
 
+// The OTLP endpoints may send null for empty lists (older servers); normalise
+// here so components can always map/filter.
+const arr = <T,>(v: T[] | null | undefined): T[] => (Array.isArray(v) ? v : []);
+
 export const getOTELServiceGraph = (params: { window?: string; namespace?: string }): Promise<OTELServiceGraph> =>
-  http.get("/otel/servicegraph", { params }).then((r) => r.data);
+  http.get("/otel/servicegraph", { params }).then((r) => ({
+    ...r.data,
+    nodes: arr<OTELGraphNode>(r.data?.nodes).map((n) => ({ ...n, pods: arr(n.pods), operations: arr(n.operations), top_errors: arr(n.top_errors) })),
+    edges: arr<OTELGraphEdge>(r.data?.edges),
+  }));
 
 export const getOTELTraceSummaries = (params: {
   window?: string;
@@ -1255,13 +1263,31 @@ export const getOTELTraceSummaries = (params: {
   min_ms?: number;
   limit?: number;
 }): Promise<{ traces: OTELTraceSummary[] }> =>
-  http.get("/otel/trace-summaries", { params }).then((r) => r.data);
+  http.get("/otel/trace-summaries", { params }).then((r) => ({
+    traces: arr<OTELTraceSummary>(r.data?.traces).map((t) => ({ ...t, services: arr(t.services) })),
+  }));
 
 export const getOTELTrace = (traceId: string): Promise<OTELTraceDetail> =>
-  http.get(`/otel/traces/${encodeURIComponent(traceId)}`).then((r) => r.data);
+  http.get(`/otel/traces/${encodeURIComponent(traceId)}`).then((r) => ({
+    ...r.data,
+    services: arr(r.data?.services),
+    spans: arr(r.data?.spans),
+    logs: arr(r.data?.logs),
+  }));
 
 export const getOTELInsights = (): Promise<{ insights: OTELInsight[] }> =>
-  http.get("/otel/insights").then((r) => r.data);
+  http.get("/otel/insights").then((r) => ({
+    insights: arr<OTELInsight>(r.data?.insights).map((i) => ({
+      ...i,
+      signals: arr(i.signals),
+      errors: arr(i.errors),
+      trace_ids: arr(i.trace_ids),
+      pods: arr(i.pods),
+      cause_path: arr(i.cause_path),
+      affected: arr(i.affected),
+      ai: i.ai ?? { status: "pending" },
+    })),
+  }));
 
 export const reanalyzeOTELInsight = (id: string): Promise<OTELInsight> =>
   http.post(`/otel/insights/${encodeURIComponent(id)}/analyze`).then((r) => r.data);

@@ -75,7 +75,7 @@ func summarise(id string, tr []SpanRecord) TraceSummary {
 	}
 	var start, end time.Time
 	services := map[string]bool{}
-	sum := TraceSummary{TraceID: id, SpanCount: len(tr)}
+	sum := TraceSummary{TraceID: id, SpanCount: len(tr), Services: []string{}}
 	var root *SpanRecord
 	for i := range tr {
 		sp := &tr[i]
