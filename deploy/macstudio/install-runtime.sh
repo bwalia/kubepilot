@@ -78,18 +78,24 @@ case "$OLLAMA_HOSTPORT" in
 esac
 OPLIST="$HOME/Library/LaunchAgents/com.ollama.kubepilot.plist"
 mkdir -p "$HOME/Library/Logs/ollama"
+OJOB="gui/$(id -u)/com.ollama.kubepilot"
+ollama_loaded() { launchctl print "$OJOB" >/dev/null 2>&1; }
 sed "s|__HOME__|$HOME|g" "$SRC/com.ollama.kubepilot.plist" > "$OPLIST.new"
 /usr/bin/plutil -lint "$OPLIST.new" >/dev/null
-if ! cmp -s "$OPLIST.new" "$OPLIST"; then
-  mv "$OPLIST.new" "$OPLIST"
-  launchctl bootout "gui/$(id -u)/com.ollama.kubepilot" 2>/dev/null || true
-  launchctl bootstrap "gui/$(id -u)" "$OPLIST"
+if ! cmp -s "$OPLIST.new" "$OPLIST" || ! ollama_loaded; then
+  mv -f "$OPLIST.new" "$OPLIST"
+  if ollama_loaded; then
+    launchctl bootout "$OJOB" 2>/dev/null || true
+    # bootout returns while the old server is still stopping; bootstrapping then fails with "5: Input/output error".
+    for i in $(seq 1 30); do ollama_loaded || break; sleep 1; done
+  fi
+  for i in 1 2 3 4 5; do launchctl bootstrap "gui/$(id -u)" "$OPLIST" 2>/dev/null && break; sleep 2; done
+  ollama_loaded || { echo "com.ollama.kubepilot did not load" >&2; exit 1; }
 else
   rm -f "$OPLIST.new"
 fi
 # A freshly bootstrapped job doesn't always start by itself: make sure it runs.
-launchctl print "gui/$(id -u)/com.ollama.kubepilot" 2>/dev/null | grep -q "state = running" \
-  || launchctl kickstart "gui/$(id -u)/com.ollama.kubepilot"
+launchctl print "$OJOB" | grep -q "state = running" || launchctl kickstart "$OJOB"
 for i in $(seq 1 30); do curl -sf -m 2 "http://${OLLAMA_HOSTPORT}/api/version" >/dev/null && break; sleep 1; done
 # The ollama CLI below must reach KubePilot's server, never the default :11434.
 export OLLAMA_HOST="$OLLAMA_HOSTPORT"
