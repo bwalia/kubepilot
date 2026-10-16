@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    @State private var showClusters = false
 
     var body: some View {
         NavigationStack {
@@ -31,7 +32,11 @@ struct SettingsView: View {
                     .listRowBackground(Theme.surface)
 
                     Section("Cluster") {
-                        LabeledContent("Context", value: appState.clusterManager.activeContextName)
+                        LabeledContent("Cluster", value: appState.clusterManager.activeContextName)
+                        if let server = appState.clusterManager.activeCluster?.serverHost {
+                            LabeledContent("API server", value: server)
+                        }
+                        Button("Switch or add cluster…") { showClusters = true }
                         Button("Refresh cluster metadata") {
                             Task { try? await appState.clusterManager.refresh() }
                         }
@@ -75,6 +80,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .themedScreen()
+            .sheet(isPresented: $showClusters) { ClusterPickerView() }
         }
     }
 }

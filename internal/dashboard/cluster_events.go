@@ -137,7 +137,7 @@ type podDiagnosticsResponse struct {
 }
 
 func (s *Server) handleListEvents(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	ns := normalizeDashboardNamespace(r.URL.Query().Get("namespace"))
 	kind := strings.TrimSpace(r.URL.Query().Get("kind"))
 	eventType := strings.TrimSpace(r.URL.Query().Get("type"))
@@ -199,7 +199,7 @@ func (s *Server) handleListEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleClusterTroubleshooting(w http.ResponseWriter, r *http.Request) {
-	resp, err := s.buildClusterTroubleshooting(r.Context(), normalizeDashboardNamespace(r.URL.Query().Get("namespace")))
+	resp, err := s.buildClusterTroubleshooting(r.Context(), s.k8sFor(r), normalizeDashboardNamespace(r.URL.Query().Get("namespace")))
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -216,7 +216,7 @@ func (s *Server) handlePodDiagnostics(w http.ResponseWriter, r *http.Request) {
 		tailLines = 200
 	}
 
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	diagnostics, err := k8sClient.GetPodDiagnostics(r.Context(), namespace, pod)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
@@ -233,8 +233,7 @@ func (s *Server) handlePodDiagnostics(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) buildClusterTroubleshooting(ctx context.Context, namespace string) (*clusterTroubleshootingResponse, error) {
-	k8sClient := s.currentK8sClient()
+func (s *Server) buildClusterTroubleshooting(ctx context.Context, k8sClient *k8s.Client, namespace string) (*clusterTroubleshootingResponse, error) {
 
 	events, err := k8sClient.ListEvents(ctx, k8s.EventFilter{Namespace: namespace, Since: defaultEventSince})
 	if err != nil {

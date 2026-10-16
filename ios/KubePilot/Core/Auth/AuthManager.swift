@@ -8,6 +8,9 @@ final class AuthManager {
     private(set) var accounts: [ServerAccount] = []
     private(set) var activeAccount: ServerAccount?
     private(set) var requiresBiometricUnlock = false
+    /// The account the API client is currently set up for. Views key reloads
+    /// on it, so they never fetch with the previous server's settings.
+    private(set) var configuredAccountID: String?
 
     private let keychainAccount = "kubepilot.accounts"
     private var unlockedSession = false
@@ -58,6 +61,7 @@ final class AuthManager {
 
     func signOut() {
         activeAccount = nil
+        configuredAccountID = nil
         unlockedSession = false
         requiresBiometricUnlock = false
     }
@@ -121,6 +125,19 @@ final class AuthManager {
     private func configureService() async {
         guard unlockedSession, let activeAccount else { return }
         await KubePilotService.shared.configure(account: activeAccount)
+        configuredAccountID = activeAccount.id
+    }
+
+    /// Removes a saved server. Removing the active one switches to the next.
+    func removeAccount(_ account: ServerAccount) async {
+        accounts.removeAll { $0.id == account.id }
+        UserDefaults.standard.removeObject(forKey: "kubepilot.cluster.\(account.id)")
+        if activeAccount?.id == account.id {
+            activeAccount = accounts.first
+            configuredAccountID = nil
+            await configureService()
+        }
+        try? await persist()
     }
 }
 

@@ -105,6 +105,20 @@ func (e *Engine) SetK8sClient(k8sClient *k8s.Client) {
 	}
 }
 
+// WithK8sClient returns an engine that shares this one's model and settings
+// but reads from another cluster. The dashboard uses it per request, so one
+// session switching cluster never changes what another session's AI sees.
+func (e *Engine) WithK8sClient(k8sClient *k8s.Client) *Engine {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	c := &Engine{cfg: e.cfg, client: e.client, k8s: k8sClient, log: e.log}
+	c.rca = NewRCAEngine(c, k8sClient, e.log)
+	if e.rca != nil {
+		c.rca.evidenceContributor = e.rca.evidenceContributor
+	}
+	return c
+}
+
 // NewEngine constructs an Engine with the provided configuration.
 // The go-openai client is pointed at the Ollama base URL so any model
 // served by Ollama (llama3, mistral, codellama, etc.) can be used without

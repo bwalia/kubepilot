@@ -9,6 +9,7 @@ enum APIError: LocalizedError, Sendable {
     case decodingFailed(String)
     case network(Error)
     case offline
+    case clusterGone
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,7 @@ enum APIError: LocalizedError, Sendable {
         case .decodingFailed(let detail): "Failed to parse response: \(detail)"
         case .network(let err): err.localizedDescription
         case .offline: "You appear to be offline."
+        case .clusterGone: "The selected cluster is no longer on this server. Pick another cluster."
         }
     }
 
@@ -76,6 +78,11 @@ actor APIClient {
     private let session: URLSession
     private var baseURL: URL?
     private var authHeader: String?
+    /// Cluster this session reads from; nil means the server default. Sent on
+    /// every request, so switching never changes anyone else's view.
+    private var clusterID: String?
+
+    static let clusterHeader = "X-KubePilot-Cluster"
 
     init(session: URLSession = .shared) {
         let config = URLSessionConfiguration.default
@@ -85,9 +92,14 @@ actor APIClient {
         self.session = URLSession(configuration: config)
     }
 
-    func configure(baseURL: URL, authHeader: String?) {
+    func configure(baseURL: URL, authHeader: String?, clusterID: String? = nil) {
         self.baseURL = baseURL
         self.authHeader = authHeader
+        self.clusterID = clusterID
+    }
+
+    func setCluster(_ id: String?) {
+        clusterID = id
     }
 
     func healthCheck() async throws -> Bool {
@@ -152,6 +164,9 @@ actor APIClient {
         if let authHeader {
             request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         }
+        if let clusterID, !clusterID.isEmpty {
+            request.setValue(clusterID, forHTTPHeaderField: Self.clusterHeader)
+        }
         if let body = apiRequest.body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -182,6 +197,9 @@ actor APIClient {
             throw APIError.forbidden(msg ?? "Forbidden")
         case 404:
             throw APIError.notFound
+        case 409 where clusterID != nil:
+            // The selected cluster was removed on the server.
+            throw APIError.clusterGone
         default:
             let msg = (try? JSONDecoder().decode(APIErrorResponse.self, from: data))?.error
             throw APIError.serverError(http.statusCode, msg)

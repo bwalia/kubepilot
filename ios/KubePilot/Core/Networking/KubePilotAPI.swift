@@ -18,21 +18,28 @@ enum KubePilotAPI {
 
     // MARK: - Clusters
 
+    static func clusters(probe: Bool = false) -> APIRequest {
+        APIRequest(path: "clusters", query: probe ? ["probe": "true"] : [:], timeout: 30)
+    }
+
+    static func setDefaultCluster(id: String) -> APIRequest {
+        let body = try? JSONEncoder.kubePilot.encode(["id": id])
+        return APIRequest(path: "clusters/default", method: .post, body: body)
+    }
+
     static func kubeconfigs() -> APIRequest {
         APIRequest(path: "clusters/kubeconfigs")
     }
 
-    static func switchContext(_ context: String) -> APIRequest {
-        let body = try? JSONEncoder.kubePilot.encode(["context": context])
-        return APIRequest(path: "clusters/switch-context", method: .post, body: body)
-    }
-
-    static func uploadKubeconfigBase64(name: String, contentBase64: String) -> APIRequest {
+    /// Saves a kubeconfig on the server. `activate: false` leaves the server
+    /// default alone; the app then selects the new cluster for itself.
+    static func uploadKubeconfigBase64(name: String, contentBase64: String, activate: Bool = false) -> APIRequest {
         struct Payload: Encodable {
             let name: String
             let content_base64: String
+            let activate: Bool
         }
-        let body = try? JSONEncoder.kubePilot.encode(Payload(name: name, content_base64: contentBase64))
+        let body = try? JSONEncoder.kubePilot.encode(Payload(name: name, content_base64: contentBase64, activate: activate))
         return APIRequest(path: "clusters/kubeconfigs/base64", method: .post, body: body)
     }
 
@@ -174,8 +181,43 @@ actor KubePilotService {
     static let shared = KubePilotService()
     private let client = APIClient.shared
 
+    private var accountKey: String?
+
     func configure(account: ServerAccount) async {
-        await client.configure(baseURL: account.baseURL, authHeader: account.authorizationHeader)
+        accountKey = account.id
+        await client.configure(
+            baseURL: account.baseURL,
+            authHeader: account.authorizationHeader,
+            clusterID: Self.storedCluster(forAccount: account.id)
+        )
+    }
+
+    // MARK: Cluster selection
+
+    /// The cluster last picked for an account, remembered across launches.
+    nonisolated static func storedCluster(forAccount id: String) -> String? {
+        UserDefaults.standard.string(forKey: "kubepilot.cluster.\(id)")
+    }
+
+    func currentAccountKey() -> String? { accountKey }
+
+    func selectCluster(_ id: String?) async {
+        if let accountKey {
+            UserDefaults.standard.set(id, forKey: "kubepilot.cluster.\(accountKey)")
+        }
+        await client.setCluster(id)
+    }
+
+    func fetchClusters(probe: Bool = false) async throws -> ClusterListResponse {
+        try await client.send(KubePilotAPI.clusters(probe: probe))
+    }
+
+    func addKubeconfig(name: String, contents: Data) async throws -> ClusterListResponse {
+        try await client.send(KubePilotAPI.uploadKubeconfigBase64(name: name, contentBase64: contents.base64EncodedString()))
+    }
+
+    func setDefaultCluster(id: String) async throws -> ClusterListResponse {
+        try await client.send(KubePilotAPI.setDefaultCluster(id: id))
     }
 
     func ping() async throws -> Bool {
@@ -240,10 +282,6 @@ actor KubePilotService {
 
     func fetchKubeconfigState() async throws -> KubeconfigState {
         try await client.send(KubePilotAPI.kubeconfigs())
-    }
-
-    func switchContext(_ context: String) async throws -> KubeconfigState {
-        try await client.send(KubePilotAPI.switchContext(context))
     }
 
     func fetchDeployments(namespace: String = "") async throws -> [DeploymentSummary] {

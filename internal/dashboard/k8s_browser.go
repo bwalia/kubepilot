@@ -12,7 +12,7 @@ import (
 // read an optional ?namespace= filter, call the client, and write JSON.
 
 func (s *Server) handleListNamespaces(w http.ResponseWriter, r *http.Request) {
-	namespaces, err := s.currentK8sClient().ListNamespaces(r.Context())
+	namespaces, err := s.k8sFor(r).ListNamespaces(r.Context())
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -22,7 +22,7 @@ func (s *Server) handleListNamespaces(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListStatefulSets(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListStatefulSets(r.Context(), ns)
+	result, err := s.k8sFor(r).ListStatefulSets(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -32,7 +32,7 @@ func (s *Server) handleListStatefulSets(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleListDaemonSets(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListDaemonSets(r.Context(), ns)
+	result, err := s.k8sFor(r).ListDaemonSets(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -42,7 +42,7 @@ func (s *Server) handleListDaemonSets(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListK8sJobs(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListJobs(r.Context(), ns)
+	result, err := s.k8sFor(r).ListJobs(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -52,7 +52,7 @@ func (s *Server) handleListK8sJobs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListCronJobs(r.Context(), ns)
+	result, err := s.k8sFor(r).ListCronJobs(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -62,7 +62,7 @@ func (s *Server) handleListCronJobs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListIngresses(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListIngresses(r.Context(), ns)
+	result, err := s.k8sFor(r).ListIngresses(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -72,7 +72,7 @@ func (s *Server) handleListIngresses(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListServices(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListServices(r.Context(), ns)
+	result, err := s.k8sFor(r).ListServices(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -82,7 +82,7 @@ func (s *Server) handleListServices(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListConfigMaps(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListConfigMaps(r.Context(), ns)
+	result, err := s.k8sFor(r).ListConfigMaps(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -93,7 +93,7 @@ func (s *Server) handleListConfigMaps(w http.ResponseWriter, r *http.Request) {
 // handleListSecrets returns Secret metadata only — values never leave the cluster.
 func (s *Server) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListSecrets(r.Context(), ns)
+	result, err := s.k8sFor(r).ListSecrets(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -103,7 +103,7 @@ func (s *Server) handleListSecrets(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleListPVCs(w http.ResponseWriter, r *http.Request) {
 	ns := r.URL.Query().Get("namespace")
-	result, err := s.currentK8sClient().ListPVCs(r.Context(), ns)
+	result, err := s.k8sFor(r).ListPVCs(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -112,7 +112,7 @@ func (s *Server) handleListPVCs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListStorageClasses(w http.ResponseWriter, r *http.Request) {
-	result, err := s.currentK8sClient().ListStorageClasses(r.Context())
+	result, err := s.k8sFor(r).ListStorageClasses(r.Context())
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -133,7 +133,7 @@ func (s *Server) handleGetPodLogs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	logs, err := s.currentK8sClient().GetPodLogs(r.Context(), vars["namespace"], vars["pod"], container, tail)
+	logs, err := s.k8sFor(r).GetPodLogs(r.Context(), vars["namespace"], vars["pod"], container, tail)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -146,7 +146,7 @@ func (s *Server) handleGetPodLogs(w http.ResponseWriter, r *http.Request) {
 // Secret values and managedFields are stripped by the k8s layer.
 func (s *Server) handleGetResourceYAML(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	yamlText, err := s.currentK8sClient().GetResourceYAML(r.Context(), vars["kind"], vars["namespace"], vars["name"])
+	yamlText, err := s.k8sFor(r).GetResourceYAML(r.Context(), vars["kind"], vars["namespace"], vars["name"])
 	if err != nil {
 		httpError(w, err, http.StatusBadRequest)
 		return

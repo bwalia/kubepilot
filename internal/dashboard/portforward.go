@@ -199,7 +199,7 @@ func (s *Server) handleStartPortForward(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	session, err := s.pfManager.Start(r.Context(), s.currentK8sClient(), req.Kind, req.Namespace, req.Name, req.RemotePort)
+	session, err := s.pfManager.Start(r.Context(), s.k8sFor(r), req.Kind, req.Namespace, req.Name, req.RemotePort)
 	if err != nil {
 		httpError(w, err, http.StatusBadRequest)
 		return

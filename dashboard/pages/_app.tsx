@@ -6,6 +6,7 @@ import { GlobalNav } from "@/components/GlobalNav";
 import { CommandPalette } from "@/components/CommandPalette";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NamespaceProvider } from "@/lib/useNamespace";
+import { ClusterProvider, useCluster } from "@/lib/useCluster";
 import { Footer } from "@/components/Footer";
 import "../styles/globals.css";
 
@@ -24,12 +25,24 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  const reduce = useReducedMotion();
-
+export default function App(props: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
+      {/* The cluster this tab looks at; see lib/useCluster. */}
+      <ClusterProvider>
+        <Shell {...props} />
+      </ClusterProvider>
+    </QueryClientProvider>
+  );
+}
+
+function Shell({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const reduce = useReducedMotion();
+  const { epoch } = useCluster();
+
+  return (
+    <>
       {/* One provider for the whole app. Previously every StatusPill mounted
           its own, which on a 768-row pod table meant 768 providers. */}
       <TooltipProvider delayDuration={120}>
@@ -41,8 +54,10 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* Subtle cross-fade + rise between routes; exit is faster than enter
               so back/forward feels snappy. Silenced under reduced-motion. */}
           <AnimatePresence mode="wait" initial={false}>
+            {/* Keyed on the cluster epoch too: switching cluster remounts the
+                page so no local state points into the previous cluster. */}
             <motion.div
-              key={router.asPath}
+              key={`${router.asPath}#${epoch}`}
               initial={reduce ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={reduce ? undefined : { opacity: 0, y: -6 }}
@@ -59,6 +74,6 @@ export default function App({ Component, pageProps }: AppProps) {
       </div>
       </NamespaceProvider>
       </TooltipProvider>
-    </QueryClientProvider>
+    </>
   );
 }

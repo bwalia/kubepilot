@@ -14,6 +14,7 @@ import { qk } from "@/lib/queryKeys";
 import { useNamespace } from "@/lib/useNamespace";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NamespacePicker } from "@/components/ui/NamespacePicker";
+import { ClusterSwitcher } from "@/components/ClusterSwitcher";
 import { openCommandPalette } from "@/components/CommandPalette";
 
 const NAV_LINKS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -80,6 +81,9 @@ export function GlobalNav() {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          {/* Cluster first, then namespace: the namespace list belongs to
+              whichever cluster this tab has selected. */}
+          <ClusterSwitcher />
           {/* The namespace scope is global: set it once here and every page —
               home, dashboard, events, topology — follows it. */}
           <NamespacePicker

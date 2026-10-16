@@ -141,12 +141,7 @@ export default function DashboardHome() {
             <p className="text-sm text-pilot-muted mt-1">Ask in plain English — KubePilot diagnoses issues and proposes fixes.</p>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <ClusterStatusBar
-              onSwitched={() => {
-                setAiActions(null);
-                setActiveTab("overview");
-              }}
-            />
+            <ClusterStatusBar />
           </div>
         </div>
       </header>

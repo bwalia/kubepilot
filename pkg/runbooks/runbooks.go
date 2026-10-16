@@ -54,6 +54,14 @@ func (e *Engine) SetK8sClient(c *k8s.Client) {
 	e.k8s = c
 }
 
+// WithK8sClient returns an engine with the same runbooks that acts on another
+// cluster, for a single request, without touching the shared engine.
+func (e *Engine) WithK8sClient(c *k8s.Client, aiEngine *ai.Engine) *Engine {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return &Engine{k8s: c, ai: aiEngine, log: e.log, userRBs: e.userRBs}
+}
+
 // SetUserRunbooks replaces the user-loaded runbook set.
 // User runbooks with the same ID override builtins, allowing customization.
 func (e *Engine) SetUserRunbooks(rbs []Runbook) {

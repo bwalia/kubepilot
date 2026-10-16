@@ -16,7 +16,6 @@ import { useNamespace } from "@/lib/useNamespace";
 import { qk } from "@/lib/queryKeys";
 import { consumeDashboardTarget, onDashboardTarget, type DashboardTarget } from "@/lib/dashboardNav";
 import { useSessionState } from "@/lib/useSessionState";
-import { KubeconfigSwitcher } from "@/components/KubeconfigSwitcher";
 import { LogViewer } from "@/components/LogViewer";
 import { CRCodeApproval } from "@/components/CRCodeApproval";
 import { OverviewSection } from "@/components/dashboard/OverviewSection";
@@ -174,9 +173,6 @@ export default function KubernetesDashboard() {
               Browse and troubleshoot everything running here. Nothing on this page changes the cluster.
             </p>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <KubeconfigSwitcher onSwitched={() => setSelectedPod(null)} />
         </div>
       </header>
 

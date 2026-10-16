@@ -105,10 +105,20 @@ struct FormSectionHeader: View {
     }
 }
 
+/// Shows the server and cluster this session is looking at; tap to switch.
 struct ClusterContextBanner: View {
     @Environment(AppState.self) private var appState
+    @State private var showPicker = false
 
     var body: some View {
+        Button { showPicker = true } label: { content }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cluster \(appState.clusterManager.activeContextName) on \(appState.authManager.activeAccount?.displayName ?? "server")")
+            .accessibilityHint("Switch cluster")
+            .sheet(isPresented: $showPicker) { ClusterPickerView() }
+    }
+
+    private var content: some View {
         HStack(spacing: Theme.spacingSM) {
             Image(systemName: "server.rack")
                 .font(.title3)
@@ -140,6 +150,10 @@ struct ClusterContextBanner: View {
                     .foregroundStyle(Theme.accentLight)
                     .accessibilityLabel("Namespace \(appState.clusterManager.selectedNamespace)")
             }
+
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.muted)
         }
         .padding(Theme.spacingMD)
         .background(Theme.surface.opacity(0.75), in: RoundedRectangle(cornerRadius: Theme.cornerRadiusSmall, style: .continuous))

@@ -22,6 +22,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/kubepilot/kubepilot/internal/version"
 	"github.com/kubepilot/kubepilot/pkg/ai"
@@ -69,6 +70,7 @@ type Server struct {
 	stateFilePath        string
 	uploadDir            string
 	pfManager            *PortForwardManager
+	clusters             clusterRegistry
 }
 
 // NewServer creates a dashboard Server.
@@ -116,14 +118,20 @@ func NewServer(cfg Config, log *zap.Logger) *Server {
 	return srv
 }
 
-// Start begins serving on the configured port until ctx is cancelled.
-func (s *Server) Start(ctx context.Context) error {
+// Handler builds the full HTTP handler: API routes, static dashboard and the
+// CORS, auth and telemetry middleware around them.
+func (s *Server) Handler() http.Handler {
 	router := mux.NewRouter()
 
 	// ── API routes ──────────────────────────────────────────────────────────
 	api := router.PathPrefix("/api/v1").Subrouter()
 
+	// Every request may pick its own cluster with the X-KubePilot-Cluster
+	// header; see clusters.go.
+	api.Use(s.withClusterSelection)
+
 	// Cluster overview
+	api.HandleFunc("/clusters", s.handleListClusters).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/kubeconfigs", s.handleListKubeconfigs).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/contexts", s.handleListContexts).Methods(http.MethodGet)
 	if s.cfg.EnableKubeconfigMutationEndpoints {
@@ -132,12 +140,16 @@ func (s *Server) Start(ctx context.Context) error {
 		api.HandleFunc("/clusters/kubeconfigs/base64", s.handleUploadKubeconfigBase64).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/switch", s.handleSwitchCluster).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/switch-context", s.handleSwitchContext).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/kubeconfigs", s.handleRemoveKubeconfig).Methods(http.MethodDelete)
+		api.HandleFunc("/clusters/default", s.handleSetDefaultCluster).Methods(http.MethodPost)
 	} else {
 		api.HandleFunc("/clusters/kubeconfigs", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/kubeconfigs/upload", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/kubeconfigs/base64", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/switch", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 		api.HandleFunc("/clusters/switch-context", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
+		api.HandleFunc("/clusters/kubeconfigs", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodDelete)
+		api.HandleFunc("/clusters/default", s.handleMutationDisabled("kubeconfig mutations are disabled")).Methods(http.MethodPost)
 	}
 
 	api.HandleFunc("/clusters/pods", s.handleListPods).Methods(http.MethodGet)
@@ -286,10 +298,14 @@ func (s *Server) Start(ctx context.Context) error {
 	if s.cfg.Telemetry != nil {
 		handler = s.cfg.Telemetry.HTTPMiddleware(handler)
 	}
+	return handler
+}
 
+// Start begins serving on the configured port until ctx is cancelled.
+func (s *Server) Start(ctx context.Context) error {
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.cfg.Port),
-		Handler:      handler,
+		Handler:      s.Handler(),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 5 * time.Minute, // AI endpoints may take time with local LLMs.
 	}
@@ -314,7 +330,7 @@ func (s *Server) Start(ctx context.Context) error {
 // ─────────────────────────────────────────
 
 func (s *Server) handleListPods(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	ns := r.URL.Query().Get("namespace")
 	pods, err := k8sClient.ListPods(r.Context(), ns)
 	if err != nil {
@@ -325,7 +341,7 @@ func (s *Server) handleListPods(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListDeployments(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	ns := r.URL.Query().Get("namespace")
 	deps, err := k8sClient.ListDeployments(r.Context(), ns)
 	if err != nil {
@@ -336,7 +352,7 @@ func (s *Server) handleListDeployments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	nodes, err := k8sClient.ListNodes(r.Context())
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
@@ -346,7 +362,7 @@ func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleNodeTargeting(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	name := mux.Vars(r)["name"]
 	workloads, err := k8sClient.NodeTargeting(r.Context(), name)
 	if err != nil {
@@ -357,7 +373,7 @@ func (s *Server) handleNodeTargeting(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleCrashingPods(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	ns := r.URL.Query().Get("namespace")
 	pods, err := k8sClient.ListCrashingPods(r.Context(), ns)
 	if err != nil {
@@ -368,7 +384,7 @@ func (s *Server) handleCrashingPods(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleServiceGraph(w http.ResponseWriter, r *http.Request) {
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	ns := strings.TrimSpace(r.URL.Query().Get("namespace"))
 	// Empty namespace (or "all") means list resources across all namespaces.
 	if strings.EqualFold(ns, "all") {
@@ -510,13 +526,7 @@ func (s *Server) handleExecuteRunbookStep(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Ensure the runbook engine has the latest k8s client in case of context switch.
-	s.mu.RLock()
-	k8sClient := s.k8sClient
-	s.mu.RUnlock()
-	s.cfg.RunbookEngine.SetK8sClient(k8sClient)
-
-	result := s.cfg.RunbookEngine.Execute(r.Context(), req.RunbookID, req.Step, req.Params)
+	result := s.runbooksFor(r).Execute(r.Context(), req.RunbookID, req.Step, req.Params)
 	writeJSON(w, map[string]any{
 		"runbook_id": req.RunbookID,
 		"step":       req.Step,
@@ -537,7 +547,7 @@ func (s *Server) handleAIInterpret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actions, err := s.cfg.AIEngine.Interpret(r.Context(), req.Command)
+	actions, err := s.aiFor(r).Interpret(r.Context(), req.Command)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -547,7 +557,7 @@ func (s *Server) handleAIInterpret(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleTroubleshoot(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	report, err := s.cfg.AIEngine.TroubleshootPod(r.Context(), vars["namespace"], vars["pod"])
+	report, err := s.aiFor(r).TroubleshootPod(r.Context(), vars["namespace"], vars["pod"])
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
@@ -572,7 +582,7 @@ func (s *Server) handleExecuteSuggestedAction(w http.ResponseWriter, r *http.Req
 	}
 
 	if req.Action.RequiresCRCode {
-		guard := s.currentGuard()
+		guard := s.guardFor(r)
 		if err := guard.Authorize(r.Context(), req.ChangeID, req.CRCode); err != nil {
 			httpError(w, err, http.StatusForbidden)
 			return
@@ -580,7 +590,7 @@ func (s *Server) handleExecuteSuggestedAction(w http.ResponseWriter, r *http.Req
 	}
 
 	if req.Action.Command != "" {
-		output, err := s.executeSuggestedCommand(r.Context(), req.Action.Command)
+		output, err := s.executeSuggestedCommand(r, req.Action.Command)
 		if err != nil {
 			httpError(w, fmt.Errorf("executing suggested command: %w", err), http.StatusBadRequest)
 			return
@@ -592,7 +602,7 @@ func (s *Server) handleExecuteSuggestedAction(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	k8sClient := s.currentK8sClient()
+	k8sClient := s.k8sFor(r)
 	switch req.Action.Type {
 	case ai.ActionRestart:
 		if req.Action.Namespace == "" || req.Action.Resource == "" {
@@ -709,7 +719,7 @@ func (s *Server) handleCRCodeAuthorize(w http.ResponseWriter, r *http.Request) {
 		httpError(w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
 		return
 	}
-	if err := s.guard.Authorize(r.Context(), req.ChangeID, req.CRCode); err != nil {
+	if err := s.guardFor(r).Authorize(r.Context(), req.ChangeID, req.CRCode); err != nil {
 		httpError(w, err, http.StatusForbidden)
 		return
 	}
@@ -726,7 +736,7 @@ func (s *Server) handleCRCodeRegister(w http.ResponseWriter, r *http.Request) {
 		httpError(w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
 		return
 	}
-	if err := s.guard.RegisterCRCode(r.Context(), req.ChangeID, req.CRCode, req.ExpiresAt); err != nil {
+	if err := s.guardFor(r).RegisterCRCode(r.Context(), req.ChangeID, req.CRCode, req.ExpiresAt); err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -742,7 +752,7 @@ func (s *Server) handleCRCodeRevoke(w http.ResponseWriter, r *http.Request) {
 		httpError(w, fmt.Errorf("invalid request: %w", err), http.StatusBadRequest)
 		return
 	}
-	if err := s.guard.RevokeCRCode(r.Context(), req.ChangeID); err != nil {
+	if err := s.guardFor(r).RevokeCRCode(r.Context(), req.ChangeID); err != nil {
 		httpError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -814,8 +824,7 @@ func (s *Server) handleListAnomalies(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleTopology(w http.ResponseWriter, r *http.Request) {
 	ns := mux.Vars(r)["namespace"]
-	k8sClient := s.currentK8sClient()
-	correlationEngine := ai.NewCorrelationEngine(s.cfg.AIEngine, k8sClient, s.log)
+	correlationEngine := ai.NewCorrelationEngine(s.aiFor(r), s.k8sFor(r), s.log)
 	topology, err := correlationEngine.BuildTopology(r.Context(), ns)
 	if err != nil {
 		httpError(w, err, http.StatusInternalServerError)
@@ -853,6 +862,9 @@ func (s *Server) handleRemediate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	step := report.Remediation[req.Step]
+	// RCA reports come from the background engine, which watches the server's
+	// default cluster, so remediation targets that cluster whatever the
+	// session has selected.
 	k8sClient := s.currentK8sClient()
 	guard := s.currentGuard()
 	executor := ai.NewRemediationExecutor(k8sClient, guard, ai.RemediationConfig{DryRun: true}, s.log)
@@ -997,19 +1009,7 @@ func (s *Server) handleAddKubeconfig(w http.ResponseWriter, r *http.Request) {
 		activate = *req.Activate
 	}
 
-	if activate {
-		if err := s.switchCluster(path); err != nil {
-			httpError(w, err, http.StatusBadRequest)
-			return
-		}
-	} else {
-		s.mu.Lock()
-		s.knownKubeconfigPaths[path] = struct{}{}
-		s.persistKubeconfigStateLocked()
-		s.mu.Unlock()
-	}
-
-	s.handleListKubeconfigs(w, r)
+	s.finishKubeconfigSave(w, r, path, activate)
 }
 
 func (s *Server) handleUploadKubeconfig(w http.ResponseWriter, r *http.Request) {
@@ -1044,18 +1044,17 @@ func (s *Server) handleUploadKubeconfig(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := s.switchCluster(dstPath); err != nil {
-		httpError(w, err, http.StatusBadRequest)
-		return
-	}
-
-	s.handleListKubeconfigs(w, r)
+	s.finishKubeconfigSave(w, r, dstPath, r.FormValue("activate") != "false")
 }
 
 func (s *Server) handleUploadKubeconfigBase64(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name          string `json:"name,omitempty"`
 		ContentBase64 string `json:"content_base64"`
+		// Activate makes the upload the server's default cluster. It
+		// defaults to true for older clients; per-session clients send
+		// false and select the new cluster for themselves.
+		Activate *bool `json:"activate,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
@@ -1099,12 +1098,93 @@ func (s *Server) handleUploadKubeconfigBase64(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := s.switchCluster(dstPath); err != nil {
-		httpError(w, err, http.StatusBadRequest)
+	s.finishKubeconfigSave(w, r, dstPath, req.Activate == nil || *req.Activate)
+}
+
+// finishKubeconfigSave registers a saved kubeconfig and, when activate is
+// set, makes it the server default. It answers with the cluster list plus the
+// IDs of the clusters the file added, so the client can select one.
+func (s *Server) finishKubeconfigSave(w http.ResponseWriter, r *http.Request, path string, activate bool) {
+	if _, err := clientcmd.LoadFromFile(path); err != nil {
+		// Only discard files we wrote; an added path belongs to the operator.
+		if s.uploadDir != "" && strings.HasPrefix(path, s.uploadDir+string(filepath.Separator)) {
+			_ = os.Remove(path)
+		}
+		httpError(w, fmt.Errorf("not a valid kubeconfig: %w", err), http.StatusBadRequest)
 		return
 	}
+	if activate {
+		if err := s.switchCluster(path); err != nil {
+			httpError(w, err, http.StatusBadRequest)
+			return
+		}
+	} else {
+		s.mu.Lock()
+		s.knownKubeconfigPaths[path] = struct{}{}
+		s.persistKubeconfigStateLocked()
+		s.mu.Unlock()
+	}
+	s.clusters.forgetPath(path)
+	s.writeClustersAdded(w, path)
+}
 
-	s.handleListKubeconfigs(w, r)
+func (s *Server) writeClustersAdded(w http.ResponseWriter, path string) {
+	clusters, unavailable, defaultID := s.listClusters()
+	added := []string{}
+	for _, c := range clusters {
+		if c.Kubeconfig == path {
+			added = append(added, c.ID)
+		}
+	}
+	s.mu.RLock()
+	activePath, activeCtx := s.activeKubeconfigPath, s.activeContext
+	paths := make([]string, 0, len(s.knownKubeconfigPaths))
+	for p := range s.knownKubeconfigPaths {
+		paths = append(paths, p)
+	}
+	s.mu.RUnlock()
+	sort.Strings(paths)
+	writeJSON(w, map[string]any{
+		// Fields of the older kubeconfig-state response, kept for old clients.
+		"active_path":    activePath,
+		"active_context": activeCtx,
+		"paths":          paths,
+		// Cluster-list fields.
+		"default_id":  defaultID,
+		"clusters":    clusters,
+		"unavailable": unavailable,
+		"added_path":  path,
+		"added_ids":   added,
+	})
+}
+
+// handleSetDefaultCluster makes a cluster the server default: the one used by
+// requests that select none, and the one background Autopilot, RCA and job
+// scheduling watch.
+func (s *Server) handleSetDefaultCluster(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpError(w, fmt.Errorf("invalid request body: %w", err), http.StatusBadRequest)
+		return
+	}
+	clusters, _, _ := s.listClusters()
+	for _, c := range clusters {
+		if c.ID != req.ID {
+			continue
+		}
+		if c.Kubeconfig == "" {
+			break
+		}
+		if err := s.setDefaultCluster(c.Kubeconfig, c.Context); err != nil {
+			httpError(w, err, http.StatusBadGateway)
+			return
+		}
+		s.handleListClusters(w, r)
+		return
+	}
+	httpError(w, errUnknownCluster, http.StatusNotFound)
 }
 
 func (s *Server) handleSwitchCluster(w http.ResponseWriter, r *http.Request) {
@@ -1135,6 +1215,12 @@ func (s *Server) currentGuard() *security.Guard {
 }
 
 func (s *Server) switchCluster(rawPath string) error {
+	return s.setDefaultCluster(rawPath, "")
+}
+
+// setDefaultCluster points the server default at a kubeconfig and context
+// (empty: the file's current-context).
+func (s *Server) setDefaultCluster(rawPath, contextName string) error {
 	path := expandKubeconfigPath(rawPath)
 	if path == "" {
 		return fmt.Errorf("path is required")
@@ -1148,7 +1234,7 @@ func (s *Server) switchCluster(rawPath string) error {
 		return fmt.Errorf("kubeconfig path is not accessible: %w", err)
 	}
 
-	client, err := k8s.NewClient(path)
+	client, err := k8s.NewClientWithContext(path, contextName)
 	if err != nil {
 		return fmt.Errorf("connecting with kubeconfig %q: %w", path, err)
 	}
@@ -1157,7 +1243,7 @@ func (s *Server) switchCluster(rawPath string) error {
 	s.k8sClient = client
 	s.guard = security.NewGuard(client.Core, s.log)
 	s.activeKubeconfigPath = path
-	s.activeContext = "" // reset to current-context in the new kubeconfig
+	s.activeContext = contextName // empty: the file's current-context
 	s.knownKubeconfigPaths[path] = struct{}{}
 	if s.cfg.AIEngine != nil {
 		s.cfg.AIEngine.SetK8sClient(client)
@@ -1168,7 +1254,7 @@ func (s *Server) switchCluster(rawPath string) error {
 	s.persistKubeconfigStateLocked()
 	s.mu.Unlock()
 
-	s.log.Info("Switched active Kubernetes cluster", zap.String("kubeconfig", path))
+	s.log.Info("Switched default Kubernetes cluster", zap.String("kubeconfig", path), zap.String("context", contextName))
 	return nil
 }
 
@@ -1195,7 +1281,8 @@ func (s *Server) saveKubeconfigBytes(name string, content []byte) (string, error
 	return dstPath, nil
 }
 
-func (s *Server) executeSuggestedCommand(ctx context.Context, command string) (string, error) {
+func (s *Server) executeSuggestedCommand(r *http.Request, command string) (string, error) {
+	ctx := r.Context()
 	command = strings.TrimSpace(command)
 	if command == "" {
 		return "", fmt.Errorf("command is empty")
@@ -1212,20 +1299,23 @@ func (s *Server) executeSuggestedCommand(ctx context.Context, command string) (s
 		return "", fmt.Errorf("only kubectl commands are allowed")
 	}
 
-	s.mu.RLock()
-	active := s.activeKubeconfigPath
-	s.mu.RUnlock()
-
+	active, activeCtx := s.kubeconfigFor(r)
 	if active != "" {
-		hasKubeconfig := false
+		hasKubeconfig, hasContext := false, false
 		for i := 1; i < len(parts); i++ {
 			if parts[i] == "--kubeconfig" || strings.HasPrefix(parts[i], "--kubeconfig=") {
 				hasKubeconfig = true
-				break
+			}
+			if parts[i] == "--context" || strings.HasPrefix(parts[i], "--context=") {
+				hasContext = true
 			}
 		}
 		if !hasKubeconfig {
-			parts = append([]string{"kubectl", "--kubeconfig", active}, parts[1:]...)
+			prefix := []string{"kubectl", "--kubeconfig", active}
+			if activeCtx != "" && !hasContext {
+				prefix = append(prefix, "--context", activeCtx)
+			}
+			parts = append(prefix, parts[1:]...)
 		}
 	}
 
@@ -1315,7 +1405,7 @@ func withCORS(next http.Handler, allowedOrigins []string) http.Handler {
 			}
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, "+ClusterHeader)
 		if r.Method == http.MethodOptions {
 			if origin != "" {
 				if _, ok := origins[origin]; !ok {

@@ -16,6 +16,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNamespaceLock } from "@/lib/useNamespaceLock";
+import { onClusterChange } from "@/lib/clusterSelection";
 
 const STORAGE_KEY = "kubepilot-namespace";
 
@@ -51,6 +52,9 @@ export function NamespaceProvider({ children }: { children: ReactNode }) {
       /* ignore */
     }
   }, []);
+
+  // A namespace picked on one cluster may not exist on the next.
+  useEffect(() => onClusterChange(() => setNamespace("")), [setNamespace]);
 
   const value = useMemo<NamespaceScope>(
     () => ({
