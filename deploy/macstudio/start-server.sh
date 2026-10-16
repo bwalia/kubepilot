@@ -19,7 +19,7 @@ set -a
 set +a
 
 # Hard defaults if somehow neither file set the interactive model.
-: "${KUBEPILOT_OLLAMA_BASE_URL:=http://127.0.0.1:11434/v1}"
+: "${KUBEPILOT_OLLAMA_BASE_URL:=http://127.0.0.1:11438/v1}"
 : "${KUBEPILOT_OLLAMA_MODEL:=llama3.2:3b-dash}"
 : "${KUBEPILOT_DASHBOARD_AUTH_ENABLED:=true}"
 : "${KUBEPILOT_DASHBOARD_AUTH_USERNAME:=admin}"
