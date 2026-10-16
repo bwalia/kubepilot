@@ -16,7 +16,7 @@ KubePilot helps you move from "what is broken?" to "what should I do next?" quic
 1. Cluster Events & Troubleshooting view surfaces warning events, pressure signals, and failing pods in one place.
 2. AI Analyze on problematic pods provides root-cause and action-oriented guidance.
 3. Topology canvas visualizes Ingress -> Service -> Workload -> Pod relationships.
-4. Kubeconfig switcher lets you move across clusters from the UI.
+4. Multiple clusters per server: each browser tab and iOS session picks its own cluster without affecting anyone else ([docs/MULTI_CLUSTER.md](docs/MULTI_CLUSTER.md)).
 
 ## Screenshots
 

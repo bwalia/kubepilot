@@ -18,6 +18,12 @@ struct RootView: View {
         .task {
             await appState.applyScreenshotLaunchConfigurationIfNeeded()
         }
+        // Lives here, outside the tab view that is rebuilt on every cluster
+        // switch, so loading the cluster list cannot restart itself.
+        .task(id: appState.authManager.configuredAccountID) {
+            guard appState.authManager.configuredAccountID != nil else { return }
+            await appState.clusterManager.accountChanged()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background {
                 appState.authManager.lockIfNeeded()
@@ -53,6 +59,9 @@ struct MainTabView: View {
         }
         .tint(Theme.accent)
         .modifier(TabBarMinimizeModifier())
+        // Rebuild every tab when the cluster changes, so no screen keeps
+        // pods, logs or navigation state from the cluster we just left.
+        .id(appState.clusterManager.epoch)
     }
 }
 

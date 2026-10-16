@@ -858,6 +858,48 @@ struct KubeconfigState: Codable, Sendable {
     }
 }
 
+/// One selectable cluster on a KubePilot server: a context inside a
+/// kubeconfig saved there. Matches `GET /api/v1/clusters`.
+struct ClusterInfo: Codable, Identifiable, Hashable, Sendable {
+    let id: String
+    let name: String
+    let context: String
+    let cluster: String
+    let server: String?
+    let kubeconfig: String
+    /// The server default: what Autopilot and RCA watch, and what requests
+    /// that select no cluster use.
+    let isDefault: Bool
+    /// Only present when the list was probed.
+    let reachable: Bool?
+    let version: String?
+    let error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, context, cluster, server, kubeconfig, reachable, version, error
+        case isDefault = "default"
+    }
+
+    var serverHost: String? {
+        guard let server, let url = URL(string: server) else { return server }
+        return url.host.map { host in url.port.map { "\(host):\($0)" } ?? host } ?? server
+    }
+}
+
+struct ClusterListResponse: Codable, Sendable {
+    let defaultID: String
+    let clusters: [ClusterInfo]
+    let mutations: Bool?
+    /// Set after adding a kubeconfig: the clusters it contributed.
+    let addedIDs: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case clusters, mutations
+        case defaultID = "default_id"
+        case addedIDs = "added_ids"
+    }
+}
+
 struct ServerConfigResponse: Codable, Sendable {
     let mutationsEnabled: Bool
 

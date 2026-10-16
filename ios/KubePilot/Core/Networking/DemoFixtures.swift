@@ -44,6 +44,8 @@ enum DemoFixtures {
             return utf8(autopilotJSON)
         case "clusters/kubeconfigs":
             return utf8(kubeconfigsJSON)
+        case "clusters":
+            return utf8(clustersJSON)
         case "version":
             return utf8(#"{"version":"1.0.0-demo","commit":"app-review","built":"2026-09-29T00:00:00Z"}"#)
         case "config":
@@ -120,6 +122,10 @@ enum DemoFixtures {
 
     private static let autopilotJSON = """
     {"enabled":true,"policy":{"mode":"dry-run","min_confidence":0.8,"allowed_actions":["restart_pod","scale"],"max_risk":"low","allowed_namespaces":["payments"],"blocked_namespaces":["kube-system"],"cooldown":60000000000,"max_actions_per_hour":10},"decisions":[{"time":"2026-09-28T23:50:00.000Z","report_id":"rca-demo-checkout","resource":{"kind":"Pod","name":"checkout-api-7d9f8c","namespace":"payments"},"severity":"critical","confidence":0.88,"root_cause":"CrashLoopBackOff from bad REDIS_HOST","action":"restart_pod","verdict":"dry-run","reason":"Demo mode — would restart after env fix","output":null}],"stats":{"executed":0,"dry-run":3,"skipped":1}}
+    """
+
+    private static let clustersJSON = """
+    {"default_id":"demo","clusters":[{"id":"demo","name":"demo-payments","context":"demo-payments","cluster":"demo","kubeconfig":"/demo/kubeconfig","default":true,"reachable":true,"version":"v1.31.0"}],"unavailable":[],"mutations":false}
     """
 
     private static let kubeconfigsJSON = """

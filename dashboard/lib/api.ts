@@ -4,10 +4,28 @@
  * or served directly by the embedded Go dashboard server in production.
  */
 import axios from "axios";
+import { CLUSTER_HEADER, getSelectedCluster, setSelectedCluster } from "@/lib/clusterSelection";
 
 const BASE = "/api/v1";
 
 const http = axios.create({ baseURL: BASE, timeout: 180_000 });
+
+// Every request names the cluster this tab selected; the server answers from
+// that cluster without changing anyone else's.
+http.interceptors.request.use((config) => {
+  const cluster = getSelectedCluster();
+  if (cluster) config.headers.set(CLUSTER_HEADER, cluster);
+  return config;
+});
+
+// A cluster removed on the server (or by another tab) answers 409. Fall back
+// to the default rather than leaving every panel in an error state.
+http.interceptors.response.use(undefined, (err) => {
+  if (err?.response?.status === 409 && err.config?.headers?.get?.(CLUSTER_HEADER)) {
+    setSelectedCluster("");
+  }
+  return Promise.reject(err);
+});
 
 // ─────────────────────────────────────────
 // Types mirroring Go backend structs
@@ -234,17 +252,30 @@ export interface PodDiagnosticsResponse {
   logs: string;
 }
 
-export interface ContextInfo {
+/** One selectable cluster: a context inside a kubeconfig saved on the server. */
+export interface ClusterInfo {
+  id: string;
   name: string;
+  context: string;
   cluster: string;
-  user: string;
+  server?: string;
+  kubeconfig: string;
+  /** The server default: used by Autopilot, RCA and requests that pick none. */
+  default: boolean;
+  /** Present only when the list was probed. */
+  reachable?: boolean;
+  version?: string;
+  error?: string;
 }
 
-export interface KubeconfigState {
-  active_path: string;
-  active_context: string;
-  paths: string[];
-  contexts?: ContextInfo[];
+export interface ClusterList {
+  default_id: string;
+  clusters: ClusterInfo[];
+  /** Saved kubeconfig paths that can no longer be read. */
+  unavailable: { path: string; error: string }[];
+  mutations: boolean;
+  /** Set by add/upload: the clusters the new kubeconfig contributed. */
+  added_ids?: string[];
 }
 
 export type ActionType =
@@ -379,41 +410,32 @@ export const getPodDiagnostics = (
     })
     .then((r) => r.data);
 
-export const listKubeconfigs = (): Promise<KubeconfigState> =>
-  http.get("/clusters/kubeconfigs").then((r) => r.data);
+export const listClusters = (probe = false): Promise<ClusterList> =>
+  http.get("/clusters", { params: probe ? { probe: true } : undefined }).then((r) => r.data);
 
-export const addKubeconfigPath = (
-  path: string,
-  activate = true
-): Promise<KubeconfigState> =>
-  http.post("/clusters/kubeconfigs", { path, activate }).then((r) => r.data);
+export const setDefaultCluster = (id: string): Promise<ClusterList> =>
+  http.post("/clusters/default", { id }).then((r) => r.data);
 
-export const switchCluster = (path: string): Promise<KubeconfigState> =>
-  http.post("/clusters/switch", { path }).then((r) => r.data);
+export const removeKubeconfig = (path: string): Promise<ClusterList> =>
+  http.delete("/clusters/kubeconfigs", { params: { path } }).then((r) => r.data);
 
-export const switchContext = (context: string): Promise<KubeconfigState> =>
-  http.post("/clusters/switch-context", { context }).then((r) => r.data);
+/** Saves a kubeconfig path on the server without changing the default. */
+export const addClusterKubeconfig = (path: string): Promise<ClusterList> =>
+  http.post("/clusters/kubeconfigs", { path, activate: false }).then((r) => r.data);
 
-export const uploadKubeconfig = async (
-  file: File
-): Promise<KubeconfigState> => {
+export const uploadClusterKubeconfig = async (file: File): Promise<ClusterList> => {
   const form = new FormData();
   form.append("kubeconfig", file);
+  form.append("activate", "false");
   const resp = await http.post("/clusters/kubeconfigs/upload", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return resp.data;
 };
 
-export const uploadKubeconfigBase64 = (
-  contentBase64: string,
-  name?: string
-): Promise<KubeconfigState> =>
+export const uploadClusterKubeconfigBase64 = (contentBase64: string, name?: string): Promise<ClusterList> =>
   http
-    .post("/clusters/kubeconfigs/base64", {
-      content_base64: contentBase64,
-      name,
-    })
+    .post("/clusters/kubeconfigs/base64", { content_base64: contentBase64, name, activate: false })
     .then((r) => r.data);
 
 // ─────────────────────────────────────────

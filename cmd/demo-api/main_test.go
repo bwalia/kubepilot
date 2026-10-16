@@ -22,6 +22,7 @@ var baselineRoutes = map[string]struct{ method, path string }{
 	"version":         {"GET", "/api/v1/version"},
 	"config":          {"GET", "/api/v1/config"},
 	"kubeconfigs":     {"GET", "/api/v1/clusters/kubeconfigs"},
+	"clusters":        {"GET", "/api/v1/clusters"},
 	"pods":            {"GET", "/api/v1/clusters/pods"},
 	"crashing-pods":   {"GET", "/api/v1/clusters/crashing-pods"},
 	"deployments":     {"GET", "/api/v1/clusters/deployments"},

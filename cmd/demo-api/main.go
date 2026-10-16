@@ -55,6 +55,7 @@ func (s *server) routes() http.Handler {
 	api.Use(s.authMiddleware)
 	api.HandleFunc("/version", s.handleVersion).Methods(http.MethodGet)
 	api.HandleFunc("/config", s.handleConfig).Methods(http.MethodGet)
+	api.HandleFunc("/clusters", s.handleClusters).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/kubeconfigs", s.handleKubeconfigs).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/switch-context", s.handleOK).Methods(http.MethodPost)
 	api.HandleFunc("/clusters/pods", s.handlePods).Methods(http.MethodGet)
@@ -160,6 +161,22 @@ func (s *server) handleVersion(w http.ResponseWriter, _ *http.Request) {
 
 func (s *server) handleConfig(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{"mutations_enabled": false})
+}
+
+// handleClusters mirrors the real cluster list. The demo serves one data set,
+// so it lists a single, read-only cluster and switching is not offered.
+func (s *server) handleClusters(w http.ResponseWriter, _ *http.Request) {
+	reachable := true
+	writeJSON(w, map[string]any{
+		"default_id": "demo",
+		"clusters": []map[string]any{{
+			"id": "demo", "name": clusterName, "context": clusterName, "cluster": clusterName,
+			"kubeconfig": "/demo/kubeconfig", "default": true, "reachable": reachable, "version": "v1.31.0",
+		}},
+		"unavailable": []any{},
+		"mutations":   false,
+		"header":      "X-KubePilot-Cluster",
+	})
 }
 
 func (s *server) handleKubeconfigs(w http.ResponseWriter, _ *http.Request) {

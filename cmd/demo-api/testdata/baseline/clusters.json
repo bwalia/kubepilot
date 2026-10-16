@@ -1,0 +1,1 @@
+{"default_id": "demo", "clusters": [{"id": "demo", "name": "kp-demo-prod-eu-west-2", "context": "kp-demo-prod-eu-west-2", "cluster": "kp-demo-prod-eu-west-2", "kubeconfig": "/demo/kubeconfig", "default": true, "reachable": true, "version": "v1.31.0"}], "unavailable": [], "mutations": false, "header": "X-KubePilot-Cluster"}
