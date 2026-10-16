@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- KubePilot's own Ollama: the copy on this Mac (kubepilot.env) and the one in k3s1 (deploy/k3s1/values.yaml) use it,
+     never the Ollama on :11434, which serves OpsAPI. Same models directory as that one, so nothing is pulled twice.
+     Installed by install-runtime.sh (__HOME__ is filled in there). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.ollama.kubepilot</string>
+  <key>ProgramArguments</key><array><string>/opt/homebrew/opt/ollama/bin/ollama</string><string>serve</string></array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>OLLAMA_HOST</key><string>0.0.0.0:11438</string>
+    <key>OLLAMA_NUM_PARALLEL</key><string>2</string>
+    <key>OLLAMA_MAX_LOADED_MODELS</key><string>2</string>
+    <key>OLLAMA_MAX_QUEUE</key><string>256</string>
+    <key>OLLAMA_KEEP_ALIVE</key><string>30m</string>
+    <key>OLLAMA_CONTEXT_LENGTH</key><string>16384</string>
+    <key>OLLAMA_KV_CACHE_TYPE</key><string>q8_0</string>
+    <key>OLLAMA_FLASH_ATTENTION</key><string>1</string>
+    <key>PATH</key><string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/ollama/kubepilot.out.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/ollama/kubepilot.err.log</string>
+</dict>
+</plist>

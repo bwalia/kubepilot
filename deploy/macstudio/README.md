@@ -10,7 +10,8 @@ thinking model.
 | `kubepilot.env` | Pinned interactive LLM + non-secret serve defaults |
 | `start-server.sh` | launchd entrypoint; loads env + secrets, passes `--ollama-model` on CLI |
 | `secrets.env.example` | Template for local-only password / kubeconfig |
-| `install-runtime.sh` | Copies the above into `~/.kubepilot` and prepares Ollama |
+| `install-runtime.sh` | Copies the above into `~/.kubepilot`, installs KubePilot's own Ollama and prepares its model |
+| `com.ollama.kubepilot.plist` | KubePilot's own Ollama on `:11438` (this Mac and k3s1 use it; `:11434` serves OpsAPI) |
 | `pin-ollama-model.py` | Legacy helper (prefer `install-runtime.sh`) |
 
 ## Interactive model policy

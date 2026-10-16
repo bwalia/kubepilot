@@ -33,8 +33,10 @@ spec:
           protocol: TCP
         - port: 6443
           protocol: TCP
-    # Allow HTTP to Ollama.
+    # Allow HTTP to Ollama, on the port in kubepilot.ollamaBaseURL (11434 when it names none).
+    {{- $ollama := urlParse .Values.kubepilot.ollamaBaseURL }}
+    {{- $port := regexFind ":[0-9]+$" $ollama.host | trimPrefix ":" | default "11434" }}
     - ports:
-        - port: 11434
+        - port: {{ $port }}
           protocol: TCP
 {{- end }}

@@ -66,8 +66,35 @@ if [ -f "$PLIST" ]; then
     || /usr/bin/plutil -insert EnvironmentVariables.KUBEPILOT_OLLAMA_BASE_URL -string "$OLLAMA_URL" "$PLIST"
 fi
 
-# ── Ensure Ollama has the pinned model; unload heavy thinkers ────────────────
+# ── KubePilot's own Ollama (com.ollama.kubepilot) ────────────────────────────
+# The Ollama on :11434 serves OpsAPI on every environment; KubePilot's long requests there starved it. KubePilot
+# gets its own server, and everything below talks to that one only.
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+OLLAMA_HOSTPORT="$(echo "$OLLAMA_URL" | sed -E 's#^[a-z]+://##; s#/.*$##')"
+case "$OLLAMA_HOSTPORT" in
+  *:11434|*:11434/*)
+    echo "Refusing: KUBEPILOT_OLLAMA_BASE_URL=$OLLAMA_URL is the shared Ollama (:11434) that OpsAPI uses." >&2
+    exit 1 ;;
+esac
+OPLIST="$HOME/Library/LaunchAgents/com.ollama.kubepilot.plist"
+mkdir -p "$HOME/Library/Logs/ollama"
+sed "s|__HOME__|$HOME|g" "$SRC/com.ollama.kubepilot.plist" > "$OPLIST.new"
+/usr/bin/plutil -lint "$OPLIST.new" >/dev/null
+if ! cmp -s "$OPLIST.new" "$OPLIST"; then
+  mv "$OPLIST.new" "$OPLIST"
+  launchctl bootout "gui/$(id -u)/com.ollama.kubepilot" 2>/dev/null || true
+  launchctl bootstrap "gui/$(id -u)" "$OPLIST"
+else
+  rm -f "$OPLIST.new"
+fi
+# A freshly bootstrapped job doesn't always start by itself: make sure it runs.
+launchctl print "gui/$(id -u)/com.ollama.kubepilot" 2>/dev/null | grep -q "state = running" \
+  || launchctl kickstart "gui/$(id -u)/com.ollama.kubepilot"
+for i in $(seq 1 30); do curl -sf -m 2 "http://${OLLAMA_HOSTPORT}/api/version" >/dev/null && break; sleep 1; done
+# The ollama CLI below must reach KubePilot's server, never the default :11434.
+export OLLAMA_HOST="$OLLAMA_HOSTPORT"
+
+# ── Ensure Ollama has the pinned model; unload heavy thinkers ────────────────
 if command -v ollama >/dev/null 2>&1; then
   echo "Ensuring Ollama model ${MODEL} is present…"
   # Dashboard pin is a local Modelfile derived from llama3.2:3b (4k ctx).
@@ -82,7 +109,7 @@ if command -v ollama >/dev/null 2>&1; then
     [ "$heavy" = "$MODEL" ] && continue
     ollama stop "$heavy" 2>/dev/null || true
   done
-  curl -s -m 180 "http://127.0.0.1:11434/api/generate" \
+  curl -s -m 180 "http://${OLLAMA_HOSTPORT}/api/generate" \
     -d "{\"model\":\"${MODEL}\",\"prompt\":\"ok\",\"stream\":false,\"keep_alive\":-1,\"options\":{\"num_predict\":1}}" \
     >/dev/null || true
   ollama ps || true

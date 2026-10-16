@@ -1,0 +1,53 @@
+# KubePilot in the home cluster k3s1 (namespace kubepilot-system, Helm release "kubepilot").
+# These settings used to exist only inside the release (typed in at `helm install`); they live here now, so every
+# deploy is the same. Deploy (see README.md):
+#   helm upgrade --install kubepilot charts/kubepilot -n kubepilot-system -f deploy/k3s1/values.yaml
+replicaCount: 1
+
+image:
+  repository: ghcr.io/bwalia/kubepilot
+  tag: latest
+  pullPolicy: Always
+
+kubepilot:
+  # KubePilot's own Ollama on the Mac Studio (com.ollama.kubepilot). Never :11434: that one serves OpsAPI on every
+  # environment, and KubePilot's 1-3 minute requests there left it without a turn.
+  ollamaBaseURL: http://192.168.1.177:11438/v1
+  ollamaModel: llama3.1:8b
+  logLevel: info
+  enableActionMutations: false
+  auth:
+    enabled: true
+    # Created once by hand (README.md), never by Helm, so no password is in git or in the release.
+    existingSecret: kubepilot-dashboard-auth
+  otel:
+    endpoint: ""
+    environment: k3s1
+    serviceNamespace: home-lab
+
+metrics:
+  enabled: true
+  requireAuth: false
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+
+nodeAgent:
+  enabled: true
+
+# Runs only on nodes the node agent has labelled with their LAN IP (the home network, where the Mac Studio is).
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubepilot.io/lan-ip
+              operator: Exists
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
