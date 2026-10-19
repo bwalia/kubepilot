@@ -3,6 +3,7 @@ package dashboard
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -161,4 +162,20 @@ func (s *Server) handleGetServerConfig(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{
 		"mutations_enabled": s.cfg.EnableActionMutationEndpoints,
 	})
+}
+
+// handlePodUsage returns live CPU, memory and storage consumption for every
+// pod in ?namespace= (empty or "all" for the whole cluster). Sorting and
+// top-N slicing happen in the browser so one cached response feeds every view.
+func (s *Server) handlePodUsage(w http.ResponseWriter, r *http.Request) {
+	ns := strings.TrimSpace(r.URL.Query().Get("namespace"))
+	if strings.EqualFold(ns, "all") {
+		ns = ""
+	}
+	report, err := s.k8sFor(r).ListPodUsage(r.Context(), ns)
+	if err != nil {
+		httpError(w, err, http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, report)
 }

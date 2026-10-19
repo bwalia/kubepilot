@@ -30,9 +30,10 @@ import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel"
 import { DeckSidebar } from "@/components/DeckSidebar";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
-import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Menu, Layers } from "lucide-react";
+import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Menu, Layers, Gauge } from "lucide-react";
+import { ResourceUsageTable } from "@/components/usage/ResourceUsageTable";
 
-type Section = "overview" | "workloads" | "network" | "config" | "topology" | "health" | "events";
+type Section = "overview" | "workloads" | "usage" | "network" | "config" | "topology" | "health" | "events";
 
 // Every section carries a one-line description. The nav label has to stay
 // short, but a label alone ("Workloads", "Config & Storage") assumes you
@@ -50,6 +51,12 @@ const SECTIONS: { key: Section; label: string; icon: typeof Boxes; blurb: string
     label: "Workloads",
     icon: Boxes,
     blurb: "Your running apps — and the instructions that keep them running.",
+  },
+  {
+    key: "usage",
+    label: "Resource Usage",
+    icon: Gauge,
+    blurb: "Every pod ranked by live CPU, memory and storage — find the heavy hitters and who is running hot against their limits.",
   },
   {
     key: "network",
@@ -210,6 +217,12 @@ export default function KubernetesDashboard() {
                 namespace={namespace}
                 onSelectPod={(ns, name) => setSelectedPod({ namespace: ns, name })}
                 mutationsEnabled={mutationsEnabled}
+              />
+            )}
+            {section === "usage" && (
+              <ResourceUsageTable
+                namespace={namespace}
+                onPodClick={(ns, name) => setSelectedPod({ namespace: ns, name })}
               />
             )}
             {section === "network" && (

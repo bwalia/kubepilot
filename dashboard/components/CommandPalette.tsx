@@ -146,6 +146,7 @@ export function CommandPalette() {
       { title: "Network", subtitle: "Services and Ingress", run: () => go({ type: "section", section: "network" }) },
       { title: "Config & Storage", subtitle: "ConfigMaps, Secrets, Disks", run: () => go({ type: "section", section: "config" }) },
       { title: "Cluster Health", subtitle: "Machines and capacity", run: () => go({ type: "section", section: "health" }) },
+      { title: "Resource Usage", subtitle: "Top CPU, memory and storage consumers", run: () => go({ type: "section", section: "usage" }) },
       { title: "Events", subtitle: "What Kubernetes just did", run: () => go({ type: "section", section: "events" }) },
       { title: "Topology", subtitle: "How services talk to each other", run: () => go({ type: "section", section: "topology" }) },
       { title: "Ask AI", subtitle: "Describe a problem in plain English", run: () => { setOpen(false); void router.push("/"); } },

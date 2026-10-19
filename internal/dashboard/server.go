@@ -158,6 +158,7 @@ func (s *Server) Handler() http.Handler {
 	api.HandleFunc("/clusters/nodes", s.handleListNodes).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/nodes/{name}/targeting", s.handleNodeTargeting).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/crashing-pods", s.handleCrashingPods).Methods(http.MethodGet)
+	api.HandleFunc("/clusters/pod-usage", s.handlePodUsage).Methods(http.MethodGet)
 	api.HandleFunc("/clusters/service-graph", s.handleServiceGraph).Methods(http.MethodGet)
 	api.HandleFunc("/events", s.handleListEvents).Methods(http.MethodGet)
 	api.HandleFunc("/troubleshooting/summary", s.handleClusterTroubleshooting).Methods(http.MethodGet)

@@ -4,6 +4,7 @@ import { getClusterTroubleshootingSummary, type NodeHealthRow, type ProblemPod }
 import { NodeIPDisplay } from "@/components/NodeIPDisplay";
 import { NodeRoleBadge } from "@/components/NodeRoleBadge";
 import { ResourceMeters } from "@/components/dashboard/ResourceMeters";
+import { TopConsumers } from "@/components/usage/TopConsumers";
 import { ResourceTable, type Column } from "./ResourceTable";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Activity } from "lucide-react";
@@ -22,6 +23,7 @@ export function ClusterHealthSection({ namespace }: { namespace: string }) {
   return (
     <div className="space-y-6">
       <ResourceMeters />
+      <TopConsumers namespace={namespace} />
 
       {/* Health KPI strip. Each tile is labelled by what it MEANS — the
           Kubernetes term is the sub-line, not the headline. */}
