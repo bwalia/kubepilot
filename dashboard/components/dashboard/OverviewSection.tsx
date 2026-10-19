@@ -54,6 +54,7 @@ import {
   type PodSummary,
 } from "@/lib/api";
 import { useThemeColors } from "@/lib/useThemeColors";
+import { TopConsumers } from "@/components/usage/TopConsumers";
 import { ResourceMeters } from "./ResourceMeters";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { explainPod } from "@/lib/k8sExplain";
@@ -202,6 +203,7 @@ export function OverviewSection({ namespace }: { namespace: string }) {
           desc="Live CPU, memory and storage pressure across all nodes."
         />
         <ResourceMeters />
+        <TopConsumers namespace={namespace} />
       </section>
 
       {/* ── Pod health ── */}

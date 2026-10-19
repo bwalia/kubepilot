@@ -5,7 +5,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
-import { Activity, Cpu, AlertTriangle, Terminal, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen, CheckCircle } from "lucide-react";
+import { Activity, Cpu, AlertTriangle, Terminal, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen, CheckCircle, Gauge } from "lucide-react";
+import { useRouter } from "next/router";
+import { requestDashboardTarget } from "@/lib/dashboardNav";
+import { TopConsumers } from "@/components/usage/TopConsumers";
+import { ResourceUsageTable } from "@/components/usage/ResourceUsageTable";
 import {
   listPods,
   listCrashingPods,
@@ -37,6 +41,7 @@ import TopologyPage from "@/pages/topology";
 
 const TABS = [
   { key: "overview" as const, label: "Overview", icon: Activity },
+  { key: "usage" as const, label: "Resource Usage", icon: Gauge },
   { key: "rca" as const, label: "RCA", icon: FileSearch },
   { key: "runbooks" as const, label: "Runbooks", icon: BookOpen },
   { key: "topology" as const, label: "Topology", icon: Network },
@@ -48,6 +53,7 @@ const TABS = [
 type TabKey = typeof TABS[number]["key"];
 
 export default function DashboardHome() {
+  const router = useRouter();
   const [command, setCommand] = useState("");
   const [aiActions, setAiActions] = useState<SuggestedAction[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -149,6 +155,10 @@ export default function DashboardHome() {
       {/* ── Cluster Resource Charts ─────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-pilot-border bg-pilot-surface/30">
         <ResourceMeters />
+        {/* The meters say how full the cluster is; this says who is filling it. */}
+        <div className="mt-5">
+          <TopConsumers namespace={nsForQuery} onViewAll={() => setActiveTab("usage")} />
+        </div>
       </div>
 
       {/* ── KPI Bar ──────────────────────────────────────────────── */}
@@ -315,6 +325,15 @@ export default function DashboardHome() {
             <PortForwardSessionsPanel mutationsEnabled={mutationsEnabled} />
             <MetricsPanel deployments={deployments} />
           </>
+        )}
+        {activeTab === "usage" && (
+          <ResourceUsageTable
+            namespace={nsForQuery}
+            onPodClick={(ns, name) => {
+              requestDashboardTarget({ type: "pod", namespace: ns, name });
+              void router.push("/dashboard");
+            }}
+          />
         )}
         {activeTab === "rca" && <RCAPage />}
         {activeTab === "runbooks" && <RunbooksPanel />}

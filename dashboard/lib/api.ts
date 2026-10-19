@@ -359,6 +359,40 @@ export const listCrashingPods = (namespace = ""): Promise<PodSummary[]> =>
     .get("/clusters/crashing-pods", { params: { namespace } })
     .then((r) => r.data);
 
+/** One pod's live consumption next to its requests/limits. CPU in millicores, memory/storage in bytes. */
+export interface PodUsage {
+  name: string;
+  namespace: string;
+  node: string;
+  phase: string;
+  owner_kind?: string;
+  owner_name?: string;
+  restarts: number;
+  cpu_usage_milli: number;
+  cpu_request_milli: number;
+  cpu_limit_milli: number;
+  mem_usage_bytes: number;
+  mem_request_bytes: number;
+  mem_limit_bytes: number;
+  storage_used_bytes: number;
+  ephemeral_used_bytes: number;
+  pvc_used_bytes: number;
+  pvc_capacity_bytes: number;
+  ephemeral_limit_bytes?: number;
+  storage_estimated?: boolean;
+  pvc_count?: number;
+}
+
+export interface PodUsageReport {
+  pods: PodUsage[];
+  metrics_available: boolean;
+  storage_stats_available: boolean;
+  generated_at: string;
+}
+
+export const listPodUsage = (namespace = ""): Promise<PodUsageReport> =>
+  http.get("/clusters/pod-usage", { params: { namespace } }).then((r) => r.data);
+
 export const listDeployments = (namespace = ""): Promise<DeploymentSummary[]> =>
   http
     .get("/clusters/deployments", { params: { namespace } })
