@@ -7,6 +7,7 @@ struct PodDetailView: View {
 
     @State private var viewModel: PodDetailViewModel
     @State private var selectedTab: PodDetailTab
+    @State private var aiGate = AIConsentGate()
 
     init(
         namespace: String,
@@ -45,8 +46,7 @@ struct PodDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    selectedTab = .ai
-                    Task { await viewModel.runAIAnalysis() }
+                    analyse()
                 } label: {
                     Label("Analyse with AI", systemImage: "sparkles")
                         .labelStyle(.titleAndIcon)
@@ -57,11 +57,17 @@ struct PodDetailView: View {
         .task {
             await viewModel.load()
             if autoAnalyse {
-                selectedTab = .ai
-                await viewModel.runAIAnalysis()
+                analyse()
             }
         }
         .refreshable { await viewModel.load() }
+        .aiConsentSheet(aiGate)
+    }
+
+    /// Runs AI analysis once the user has agreed to share the pod's data.
+    private func analyse() {
+        selectedTab = .ai
+        aiGate.run { await viewModel.runAIAnalysis() }
     }
 
     @ViewBuilder
@@ -72,8 +78,7 @@ struct PodDetailView: View {
             } else if let diag = viewModel.diagnostics {
                 VStack(alignment: .leading, spacing: 16) {
                     AnalyseWithAIButton(isLoading: viewModel.isAnalyzing) {
-                        selectedTab = .ai
-                        Task { await viewModel.runAIAnalysis() }
+                        analyse()
                     }
 
                     infoRow("Phase", diag.phase)
@@ -146,8 +151,11 @@ struct PodDetailView: View {
                         Text("Run AI root-cause analysis on this pod using logs, events, and workload metadata.")
                             .font(.subheadline)
                             .foregroundStyle(Theme.textSecondary)
+                        Text("This sends the pod's details and recent logs to the AI model your KubePilot server uses. You'll be asked first.")
+                            .font(.caption)
+                            .foregroundStyle(Theme.muted)
                         AnalyseWithAIButton(isLoading: viewModel.isAnalyzing) {
-                            Task { await viewModel.runAIAnalysis() }
+                            analyse()
                         }
                         if let error = viewModel.errorMessage {
                             Text(error)

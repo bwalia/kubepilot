@@ -201,6 +201,12 @@ actor KubePilotService {
 
     func currentAccountKey() -> String? { accountKey }
 
+    /// Every request that sends cluster data to the AI model checks this, so no
+    /// screen, intent or widget can reach the model without the user's consent.
+    private func requireAIConsent() throws {
+        guard AIConsent.isGranted(account: accountKey) else { throw AIConsentError.notGranted }
+    }
+
     func selectCluster(_ id: String?) async {
         if let accountKey {
             UserDefaults.standard.set(id, forKey: "kubepilot.cluster.\(accountKey)")
@@ -261,11 +267,13 @@ actor KubePilotService {
     }
 
     func troubleshootPod(namespace: String, pod: String) async throws -> TroubleshootReport {
-        try await client.send(KubePilotAPI.troubleshootPod(namespace: namespace, pod: pod))
+        try requireAIConsent()
+        return try await client.send(KubePilotAPI.troubleshootPod(namespace: namespace, pod: pod))
     }
 
     func interpretCommand(_ command: String) async throws -> AIInterpretResponse {
-        try await client.send(KubePilotAPI.interpretCommand(command))
+        try requireAIConsent()
+        return try await client.send(KubePilotAPI.interpretCommand(command))
     }
 
     func fetchRCAReports() async throws -> [RCAReport] {

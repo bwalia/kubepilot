@@ -14,7 +14,9 @@
 		1E97915AFCE77315B3ED07BA /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F197C1ACB53EA59AEC7621D /* AuthManager.swift */; };
 		219951A2469EB84E4F1996AF /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ABD096080CD5CD496FE6032 /* PersistenceController.swift */; };
 		265BC537F3D67156D68B1679 /* PodDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05440CA63ED7D2CC7DB39FEE /* PodDetailView.swift */; };
+		28EACDCB30C3CF910E7BC522 /* AIConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C386F2E08A6017EEB84B241 /* AIConsent.swift */; };
 		2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBA3493DCF51CE0FD0FF05BD /* APIClient.swift */; };
+		321D2BAB14BDC4A94113AD40 /* AIConsentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC3957EDB7CF758F2326CBF /* AIConsentTests.swift */; };
 		40A23F6F8F462CC8217A2B70 /* HelmMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A44B4A207F167F48D6C066 /* HelmMark.swift */; };
 		45EC8B15BEE73B778443DED9 /* BiometricUnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D27256635353D8F6669103 /* BiometricUnlockView.swift */; };
 		4FB041433372998B3391504B /* AIReportCopyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F8A6414EB203EFAEB2904B /* AIReportCopyBar.swift */; };
@@ -83,10 +85,12 @@
 		0F4143F1164780374F42C994 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodesListView.swift; sourceTree = "<group>"; };
 		223945BA22626F8E81B1B55F /* KubePilotLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotLogo.swift; sourceTree = "<group>"; };
+		2AC3957EDB7CF758F2326CBF /* AIConsentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConsentTests.swift; sourceTree = "<group>"; };
 		34362A3B0CDB0C40EC4D7909 /* AnalyseWithAIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyseWithAIButton.swift; sourceTree = "<group>"; };
 		3459A1ED312F009A72B9941A /* KubePilot.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KubePilot.entitlements; sourceTree = "<group>"; };
 		35D13380DC94C7DDF267EA79 /* AIAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAssistantView.swift; sourceTree = "<group>"; };
 		3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestedActionsView.swift; sourceTree = "<group>"; };
+		3C386F2E08A6017EEB84B241 /* AIConsent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConsent.swift; sourceTree = "<group>"; };
 		3F197C1ACB53EA59AEC7621D /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		4082921476E7A5048CD00194 /* KubePilotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KubePilotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4DB3E39265829BD9406A9004 /* ClusterPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusterPickerView.swift; sourceTree = "<group>"; };
@@ -120,6 +124,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		06AEBCEDD73065F4ED69C461 /* Privacy */ = {
+			isa = PBXGroup;
+			children = (
+				3C386F2E08A6017EEB84B241 /* AIConsent.swift */,
+			);
+			path = Privacy;
+			sourceTree = "<group>";
+		};
 		0A7AF1E06F7EAF8CB312FE82 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
@@ -149,6 +161,7 @@
 				6F8BB69886F48BC48EEA7D45 /* Models */,
 				0A7AF1E06F7EAF8CB312FE82 /* Networking */,
 				2B5349B28067756626C80F69 /* Persistence */,
+				06AEBCEDD73065F4ED69C461 /* Privacy */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -270,6 +283,7 @@
 		8C5813C266C29484A10CFC64 /* KubePilotTests */ = {
 			isa = PBXGroup;
 			children = (
+				2AC3957EDB7CF758F2326CBF /* AIConsentTests.swift */,
 				D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */,
 			);
 			path = KubePilotTests;
@@ -484,6 +498,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				321D2BAB14BDC4A94113AD40 /* AIConsentTests.swift in Sources */,
 				F4A7DEDF8C007794EF27F717 /* APIModelsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -501,6 +516,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0412E91B59FDDCADDE8639CB /* AIAssistantView.swift in Sources */,
+				28EACDCB30C3CF910E7BC522 /* AIConsent.swift in Sources */,
 				4FB041433372998B3391504B /* AIReportCopyBar.swift in Sources */,
 				2B05288BEEC7E9D1633F1C25 /* APIClient.swift in Sources */,
 				932B03C9135B29347A230757 /* APIModels.swift in Sources */,
