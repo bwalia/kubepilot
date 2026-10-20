@@ -3,6 +3,9 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
     @State private var showClusters = false
+    @State private var showAIConsent = false
+    /// Mirrors the stored consent so the toggle redraws when it changes.
+    @State private var aiAllowed = false
 
     var body: some View {
         NavigationStack {
@@ -61,6 +64,28 @@ struct SettingsView: View {
                     .listRowBackground(Theme.surface)
 
                     Section {
+                        Toggle("Share data with AI", isOn: Binding(
+                            get: { aiAllowed },
+                            set: { allow in
+                                if allow {
+                                    // Turning it on always goes through the full disclosure.
+                                    showAIConsent = true
+                                } else {
+                                    AIConsent.set(false, account: appState.authManager.activeAccount?.id)
+                                    aiAllowed = false
+                                }
+                            }
+                        ))
+                        Button("What's shared with AI") { showAIConsent = true }
+                        Link("Privacy Policy", destination: AIConsentSheet.privacyPolicyURL)
+                    } header: {
+                        Text("AI & Privacy")
+                    } footer: {
+                        Text("AI Assistant and Analyse with AI send your questions, pod details and recent logs to the AI model configured on your KubePilot server. Off until you allow it.")
+                    }
+                    .listRowBackground(Theme.surface)
+
+                    Section {
                         Button("Sign Out", role: .destructive) {
                             appState.signOut()
                         }
@@ -81,6 +106,13 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .themedScreen()
             .sheet(isPresented: $showClusters) { ClusterPickerView() }
+            .sheet(isPresented: $showAIConsent) {
+                AIConsentSheet { allowed in
+                    aiAllowed = allowed
+                    showAIConsent = false
+                }
+            }
+            .onAppear { aiAllowed = AIConsent.isGranted(account: appState.authManager.activeAccount?.id) }
         }
     }
 }

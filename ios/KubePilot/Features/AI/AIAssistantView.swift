@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AIAssistantView: View {
     @Environment(AppState.self) private var appState
+    @State private var aiGate = AIConsentGate()
 
     var body: some View {
         let vm = appState.aiAssistant
@@ -40,12 +41,19 @@ struct AIAssistantView: View {
 
                     suggestionChips(vm: vm)
 
+                    Text("Messages and a summary of cluster state are sent to the AI model your KubePilot server uses.")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, Theme.spacingMD)
+                        .padding(.bottom, 4)
+
                     ChatComposerBar(
                         text: Bindable(vm).inputText,
                         placeholder: "Ask KubePilot AI…",
                         isSending: vm.isSending
                     ) {
-                        Task { await vm.send() }
+                        aiGate.run { await vm.send() }
                     }
                 }
             }
@@ -57,6 +65,7 @@ struct AIAssistantView: View {
                     vm.seedWelcome()
                 }
             }
+            .aiConsentSheet(aiGate)
         }
     }
 
@@ -67,7 +76,7 @@ struct AIAssistantView: View {
                 ForEach(vm.suggestions, id: \.self) { suggestion in
                     Button(suggestion) {
                         vm.inputText = suggestion
-                        Task { await vm.send() }
+                        aiGate.run { await vm.send() }
                     }
                     .buttonStyle(.bordered)
                     .tint(Theme.accent)
@@ -157,6 +166,8 @@ final class AIAssistantViewModel {
                 ? "I couldn't map that to a specific action yet. Try asking about cluster health, failing pods, or a specific namespace."
                 : response.actions.map(\.explanation).joined(separator: "\n\n")
             messages.append(AIChatMessage(role: .assistant, content: text, actions: response.actions))
+        } catch AIConsentError.notGranted {
+            messages.append(AIChatMessage(role: .assistant, content: AIConsentError.notGranted.localizedDescription))
         } catch {
             if let summary = try? await KubePilotService.shared.fetchTroubleshootingSummary() {
                 let text = buildSummaryReply(summary, prompt: prompt)
