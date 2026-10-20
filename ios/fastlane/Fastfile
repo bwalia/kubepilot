@@ -11,7 +11,7 @@ WIDGET_APP_ID = "io.kubepilot.app.widgets".freeze
 
 def team_id
   ENV.fetch("APPLE_TEAM_ID") do
-    UI.user_error!("APPLE_TEAM_ID is not set — add it to Vault secret/kubepilot/ios")
+    UI.user_error!("APPLE_TEAM_ID is not set — add it to wslvault kv/kubepilot/ios")
   end
 end
 

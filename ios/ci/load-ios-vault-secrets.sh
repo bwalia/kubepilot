@@ -1,56 +1,73 @@
 #!/usr/bin/env bash
 #
-# load-ios-vault-secrets.sh — pull KubePilot iOS signing material from Vault.
+# load-ios-vault-secrets.sh — pull KubePilot iOS signing material from wslvault.
 #
-# Reads the flat KV v2 secret `secret/kubepilot/ios` (override with
-# KUBEPILOT_IOS_VAULT_PATH), materialises the ASC API key and distribution-
-# certificate private key as files, and exports identifiers for fastlane.
+# Reads the flat KV v2 secret `kv/kubepilot/ios` from wslvault
+# (https://vault.workstation.co.uk; override the path with KUBEPILOT_IOS_VAULT_PATH),
+# materialises the ASC API key and distribution-certificate private key as
+# files, and exports identifiers for fastlane.
+#
+# Auth, first match wins:
+#   WSLVAULT_TOKEN          a wslvault JWT
+#   WSLVAULT_API_KEY        a wslvault API key, exchanged for a JWT
+#   WSLVAULT_API_KEY_FILE   file holding that key (default ~/.secrets/kubepilot/wslvault-ci-key)
+# CI cannot answer an MFA challenge, so the runner's key must be a machine key
+# issued without mfa_required.
 #
 #   CI:    ./ci/load-ios-vault-secrets.sh           # appends to $GITHUB_ENV
 #   local: eval "$(./ci/load-ios-vault-secrets.sh)" # exports to shell
 #
 set -euo pipefail
 
-VAULT_TOKEN_FILE="${VAULT_TOKEN_FILE:-$HOME/.secrets/vault/token.json}"
-VAULT_SECRET_PATH="${KUBEPILOT_IOS_VAULT_PATH:-secret/kubepilot/ios}"
+WSLVAULT_ADDR="${WSLVAULT_ADDR:-https://vault.workstation.co.uk}"
+WSLVAULT_API_KEY_FILE="${WSLVAULT_API_KEY_FILE:-$HOME/.secrets/kubepilot/wslvault-ci-key}"
+VAULT_SECRET_PATH="${KUBEPILOT_IOS_VAULT_PATH:-kubepilot/ios}"
 WORKDIR="${IOS_SECRETS_DIR:-${RUNNER_TEMP:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.ios-secrets}}"
 mkdir -p "$WORKDIR"
 chmod 700 "$WORKDIR"
-export VAULT_ADDR="${VAULT_ADDR:-}" VAULT_TOKEN="${VAULT_TOKEN:-}" VAULT_TOKEN_FILE WORKDIR VAULT_SECRET_PATH
+export WSLVAULT_ADDR WSLVAULT_TOKEN="${WSLVAULT_TOKEN:-}" WSLVAULT_API_KEY="${WSLVAULT_API_KEY:-}" \
+  WSLVAULT_API_KEY_FILE WORKDIR VAULT_SECRET_PATH
 
 python3 - <<'PY'
 import base64, json, os, sys, urllib.request, urllib.error
 
-def resolve_auth():
-    addr = os.environ.get("VAULT_ADDR") or ""
-    token = os.environ.get("VAULT_TOKEN") or ""
-    path = os.environ.get("VAULT_TOKEN_FILE") or ""
-    if (not addr or not token) and path and os.path.isfile(path):
-        with open(path) as fh:
-            data = json.load(fh)
-        if not isinstance(data, dict):
-            sys.exit("ERROR: %s is not a JSON object" % path)
+addr = os.environ["WSLVAULT_ADDR"].rstrip("/")
 
-        def pick(keys):
-            for key in keys:
-                if data.get(key):
-                    return data[key]
-            return ""
+def post_json(path, body):
+    req = urllib.request.Request(addr + path, data=json.dumps(body).encode(), method="POST")
+    req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        sys.exit("ERROR: wslvault POST %s -> HTTP %s" % (path, exc.code))
+    except urllib.error.URLError as exc:
+        sys.exit("ERROR: wslvault POST %s -> %s" % (path, exc))
 
-        addr = addr or pick(("VAULT_ADDR", "VAULT_URI", "vault_addr", "addr", "url"))
-        token = token or pick(("VAULT_TOKEN", "vault_token", "token", "client_token"))
-        if not token and isinstance(data.get("auth"), dict):
-            token = data["auth"].get("client_token") or ""
-    if not addr or not token:
-        sys.exit("ERROR: Vault auth unavailable — set VAULT_ADDR/VAULT_TOKEN or %s"
-                 % (path or "$VAULT_TOKEN_FILE"))
-    return addr.rstrip("/"), token
+def resolve_token():
+    token = os.environ.get("WSLVAULT_TOKEN") or ""
+    if token:
+        return token
+    key = os.environ.get("WSLVAULT_API_KEY") or ""
+    key_file = os.environ.get("WSLVAULT_API_KEY_FILE") or ""
+    if not key and key_file and os.path.isfile(key_file):
+        with open(key_file) as fh:
+            key = fh.read().strip()
+    if not key:
+        sys.exit("ERROR: wslvault auth unavailable — set WSLVAULT_TOKEN, WSLVAULT_API_KEY, "
+                 "or put a machine API key in %s" % (key_file or "$WSLVAULT_API_KEY_FILE"))
+    resp = post_json("/v1/auth/api-key", {"api_key": key})
+    if resp.get("mfa_required"):
+        sys.exit("ERROR: this wslvault API key requires MFA, which CI cannot answer — "
+                 "issue a machine key without mfa_required for the runner")
+    if not resp.get("token"):
+        sys.exit("ERROR: wslvault returned no token for the API key")
+    return resp["token"]
 
-addr, token = resolve_auth()
+token = resolve_token()
 workdir = os.environ["WORKDIR"]
-secret_path = os.environ.get("VAULT_SECRET_PATH", "secret/kubepilot/ios")
-if not secret_path.startswith("secret/data/"):
-    secret_path = "secret/data/" + secret_path.removeprefix("secret/")
+secret_path = os.environ.get("VAULT_SECRET_PATH", "kubepilot/ios")
+secret_path = "kv/data/" + secret_path.removeprefix("kv/data/").removeprefix("kv/")
 url = addr + "/v1/" + secret_path
 
 req = urllib.request.Request(url, method="GET")
@@ -60,18 +77,18 @@ try:
         raw = resp.read()
 except urllib.error.HTTPError as exc:
     detail = exc.read().decode("utf-8", "replace")[:500]
-    sys.exit("ERROR: Vault GET %s -> HTTP %s: %s" % (url, exc.code, detail))
+    sys.exit("ERROR: wslvault GET %s -> HTTP %s: %s" % (url, exc.code, detail))
 except urllib.error.URLError as exc:
-    sys.exit("ERROR: Vault GET %s -> %s" % (url, exc))
+    sys.exit("ERROR: wslvault GET %s -> %s" % (url, exc))
 
 try:
     payload = json.loads(raw)
 except ValueError:
-    sys.exit("ERROR: Vault response from %s is not JSON" % url)
+    sys.exit("ERROR: wslvault response from %s is not JSON" % url)
 
 data = (payload.get("data") or {}).get("data")
 if not isinstance(data, dict):
-    sys.exit("ERROR: unexpected Vault response at %s (no .data.data map)" % url)
+    sys.exit("ERROR: unexpected wslvault response at %s (no .data.data map)" % url)
 
 # fastlane provisions the distribution certificate from the ASC API key, so only
 # the ASC key is required. CERT_PRIVATE_KEY_B64 is accepted but optional.
@@ -112,6 +129,6 @@ else:
     for key, value in env_lines:
         sys.stdout.write("export %s=%s\n" % (key, value))
 
-sys.stderr.write("OK: loaded iOS signing material from %s into %s\n"
+sys.stderr.write("OK: loaded iOS signing material from wslvault %s into %s\n"
                  % (secret_path, os.environ["WORKDIR"]))
 PY

@@ -39,9 +39,9 @@ Run workflow (or push v1.2.3 tag)
 3. Generate an **App Store Connect API** key (App Manager role)
 4. Create / reuse an **Apple Distribution** certificate tied to a private key
 
-### 2. Vault secret
+### 2. wslvault secret
 
-Store at **`secret/kubepilot/ios`** (KV v2):
+Store at **`kv/kubepilot/ios`** in wslvault (`https://vault.workstation.co.uk`, KV v2 mount `kv`):
 
 | Key | Description |
 |-----|-------------|
@@ -59,7 +59,7 @@ See `ios/ci/ios.vault.env.example`.
 The Mac Studio runner needs:
 
 - Xcode 26+ GM (Apple requires the iOS 26 SDK for uploads since April 2026), XcodeGen, CocoaPods (if added later)
-- Vault token file (default `VAULT_TOKEN_FILE` in workflow)
+- A wslvault machine API key (issued without `mfa_required`, read access to `kubepilot/*`) at `~/.secrets/kubepilot/wslvault-ci-key` (`WSLVAULT_API_KEY_FILE` in the workflow)
 - Label `ios_cicd`
 
 ### 4. GitHub workflow
@@ -75,13 +75,13 @@ Workflow file: `.github/workflows/ios_release.yml`
 **App Store (after QA):**
 
 1. Same workflow → target **app_store**
-2. Submits the built binary for review (`automatic_release: false` — you release manually in ASC when approved)
+2. Submits the built binary for review and releases automatically once Apple approves (`automatic_release: true`)
 
 ## Local dry run (on the Mac Studio)
 
 ```bash
 cd ios
-export VAULT_TOKEN_FILE=$HOME/.secrets/acc-vault/login-token.json
+export WSLVAULT_TOKEN=<wslvault JWT>   # or WSLVAULT_API_KEY_FILE=<machine key file>
 eval "$(./ci/load-ios-vault-secrets.sh)"
 export BUILD_KEYCHAIN_PATH=/tmp/kp-ios.keychain-db
 export BUILD_KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
