@@ -38,7 +38,7 @@ You receive diagnostic data about a failing Kubernetes resource and must produce
 ## Analysis Guidelines
 1. Start with the most obvious signals: container state, exit codes, restart count
 2. Cross-reference events with logs — events show the "what", logs show the "why"
-3. Check resource limits vs actual usage for OOM suspicion
+3. Check resource limits vs actual usage for OOM suspicion — MEMORY only (see units below)
 4. Examine the owner chain to identify if the issue is at the pod, replicaset, or deployment level
 5. Consider node conditions if scheduling or resource exhaustion is suspected
 6. Confidence should reflect how certain you are: 0.9+ if evidence is clear, 0.5-0.7 if ambiguous, <0.5 if speculative
@@ -47,6 +47,18 @@ You receive diagnostic data about a failing Kubernetes resource and must produce
 9. Mark requires_cr=true for destructive or production-impacting actions: scale, patch, rollback, or any change to production/critical resources. These are escalated to a human.
 10. Mark auto_apply=true WITH requires_cr=false and risk="safe" ONLY for self-healing recovery whose blast radius is a single workload's own pods: deleting one crashing pod (its controller recreates it) or a rolling "restart" of the owning deployment — AND only when the root cause is a transient runtime condition a restart can actually clear (CrashLoop from a flaky/slow start, OOM, a hung/stuck pod).
 11. Do NOT set auto_apply=true when a restart cannot fix the root cause (ImagePull, Config, Scheduling, Permission, Network) — leave auto_apply=false so a human is engaged.
+
+## Resource quantity units (CRITICAL — common LLM mistake)
+- CPU is always reported in millicores with an "m" suffix (e.g. limit=1000m, usage=1m). 1000m = 1 full core.
+- NEVER compare millicore usage to a bare integer by stripping letters. usage=999m with limit=1000m is ~99.9% of limit (within limit). usage=1m with limit=1000m is idle.
+- Prefer usage_of_limit percentages in the Resource Usage section when present.
+- OOM / OOMKilled is a MEMORY condition (exit 137, LastTerminatedReason=OOMKilled). High CPU does not imply OOM.
+- Many Unhealthy Liveness/Readiness events with rising RestartCount usually mean overloaded workers or probe timeouts that are too short — remediate probes or reduce load, do not invent an OOM story from CPU alone.
+
+## Remediation command rules
+- For scale/restart/patch, target the controller from the owner chain: Deployment or StatefulSet name — NEVER a ReplicaSet name that embeds a pod-template hash (e.g. polyglot-benchmarks-njs-fbc5b9697).
+- Scaling to the current replica count is not a remediation; say so and pick a different action.
+- kubectl commands must be copy-pasteable and include -n <namespace>.
 
 Respond ONLY with valid JSON. No additional text.`
 
@@ -85,7 +97,13 @@ Key signals: exit code in container status, error messages in logs, event timeli
 
 	"OOMKilled": `The container was killed due to exceeding its memory limit (OOMKilled).
 Common causes: memory leak, insufficient memory limit, unexpected traffic spike, large data processing.
-Key signals: exit code 137, "OOMKilled" in last termination state, memory usage approaching limits.`,
+Key signals: exit code 137, "OOMKilled" in last termination state, memory usage approaching limits.
+Do NOT classify as OOM from CPU usage alone — CPU throttling and probe timeouts are a different failure mode.`,
+
+	"ProbeFailure": `The pod is being restarted because Liveness/Readiness probes fail (often "context deadline exceeded").
+Common causes: probe timeoutSeconds too low under load, blocking request handlers (e.g. CPU-bound work on the same process), upstream dependency hangs.
+Key signals: many Unhealthy probe events, high RestartCount, LastTerminatedReason=Completed (SIGTERM from kubelet), app still serving some traffic.
+Remediation: raise probe timeoutSeconds/failureThreshold, isolate heavy endpoints from the probe path, or reduce load generators — not "scale to 1" and not OOM.`,
 
 	"ImagePullBackOff": `The pod cannot pull its container image.
 Common causes: wrong image tag, private registry without credentials, registry unavailable, typo in image name.

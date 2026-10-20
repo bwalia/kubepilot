@@ -298,7 +298,35 @@ func identifyScenario(diag *k8s.PodDiagnostics) string {
 	if diag.Phase == "Pending" {
 		return "Pending"
 	}
+	if looksLikeProbeRestartStorm(diag) {
+		return "ProbeFailure"
+	}
 	return "Unknown"
+}
+
+// looksLikeProbeRestartStorm detects kubelet killing pods because probes time out
+// under load — a pattern LLMs often mislabel as OOM when CPU strings are ambiguous.
+func looksLikeProbeRestartStorm(diag *k8s.PodDiagnostics) bool {
+	highRestarts := false
+	for _, cs := range diag.ContainerStatuses {
+		if cs.RestartCount >= 10 {
+			highRestarts = true
+			break
+		}
+	}
+	if !highRestarts {
+		return false
+	}
+	for _, e := range diag.Events {
+		msg := strings.ToLower(e.Message + " " + e.Reason)
+		if strings.Contains(msg, "unhealthy") ||
+			strings.Contains(msg, "liveness") ||
+			strings.Contains(msg, "readiness") ||
+			strings.Contains(msg, "probe") {
+			return true
+		}
+	}
+	return false
 }
 
 // Helper functions for formatting diagnostic data into prompt sections.
@@ -356,9 +384,23 @@ func formatResourceMetrics(rm *k8s.ResourceMetrics) string {
 	if rm == nil {
 		return "(resource metrics unavailable)"
 	}
-	return fmt.Sprintf("CPU: request=%s limit=%s usage=%s\nMemory: request=%s limit=%s usage=%s",
-		rm.CPURequest, rm.CPULimit, rm.CPUUsage,
-		rm.MemRequest, rm.MemLimit, rm.MemUsage)
+	cpuPct := "n/a"
+	memPct := "n/a"
+	if rm.CPUUsageOfLimitPct != nil {
+		cpuPct = fmt.Sprintf("%.1f%%", *rm.CPUUsageOfLimitPct)
+	}
+	if rm.MemUsageOfLimitPct != nil {
+		memPct = fmt.Sprintf("%.1f%%", *rm.MemUsageOfLimitPct)
+	}
+	return fmt.Sprintf(
+		"CPU: request=%s limit=%s usage=%s (usage_of_limit=%s)\n"+
+			"Memory: request=%s limit=%s usage=%s (usage_of_limit=%s)\n"+
+			"Unit note: CPU values are millicores (1000m = 1 core). "+
+			"A limit of 1000m is one full core — never treat a bare \"1\" as \"1m\". "+
+			"High CPU alone is not OOM; OOM requires OOMKilled / exit 137 / memory pressure.",
+		rm.CPURequest, rm.CPULimit, rm.CPUUsage, cpuPct,
+		rm.MemRequest, rm.MemLimit, rm.MemUsage, memPct,
+	)
 }
 
 func formatOwnerChain(owners []k8s.OwnerRef) string {
