@@ -7,7 +7,7 @@ name: iOS Release (TestFlight & App Store)
 #   APP STORE : workflow_dispatch with target = app_store (after TestFlight QA)
 #
 # Runs on the self-hosted Mac Studio runner (labels: self-hosted, macOS, ios_cicd).
-# Signing secrets are loaded from HashiCorp Vault at build time — nothing stored
+# Signing secrets are loaded from wslvault (vault.workstation.co.uk) at build time — nothing stored
 # in GitHub. See docs/IOS_RELEASE.md.
 
 on:
@@ -51,7 +51,8 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 90
     env:
-      VAULT_TOKEN_FILE: /Users/balinderwalia/.secrets/acc-vault/login-token.json
+      # wslvault machine key (no MFA) for kv/kubepilot/ios — see ci/load-ios-vault-secrets.sh
+      WSLVAULT_API_KEY_FILE: /Users/balinderwalia/.secrets/kubepilot/wslvault-ci-key
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     steps:
@@ -78,7 +79,7 @@ jobs:
             echo "EXPORT_OPTIONS_PLIST=$RUNNER_TEMP/ExportOptions.plist"
           } >> "$GITHUB_ENV"
 
-      - name: Load signing secrets from Vault
+      - name: Load signing secrets from wslvault
         run: |
           chmod +x ./ci/load-ios-vault-secrets.sh
           ./ci/load-ios-vault-secrets.sh

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="627" viewBox="0 0 1200 627">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1017"/><stop offset="1" stop-color="#0F1C26"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#1FA3C4" stop-opacity="0.28"/><stop offset="1" stop-color="#1FA3C4" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#FFFFFF" stroke-opacity="0.035"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="627" fill="url(#bg)"/>
+  <rect width="1200" height="627" fill="url(#grid)"/>
+  <rect width="1200" height="627" fill="url(#glow)"/>
+
+  <!-- logo -->
+  <g transform="translate(64,56)">
+    <rect width="44" height="44" rx="11" fill="#0D6F8A"/>
+    <g transform="translate(10,10) scale(1)" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+      <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+    </g>
+    <text x="60" y="31" font-family="Helvetica Neue, Helvetica, Arial" font-size="26" font-weight="700" fill="#E6EDF5">Kube<tspan fill="#38BDD8">Pilot</tspan></text>
+  </g>
+
+  <!-- eyebrow -->
+  <text x="64" y="176" font-family="Menlo, monospace" font-size="17" letter-spacing="2" fill="#38BDD8">NEW ON THE BLOG</text>
+
+  <!-- headline -->
+  <text font-family="Helvetica Neue, Helvetica, Arial" font-weight="700" font-size="58" fill="#F1F5F9">
+    <tspan x="64" y="244">Resolve Kubernetes</tspan>
+    <tspan x="64" y="312">incidents <tspan fill="#38BDD8">faster</tspan></tspan>
+  </text>
+  <text font-family="Helvetica Neue, Helvetica, Arial" font-size="23" fill="#94A3B8">
+    <tspan x="64" y="368">AI root-cause analysis, an SRE browser and</tspan>
+    <tspan x="64" y="400">policy-gated self-healing in one cockpit.</tspan>
+  </text>
+
+  <!-- mode pills -->
+  <g font-family="Helvetica Neue, Helvetica, Arial" font-size="20" font-weight="600">
+    <rect x="64" y="448" width="132" height="44" rx="22" fill="#0D6F8A" fill-opacity="0.25" stroke="#38BDD8" stroke-opacity="0.6"/>
+    <text x="130" y="477" text-anchor="middle" fill="#7DD8EC">CoPilot</text>
+    <text x="214" y="477" text-anchor="middle" fill="#475569">→</text>
+    <rect x="232" y="448" width="108" height="44" rx="22" fill="#6B28D6" fill-opacity="0.2" stroke="#A78BFA" stroke-opacity="0.6"/>
+    <text x="286" y="477" text-anchor="middle" fill="#C4B5FD">Pilot</text>
+    <text x="358" y="477" text-anchor="middle" fill="#475569">→</text>
+    <rect x="376" y="448" width="148" height="44" rx="22" fill="#047857" fill-opacity="0.22" stroke="#34D399" stroke-opacity="0.6"/>
+    <text x="450" y="477" text-anchor="middle" fill="#6EE7B7">AutoPilot</text>
+  </g>
+  <text x="64" y="560" font-family="Menlo, monospace" font-size="17" fill="#64748B">pages.kubepilot.org/blog</text>
+
+  <!-- RCA card mock -->
+  <g transform="translate(706,118)" font-family="Helvetica Neue, Helvetica, Arial">
+    <rect width="430" height="392" rx="18" fill="#141B26" stroke="#2A3646"/>
+    <circle cx="26" cy="28" r="6" fill="#EF4444"/><circle cx="46" cy="28" r="6" fill="#F59E0B"/><circle cx="66" cy="28" r="6" fill="#22C55E"/>
+    <text x="96" y="33" font-family="Menlo, monospace" font-size="14" fill="#64748B">AI Analyze · prod/payments-api</text>
+    <line x1="0" y1="54" x2="430" y2="54" stroke="#2A3646"/>
+
+    <rect x="24" y="76" width="156" height="28" rx="14" fill="#C82028" fill-opacity="0.2"/>
+    <text x="102" y="95" text-anchor="middle" font-size="14" font-weight="700" fill="#FCA5A5">CrashLoop · HIGH</text>
+    <text x="406" y="95" text-anchor="end" font-family="Menlo, monospace" font-size="14" fill="#34D399">95% confidence</text>
+
+    <text x="24" y="140" font-size="13" letter-spacing="1.5" fill="#64748B">ROOT CAUSE</text>
+    <text font-size="18" fill="#E2E8F0">
+      <tspan x="24" y="168">Missing env var after ConfigMap</tspan>
+      <tspan x="24" y="194">edit; container exits on startup.</tspan>
+    </text>
+
+    <text x="24" y="238" font-size="13" letter-spacing="1.5" fill="#64748B">EVIDENCE</text>
+    <g font-family="Menlo, monospace" font-size="14" fill="#94A3B8">
+      <text x="24" y="264"><tspan fill="#38BDD8">●</tspan><tspan x="46">events</tspan><tspan x="122" fill="#CBD5E1">BackOff restarting container</tspan></text>
+      <text x="24" y="288"><tspan fill="#38BDD8">●</tspan><tspan x="46">logs</tspan><tspan x="122" fill="#CBD5E1">DB_URL is required</tspan></text>
+      <text x="24" y="312"><tspan fill="#38BDD8">●</tspan><tspan x="46">diff</tspan><tspan x="122" fill="#CBD5E1">configmap/payments -1 key</tspan></text>
+    </g>
+
+    <rect x="24" y="336" width="382" height="36" rx="10" fill="#047857" fill-opacity="0.2" stroke="#34D399" stroke-opacity="0.5"/>
+    <text x="215" y="360" text-anchor="middle" font-size="15" font-weight="600" fill="#6EE7B7">AutoPilot dry-run: restore key → rollout</text>
+  </g>
+</svg>
