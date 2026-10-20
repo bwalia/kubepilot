@@ -44,7 +44,7 @@ interface Props {
 export function ResourceUsageTable({ namespace, onPodClick }: Props) {
   const [metric, setMetric] = useState<UsageMetric>("cpu");
   const [group, setGroup] = useState<UsageGroup>("pod");
-  const { data, isLoading, error } = usePodUsage(namespace);
+  const { data, isLoading, error, isPlaceholderData } = usePodUsage(namespace);
 
   const rows = useMemo(() => {
     const grouped = groupUsage(data?.pods ?? [], group);
@@ -149,6 +149,13 @@ export function ResourceUsageTable({ namespace, onPodClick }: Props) {
           {!data.metrics_available && "metrics-server is not answering, so CPU and memory show zero. "}
           {!data.storage_stats_available &&
             "Kubelet storage stats are unavailable (needs nodes/proxy access), so storage shows claimed PVC size."}
+        </p>
+      )}
+
+      {isPlaceholderData && (
+        <p className="flex items-center gap-2 text-xs text-pilot-muted" role="status">
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-pilot-accent border-t-transparent" />
+          Showing the top consumers while the full list loads…
         </p>
       )}
 

@@ -390,8 +390,9 @@ export interface PodUsageReport {
   generated_at: string;
 }
 
-export const listPodUsage = (namespace = ""): Promise<PodUsageReport> =>
-  http.get("/clusters/pod-usage", { params: { namespace } }).then((r) => r.data);
+/** Pod usage for a namespace. With `top`, only pods in the top N by CPU, memory or storage. */
+export const listPodUsage = (namespace = "", top?: number): Promise<PodUsageReport> =>
+  http.get("/clusters/pod-usage", { params: { namespace, top } }).then((r) => r.data);
 
 export const listDeployments = (namespace = ""): Promise<DeploymentSummary[]> =>
   http

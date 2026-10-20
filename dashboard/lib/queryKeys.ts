@@ -19,6 +19,7 @@ export const qk = {
   pods: (namespace: string) => ["pods", namespace] as const,
   crashingPods: (namespace: string) => ["crashing-pods", namespace] as const,
   podUsage: (namespace: string) => ["pod-usage", namespace] as const,
+  podUsageTop: (namespace: string, top: number) => ["pod-usage", namespace, "top", top] as const,
   deployments: (namespace: string) => ["deployments", namespace] as const,
   statefulSets: (namespace: string) => ["statefulsets", namespace] as const,
   daemonSets: (namespace: string) => ["daemonsets", namespace] as const,

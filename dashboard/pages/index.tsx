@@ -2,14 +2,15 @@
  * KubePilot — Kubernetes Troubleshooting powered by AI
  * Dashboard home: cluster health overview, AI command bar, crashing pods, nodes.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { qk } from "@/lib/queryKeys";
 import { Activity, Cpu, AlertTriangle, Terminal, FileSearch, Network, Shield, FileWarning, CalendarClock, KeyRound, BookOpen, CheckCircle, Gauge } from "lucide-react";
 import { useRouter } from "next/router";
 import { requestDashboardTarget } from "@/lib/dashboardNav";
 import { TopConsumers } from "@/components/usage/TopConsumers";
-import { ResourceUsageTable } from "@/components/usage/ResourceUsageTable";
+import { UsageTableSkeleton } from "@/components/usage/UsageTableSkeleton";
 import {
   listPods,
   listCrashingPods,
@@ -39,6 +40,12 @@ import { PortForwardSessionsPanel } from "@/components/PortForwardSessionsPanel"
 import RCAPage from "@/pages/rca";
 import TopologyPage from "@/pages/topology";
 
+// Loaded on demand: the full usage table is only needed once someone opens it.
+const ResourceUsageTable = dynamic(
+  () => import("@/components/usage/ResourceUsageTable").then((m) => m.ResourceUsageTable),
+  { ssr: false, loading: () => <UsageTableSkeleton /> },
+);
+
 const TABS = [
   { key: "overview" as const, label: "Overview", icon: Activity },
   { key: "usage" as const, label: "Resource Usage", icon: Gauge },
@@ -54,6 +61,7 @@ type TabKey = typeof TABS[number]["key"];
 
 export default function DashboardHome() {
   const router = useRouter();
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [command, setCommand] = useState("");
   const [aiActions, setAiActions] = useState<SuggestedAction[] | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -157,7 +165,15 @@ export default function DashboardHome() {
         <ResourceMeters />
         {/* The meters say how full the cluster is; this says who is filling it. */}
         <div className="mt-5">
-          <TopConsumers namespace={nsForQuery} onViewAll={() => setActiveTab("usage")} />
+          <TopConsumers
+            namespace={nsForQuery}
+            onViewAll={() => {
+              setActiveTab("usage");
+              // The tab content sits below the AI bar; bring it into view so
+              // the click visibly does something.
+              requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+            }}
+          />
         </div>
       </div>
 
@@ -258,7 +274,7 @@ export default function DashboardHome() {
       </div>
 
       {/* ── Tab Bar ──────────────────────────────────────────────── */}
-      <div className="px-4 sm:px-6 lg:px-8 border-b border-pilot-border overflow-x-auto">
+      <div ref={tabsRef} className="scroll-mt-4 px-4 sm:px-6 lg:px-8 border-b border-pilot-border overflow-x-auto">
         <nav className="flex gap-1 -mb-px" role="tablist">
           {TABS.map((tab) => {
             const Icon = tab.icon;

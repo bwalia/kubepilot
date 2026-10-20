@@ -14,7 +14,7 @@
  * The Column<T> shape is unchanged; `sortValue` and the table's `searchText`
  * are opt-in, and a column without `sortValue` simply is not sortable.
  */
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Search, Inbox, AlertTriangle, X } from "lucide-react";
 import { fuzzyFilter } from "@/lib/fuzzy";
 import { cn } from "@/lib/utils";
@@ -103,6 +103,23 @@ export function ResourceTable<T>({
   useEffect(() => setLimit(PAGE_SIZE), [query, sort]);
 
   const visible = shown.slice(0, limit);
+  const hasMore = shown.length > visible.length;
+
+  // Lazy-render the next page as the end of the list scrolls into view; the
+  // "Show more" button stays as the keyboard / no-IntersectionObserver path.
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasMore || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setLimit((n) => n + PAGE_SIZE);
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, limit]);
 
   const toggleSort = (i: number) => {
     setSort((s) =>
@@ -340,8 +357,8 @@ export function ResourceTable<T>({
             ))}
           </ul>
 
-          {shown.length > visible.length && (
-            <div className="mt-3 flex items-center justify-center gap-3">
+          {hasMore && (
+            <div ref={sentinel} className="mt-3 flex items-center justify-center gap-3">
               <span className="text-sm text-pilot-muted tabular-nums">
                 Showing {visible.length} of {shown.length}
               </span>
