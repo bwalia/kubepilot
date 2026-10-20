@@ -5,12 +5,16 @@
  * cluster is, this says who is filling it. Each row opens the pod drawer on
  * the dashboard; "View all" jumps to the full ranked list.
  */
+import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Cpu, MemoryStick, HardDrive, ArrowRight, Flame, Info } from "lucide-react";
 import { requestDashboardTarget } from "@/lib/dashboardNav";
 import { useThemeColors } from "@/lib/useThemeColors";
 import {
-  usePodUsage,
+  useTopPodUsage,
+  prefetchPodUsage,
+  TOP_N,
   groupUsage,
   topBy,
   metricValue,
@@ -34,9 +38,19 @@ interface Props {
   onViewAll?: () => void;
 }
 
-export function TopConsumers({ namespace, limit = 5, onViewAll }: Props) {
+export function TopConsumers({ namespace, limit = TOP_N, onViewAll }: Props) {
   const router = useRouter();
-  const { data, isLoading, error } = usePodUsage(namespace);
+  const qc = useQueryClient();
+  const { data, isLoading, error } = useTopPodUsage(namespace);
+
+  // Once the light query has painted, fetch the full list in the background so
+  // "View full usage list" opens with data already in cache.
+  useEffect(() => {
+    if (!data) return;
+    const id = window.setTimeout(() => prefetchPodUsage(qc, namespace), 1500);
+    return () => window.clearTimeout(id);
+  }, [data, qc, namespace]);
+  const warm = () => prefetchPodUsage(qc, namespace);
   const tc = useThemeColors(["accent", "warning", "danger", "info"]);
   const colors: Record<UsageMetric, string> = {
     cpu: tc.accent || "#0D6F8A",
@@ -70,6 +84,8 @@ export function TopConsumers({ namespace, limit = 5, onViewAll }: Props) {
         <button
           type="button"
           onClick={viewAll}
+          onMouseEnter={warm}
+          onFocus={warm}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-pilot-accent hover:text-pilot-accent-light"
         >
           View full usage list <ArrowRight className="w-4 h-4" />

@@ -71,6 +71,7 @@ type Server struct {
 	uploadDir            string
 	pfManager            *PortForwardManager
 	clusters             clusterRegistry
+	podUsage             podUsageCache
 }
 
 // NewServer creates a dashboard Server.
@@ -114,6 +115,10 @@ func NewServer(cfg Config, log *zap.Logger) *Server {
 		srv.knownKubeconfigPaths[srv.activeKubeconfigPath] = struct{}{}
 		srv.persistKubeconfigStateLocked()
 	}
+
+	// Collecting pod usage walks every node's kubelet, which takes seconds on
+	// a large cluster. Start it now so the first dashboard load is instant.
+	srv.warmPodUsage()
 
 	return srv
 }

@@ -2,8 +2,8 @@
  * Shared helpers for the resource-usage views: formatting, ranking and
  * rolling pods up into workloads, namespaces and nodes.
  */
-import { useQuery } from "@tanstack/react-query";
-import { listPodUsage, type PodUsage } from "@/lib/api";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { listPodUsage, type PodUsage, type PodUsageReport } from "@/lib/api";
 import { qk } from "@/lib/queryKeys";
 
 export type UsageMetric = "cpu" | "memory" | "storage";
@@ -33,14 +33,44 @@ export interface UsageRow {
   pod?: PodUsage;
 }
 
-/** Shared poll for every usage surface; one request per namespace scope. */
+/** Rows each "Top consumers" card shows; also the size of the light query. */
+export const TOP_N = 5;
+
+const fullUsageQuery = (namespace: string) => ({
+  queryKey: qk.podUsage(namespace),
+  queryFn: () => listPodUsage(namespace),
+  staleTime: 15_000,
+});
+
+/**
+ * The full per-pod list, for the usage table. Until it arrives the table shows
+ * the top consumers already in cache, so opening it never starts blank.
+ */
 export function usePodUsage(namespace: string) {
+  const qc = useQueryClient();
   return useQuery({
-    queryKey: qk.podUsage(namespace),
-    queryFn: () => listPodUsage(namespace),
+    ...fullUsageQuery(namespace),
+    refetchInterval: 30_000,
+    placeholderData: () => qc.getQueryData<PodUsageReport>(qk.podUsageTop(namespace, TOP_N)),
+  });
+}
+
+/** Only the top consumers — a few KB instead of the whole cluster. */
+export function useTopPodUsage(namespace: string) {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: qk.podUsageTop(namespace, TOP_N),
+    queryFn: () => listPodUsage(namespace, TOP_N),
     refetchInterval: 30_000,
     staleTime: 15_000,
+    // If the full list is already cached (the table was open), start from it.
+    placeholderData: () => qc.getQueryData<PodUsageReport>(qk.podUsage(namespace)),
   });
+}
+
+/** Warm the full list before the user gets there (hover / focus on "View all"). */
+export function prefetchPodUsage(qc: QueryClient, namespace: string) {
+  void qc.prefetchQuery(fullUsageQuery(namespace));
 }
 
 export function formatCPU(milli: number): string {

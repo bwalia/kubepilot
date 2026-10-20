@@ -31,7 +31,14 @@ import { DeckSidebar } from "@/components/DeckSidebar";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
 import { LayoutDashboard, Boxes, Network, Database, HeartPulse, FileWarning, Share2, X, Menu, Layers, Gauge } from "lucide-react";
-import { ResourceUsageTable } from "@/components/usage/ResourceUsageTable";
+import dynamic from "next/dynamic";
+import { UsageTableSkeleton } from "@/components/usage/UsageTableSkeleton";
+
+// Loaded on demand: the full usage table is only needed once someone opens it.
+const ResourceUsageTable = dynamic(
+  () => import("@/components/usage/ResourceUsageTable").then((m) => m.ResourceUsageTable),
+  { ssr: false, loading: () => <UsageTableSkeleton /> },
+);
 
 type Section = "overview" | "workloads" | "usage" | "network" | "config" | "topology" | "health" | "events";
 
