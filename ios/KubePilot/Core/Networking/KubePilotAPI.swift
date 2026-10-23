@@ -85,6 +85,13 @@ enum KubePilotAPI {
         )
     }
 
+    /// With `top`, only pods in the top N by CPU, memory or storage.
+    static func podUsage(namespace: String = "", top: Int? = nil) -> APIRequest {
+        var query = ["namespace": namespace]
+        if let top { query["top"] = String(top) }
+        return APIRequest(path: "clusters/pod-usage", query: query)
+    }
+
     static func troubleshootingSummary(namespace: String = "") -> APIRequest {
         APIRequest(path: "troubleshooting/summary", query: ["namespace": namespace])
     }
@@ -232,6 +239,10 @@ actor KubePilotService {
 
     func fetchTroubleshootingSummary(namespace: String = "") async throws -> ClusterTroubleshootingSummary {
         try await client.send(KubePilotAPI.troubleshootingSummary(namespace: namespace))
+    }
+
+    func fetchPodUsage(namespace: String = "", top: Int? = nil) async throws -> PodUsageReport {
+        try await client.send(KubePilotAPI.podUsage(namespace: namespace, top: top))
     }
 
     func fetchPods(namespace: String = "") async throws -> [PodSummary] {

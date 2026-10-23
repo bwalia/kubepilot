@@ -32,7 +32,9 @@
 		91286E84F26B2F5ECD3E446E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */; };
 		932B03C9135B29347A230757 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD56197EAE085B464CF39AC5 /* APIModels.swift */; };
 		995EE005A8AF4F04320EBDCD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0F4143F1164780374F42C994 /* Assets.xcassets */; };
+		A24561EAF6A10CCBBB2FEEDB /* PodUsageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB4FF7944B9606F9D32EEF7 /* PodUsageTests.swift */; };
 		A87599B50C98AC14DE590EC8 /* NodeRoleBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 954FDB6253BD81842533B974 /* NodeRoleBadge.swift */; };
+		B07A6F1333C2D514B1FF7A74 /* TopConsumersSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CBF34F9EF1E0415A18C272 /* TopConsumersSection.swift */; };
 		B35CFE92D5FA30F48A6C55D6 /* KubePilotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C52BABA6D0DB49EC4A8F57 /* KubePilotApp.swift */; };
 		B748CEBB3BB8D078ABE8E5C8 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */; };
 		B92B994F8E9BE45991C4CF69 /* PodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DC0195DE0D09BBB5C678F39 /* PodsListView.swift */; };
@@ -84,6 +86,7 @@
 		0AD13FCFADC0A993DA318164 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		0F4143F1164780374F42C994 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1CDF57058D7FFE53D0C392D5 /* NodesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodesListView.swift; sourceTree = "<group>"; };
+		1EB4FF7944B9606F9D32EEF7 /* PodUsageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodUsageTests.swift; sourceTree = "<group>"; };
 		223945BA22626F8E81B1B55F /* KubePilotLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KubePilotLogo.swift; sourceTree = "<group>"; };
 		2AC3957EDB7CF758F2326CBF /* AIConsentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConsentTests.swift; sourceTree = "<group>"; };
 		34362A3B0CDB0C40EC4D7909 /* AnalyseWithAIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyseWithAIButton.swift; sourceTree = "<group>"; };
@@ -94,6 +97,7 @@
 		3F197C1ACB53EA59AEC7621D /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		4082921476E7A5048CD00194 /* KubePilotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KubePilotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4DB3E39265829BD9406A9004 /* ClusterPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusterPickerView.swift; sourceTree = "<group>"; };
+		54CBF34F9EF1E0415A18C272 /* TopConsumersSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopConsumersSection.swift; sourceTree = "<group>"; };
 		5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		61D27256635353D8F6669103 /* BiometricUnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricUnlockView.swift; sourceTree = "<group>"; };
 		64A44B4A207F167F48D6C066 /* HelmMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelmMark.swift; sourceTree = "<group>"; };
@@ -285,6 +289,7 @@
 			children = (
 				2AC3957EDB7CF758F2326CBF /* AIConsentTests.swift */,
 				D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */,
+				1EB4FF7944B9606F9D32EEF7 /* PodUsageTests.swift */,
 			);
 			path = KubePilotTests;
 			sourceTree = "<group>";
@@ -376,6 +381,7 @@
 			isa = PBXGroup;
 			children = (
 				0AD13FCFADC0A993DA318164 /* DashboardView.swift */,
+				54CBF34F9EF1E0415A18C272 /* TopConsumersSection.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -500,6 +506,7 @@
 			files = (
 				321D2BAB14BDC4A94113AD40 /* AIConsentTests.swift in Sources */,
 				F4A7DEDF8C007794EF27F717 /* APIModelsTests.swift in Sources */,
+				A24561EAF6A10CCBBB2FEEDB /* PodUsageTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -548,6 +555,7 @@
 				91286E84F26B2F5ECD3E446E /* SettingsView.swift in Sources */,
 				E533BAAE5318667DAC2DD1C7 /* SuggestedActionsView.swift in Sources */,
 				FCF0A5D578E9639FE0EAC677 /* Theme.swift in Sources */,
+				B07A6F1333C2D514B1FF7A74 /* TopConsumersSection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

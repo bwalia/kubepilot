@@ -1052,3 +1052,129 @@ struct AIChatMessage: Identifiable, Hashable, Sendable {
         return lines.joined(separator: "\n")
     }
 }
+
+// MARK: - Resource usage (snake_case, /clusters/pod-usage)
+
+/// One pod's live CPU/memory (metrics-server) and storage (kubelet stats)
+/// alongside its requests and limits.
+struct PodUsage: Codable, Identifiable, Hashable, Sendable {
+    var id: String { "\(namespace)/\(name)" }
+    let name: String
+    let namespace: String
+    let node: String
+    let phase: String
+    let ownerKind: String?
+    let ownerName: String?
+    let restarts: Int
+    let cpuUsageMilli: Int64
+    let cpuRequestMilli: Int64
+    let cpuLimitMilli: Int64
+    let memUsageBytes: Int64
+    let memRequestBytes: Int64
+    let memLimitBytes: Int64
+    let storageUsedBytes: Int64
+    let pvcUsedBytes: Int64
+    let pvcCapacityBytes: Int64
+    let storageEstimated: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case name, namespace, node, phase, restarts
+        case ownerKind = "owner_kind"
+        case ownerName = "owner_name"
+        case cpuUsageMilli = "cpu_usage_milli"
+        case cpuRequestMilli = "cpu_request_milli"
+        case cpuLimitMilli = "cpu_limit_milli"
+        case memUsageBytes = "mem_usage_bytes"
+        case memRequestBytes = "mem_request_bytes"
+        case memLimitBytes = "mem_limit_bytes"
+        case storageUsedBytes = "storage_used_bytes"
+        case pvcUsedBytes = "pvc_used_bytes"
+        case pvcCapacityBytes = "pvc_capacity_bytes"
+        case storageEstimated = "storage_estimated"
+    }
+}
+
+struct PodUsageReport: Codable, Sendable {
+    let pods: [PodUsage]
+    let metricsAvailable: Bool
+    let storageStatsAvailable: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case pods
+        case metricsAvailable = "metrics_available"
+        case storageStatsAvailable = "storage_stats_available"
+    }
+}
+
+enum UsageMetric: String, CaseIterable, Identifiable, Sendable {
+    case cpu, memory, storage
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .cpu: "CPU"
+        case .memory: "Memory"
+        case .storage: "Storage"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .cpu: "cpu"
+        case .memory: "memorychip"
+        case .storage: "internaldrive"
+        }
+    }
+
+    func value(of pod: PodUsage) -> Int64 {
+        switch self {
+        case .cpu: pod.cpuUsageMilli
+        case .memory: pod.memUsageBytes
+        case .storage: pod.storageUsedBytes
+        }
+    }
+
+    func format(_ value: Int64) -> String {
+        self == .cpu ? Self.formatCPU(value) : Self.formatBytes(value)
+    }
+
+    /// Usage as a percentage of the limit, or of the request when unlimited.
+    func pressure(of pod: PodUsage) -> (pct: Double, of: String)? {
+        if self == .storage {
+            guard pod.pvcCapacityBytes > 0, pod.storageEstimated != true else { return nil }
+            return (Double(pod.pvcUsedBytes) / Double(pod.pvcCapacityBytes) * 100, "limit")
+        }
+        let used = value(of: pod)
+        let limit = self == .cpu ? pod.cpuLimitMilli : pod.memLimitBytes
+        let request = self == .cpu ? pod.cpuRequestMilli : pod.memRequestBytes
+        if limit > 0 { return (Double(used) / Double(limit) * 100, "limit") }
+        if request > 0 { return (Double(used) / Double(request) * 100, "request") }
+        return nil
+    }
+
+    /// The `n` heaviest pods for this metric, ignoring pods that report zero.
+    func top(_ pods: [PodUsage], _ n: Int) -> [PodUsage] {
+        Array(pods.filter { value(of: $0) > 0 }.sorted { value(of: $0) > value(of: $1) }.prefix(n))
+    }
+
+    static func formatCPU(_ milli: Int64) -> String {
+        guard milli > 0 else { return "0" }
+        if milli >= 1000 {
+            return String(format: milli >= 10_000 ? "%.0f cores" : "%.2f cores", Double(milli) / 1000)
+        }
+        return "\(milli)m"
+    }
+
+    static func formatBytes(_ bytes: Int64) -> String {
+        guard bytes > 0 else { return "0" }
+        let units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
+        var v = Double(bytes)
+        var i = 0
+        while v >= 1024 && i < units.count - 1 {
+            v /= 1024
+            i += 1
+        }
+        return String(format: (v >= 100 || i == 0) ? "%.0f %@" : "%.1f %@", v, units[i])
+    }
+}
