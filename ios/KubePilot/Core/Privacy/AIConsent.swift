@@ -19,6 +19,13 @@ enum AIConsent {
         return UserDefaults.standard.bool(forKey: key(account))
     }
 
+    /// Whether the user has answered the disclosure at all (either way), so
+    /// the app asks once up front instead of only on first AI use.
+    static func hasAnswered(account: String?) -> Bool {
+        guard let account else { return false }
+        return UserDefaults.standard.object(forKey: key(account)) != nil
+    }
+
     static func set(_ granted: Bool, account: String?) {
         guard let account else { return }
         UserDefaults.standard.set(granted, forKey: key(account))
@@ -35,20 +42,74 @@ enum AIConsentError: LocalizedError {
 
 /// Where AI requests end up, derived from the server's /ai/health answer.
 struct AIRecipient: Equatable {
+    enum Kind: Equatable {
+        /// The model runs on the KubePilot server itself (e.g. Ollama on localhost).
+        case onServer
+        /// The model runs inside the server's own private network (a cluster
+        /// service, private IP or internal hostname), not at an outside company.
+        case privateNetwork
+        /// A third-party AI provider we can name from its endpoint.
+        case provider(String)
+        /// A public endpoint we cannot name: treated as a third party.
+        case thirdParty
+        /// The server did not say which AI service it uses.
+        case unknown
+    }
+
     let serverHost: String
     let model: String?
     let endpointHost: String?
-
-    /// The model runs on the KubePilot server itself (e.g. Ollama on localhost).
-    var isOnServer: Bool {
-        guard let host = endpointHost?.lowercased() else { return false }
-        return host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "0.0.0.0"
-    }
 
     init(serverURL: URL?, health: AIHealthResponse?) {
         serverHost = serverURL?.host() ?? "your KubePilot server"
         model = health.map(\.model).flatMap { $0.isEmpty ? nil : $0 }
         endpointHost = health.flatMap { URL(string: $0.baseURL)?.host() }
+    }
+
+    var isOnServer: Bool { kind == .onServer }
+
+    var kind: Kind {
+        guard let host = endpointHost?.lowercased(), !host.isEmpty else { return .unknown }
+        if ["localhost", "127.0.0.1", "::1", "0.0.0.0"].contains(host) { return .onServer }
+        if let name = Self.knownProviders.first(where: { host == $0.domain || host.hasSuffix("." + $0.domain) })?.name {
+            return .provider(name)
+        }
+        if Self.isPrivate(host) { return .privateNetwork }
+        return .thirdParty
+    }
+
+    private static let knownProviders: [(domain: String, name: String)] = [
+        ("openai.com", "OpenAI"),
+        ("anthropic.com", "Anthropic"),
+        ("openai.azure.com", "Microsoft Azure OpenAI"),
+        ("googleapis.com", "Google"),
+        ("mistral.ai", "Mistral AI"),
+        ("groq.com", "Groq"),
+        ("together.xyz", "Together AI"),
+        ("together.ai", "Together AI"),
+        ("deepseek.com", "DeepSeek"),
+        ("openrouter.ai", "OpenRouter"),
+        ("x.ai", "xAI"),
+        ("cohere.ai", "Cohere"),
+        ("cohere.com", "Cohere"),
+        ("perplexity.ai", "Perplexity"),
+        ("fireworks.ai", "Fireworks AI"),
+        ("amazonaws.com", "Amazon Web Services"),
+    ]
+
+    private static func isPrivate(_ host: String) -> Bool {
+        if !host.contains(".") { return true }
+        for suffix in [".svc", ".cluster.local", ".local", ".internal", ".lan", ".home.arpa"] where host.hasSuffix(suffix) {
+            return true
+        }
+        let octets = host.split(separator: ".").compactMap { Int($0) }
+        guard octets.count == 4 else { return false }
+        switch (octets[0], octets[1]) {
+        case (10, _), (192, 168), (169, 254): return true
+        case (172, 16...31): return true
+        case (100, 64...127): return true // carrier-grade NAT / tailnets
+        default: return false
+        }
     }
 }
 
@@ -114,7 +175,7 @@ struct AIConsentSheet: View {
                     Text("Share cluster data with AI?")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(Theme.textPrimary)
-                    Text("AI analysis works by sending information about your cluster to an AI model. Nothing is sent unless you allow it.")
+                    Text("KubePilot's AI features work by sending information about your cluster to an AI model. Before you use them, here is exactly what is sent and who receives it.")
                         .font(.subheadline)
                         .foregroundStyle(Theme.textSecondary)
 
@@ -125,27 +186,24 @@ struct AIConsentSheet: View {
                     }
 
                     section("Who receives it", systemImage: "arrow.triangle.branch") {
-                        bullet("**Your KubePilot server** at \(recipient.serverHost), which you or your organisation operate.")
+                        bullet("**Your KubePilot server** at \(recipient.serverHost), which you or your organisation operate. The app sends AI requests only to this server.")
                         if !loaded {
                             HStack(spacing: Theme.spacingSM) {
                                 ProgressView()
                                 Text("Checking which AI model the server uses…").font(.footnote).foregroundStyle(Theme.muted)
                             }
-                        } else if let endpoint = recipient.endpointHost {
-                            if recipient.isOnServer {
-                                bullet("**The AI model \(recipient.model ?? "configured on the server")**, which runs on that same server. Your data is not sent to an outside AI company.")
-                            } else {
-                                bullet("**The AI service at \(endpoint)**\(recipient.model.map { " (model \($0))" } ?? ""), chosen by your server operator. This may be a third-party AI provider, which receives the data above and handles it under its own terms.")
-                            }
                         } else {
-                            bullet("**The AI model configured on that server** by your server operator. The server did not report which one, so it may be a third-party AI provider.")
+                            bullet(modelRecipient)
                         }
-                        bullet("KubePilot's developers do not receive this data, and it is never used for advertising or tracking.")
+                        bullet("KubePilot's developers do not receive this data, and it is never used for advertising, tracking or training by KubePilot.")
                     }
 
-                    Text("You can change this at any time in Settings → AI & Privacy.")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.muted)
+                    section("Your choice", systemImage: "hand.raised") {
+                        bullet("Nothing is sent to AI until you tap **Allow**.")
+                        bullet("If you tap **Don't Allow**, AI features stay off and everything else in the app works normally.")
+                        bullet("You can change this at any time in **Settings → AI & Privacy**.")
+                    }
+
                     Link("Read the Privacy Policy", destination: Self.privacyPolicyURL)
                         .font(.footnote.weight(.semibold))
                 }
@@ -178,6 +236,24 @@ struct AIConsentSheet: View {
             // The health probe carries no cluster or personal data.
             health = try? await KubePilotService.shared.fetchAIHealth()
             loaded = true
+        }
+    }
+
+    /// Names who runs the AI model, as plainly as the server lets us.
+    private var modelRecipient: LocalizedStringKey {
+        let model = recipient.model.map { " (\($0))" } ?? ""
+        let host = recipient.endpointHost ?? ""
+        switch recipient.kind {
+        case .onServer:
+            return "**The AI model\(model) running on that same server.** Your data is not sent to any outside AI company."
+        case .privateNetwork:
+            return "**The AI model\(model) at \(host)**, inside your server's own private network. Your data is not sent to any outside AI company."
+        case .provider(let name):
+            return "**\(name)**, a third-party AI provider (\(host))\(model), chosen by your server operator. \(name) receives the data above to generate the answer and processes it under its own privacy policy."
+        case .thirdParty:
+            return "**A third-party AI service at \(host)**\(model), chosen by your server operator. That service receives the data above to generate the answer and processes it under its own privacy policy."
+        case .unknown:
+            return "**The AI service your server operator configured.** The server did not report which one, so it may be a third-party AI provider that receives the data above."
         }
     }
 

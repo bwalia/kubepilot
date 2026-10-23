@@ -34,6 +34,7 @@ struct RootView: View {
 
 struct MainTabView: View {
     @Environment(AppState.self) private var appState
+    @State private var askAIConsent = false
 
     var body: some View {
         @Bindable var state = appState
@@ -62,6 +63,15 @@ struct MainTabView: View {
         // Rebuild every tab when the cluster changes, so no screen keeps
         // pods, logs or navigation state from the cluster we just left.
         .id(appState.clusterManager.epoch)
+        // Ask about AI data sharing once per server account, right after
+        // sign-in, so the choice is made before any AI feature is in view.
+        .task(id: appState.authManager.activeAccount?.id) {
+            guard !ProcessInfo.processInfo.arguments.contains("-UITestingScreenshots") else { return }
+            askAIConsent = !AIConsent.hasAnswered(account: appState.authManager.activeAccount?.id)
+        }
+        .sheet(isPresented: $askAIConsent) {
+            AIConsentSheet { _ in askAIConsent = false }
+        }
     }
 }
 

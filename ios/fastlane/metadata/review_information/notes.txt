@@ -18,11 +18,14 @@ Steps
 2. On Welcome, either tap Try demo, or enter the URL and credentials above and tap Connect.
 3. Face ID may be enabled or disabled; either is fine for review.
 
-AI data sharing (Guidelines 5.1.1(i) and 5.1.2(i))
-• KubePilot does not embed or call any AI service from the device. AI features send a request to the user's own KubePilot server, which runs the AI model it is configured with — by default a self-hosted model on that server (for example Ollama), or an OpenAI-compatible third-party service if the server operator configures one.
-• Before any data is sent, the app shows a permission screen that lists exactly what is sent (the typed question plus a cluster-state summary; or the selected pod's name, namespace, status, events, resource usage and up to 200 recent log lines), names who receives it (the KubePilot server host, and the AI model and endpoint that server reports — flagged as a possible third-party provider when it is not on the server), and asks the user to Allow or Don't Allow. AI features are off until the user taps Allow.
-• To see it: sign in to the demo, open a pod and tap "Analyse with AI", or send a message in the AI tab. The choice can be reviewed or withdrawn in Settings → AI & Privacy, which also links to the privacy policy (https://pages.kubepilot.org/privacy.html, section "AI features and AI services").
-• On the demo server the AI responses are synthetic sample data and no third-party AI service is involved.
+AI data sharing (Guidelines 5.1.1(i) and 5.1.2(i)) — changed in this build
+• The AI permission screen now appears immediately after sign-in, before any AI feature is used. It cannot be swiped away; the user must tap Allow or Don't Allow. Don't Allow keeps every AI feature off and the rest of the app works normally.
+• The screen lists exactly what is sent: the typed question plus a cluster-state summary (AI Assistant), or the selected pod's name, namespace, status, events, resource usage and up to 200 recent log lines (Analyse with AI).
+• It names who receives it: (1) the user's own KubePilot server, by host name, and (2) the AI model that server uses. When the server uses a third-party AI provider the provider is named (for example "OpenAI (api.openai.com)") and the screen states that the provider receives the data and processes it under its own privacy policy. When the model runs on the server or in its private network, the screen states that no outside AI company receives the data.
+• The app itself contains no AI SDK and calls no AI service directly; it only talks to the user's KubePilot server.
+• The dashboard section previously titled "AI Insights" is rule-based and sends nothing to any AI model; it is now titled "Detected Issues".
+• To see it: tap Try demo on the Welcome screen. The permission screen opens straight away. Afterwards it can be reviewed or withdrawn in Settings → AI & Privacy, which also links to the privacy policy (https://pages.kubepilot.org/privacy.html, section "AI features and AI services").
+• On the demo server the AI model is a simulated model inside the demo cluster's private network, so the screen shows that no outside AI company receives the data. No third-party AI service is involved in the demo.
 
 Notes
 • The demo API returns synthetic cluster data only (for example CrashLoopBackOff and sample AI analysis). It does not expose customer clusters or real kubeconfigs.
