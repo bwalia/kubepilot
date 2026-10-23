@@ -115,14 +115,17 @@
   </header>
   <main class="card-wrap"><div class="card">
   <h1>KubePilot Privacy Policy</h1>
-  <p class="muted">Last updated: 21 October 2026</p>
+  <p class="muted">Last updated: 23 October 2026</p>
 
-  <p>KubePilot (“we”, “the app”) is an AI-assisted Kubernetes operations companion. This policy explains what the <strong>iOS app</strong> collects and how data is handled.</p>
+  <p>KubePilot (“we”, “the app”) is an AI-assisted Kubernetes operations companion. This policy explains how the <strong>iOS app</strong> handles data.</p>
+
+  <p><strong>In short: KubePilot does not collect data from this app.</strong> We, the developer, do not run a backend that receives your data, and the app contains no analytics, crash-reporting or advertising SDKs. Everything the app loads comes from, and goes to, the KubePilot server that you or your organisation operate.</p>
 
   <h2>Who processes your data</h2>
   <p>The KubePilot iOS app connects to a <strong>KubePilot server that you configure</strong> (your own host or organisation). We do not operate a mandatory cloud backend for the mobile app. Data you load in the app is sent to the server URL you enter.</p>
 
-  <h2>Data the app accesses</h2>
+  <h2>Data the app handles on your behalf</h2>
+  <p>The app uses the following data to do its job. It stays on your device or travels only between the app and your own KubePilot server; none of it is sent to us.</p>
   <ul>
     <li><strong>Account credentials you enter</strong> — server URL, username/password or token. Stored in the iOS Keychain on your device; used only to authenticate to your KubePilot server.</li>
     <li><strong>Cluster operations data</strong> — pod lists, events, logs, diagnostics, and AI troubleshooting results returned by your server.</li>
@@ -130,12 +133,15 @@
     <li><strong>Optional biometrics</strong> — Face ID / Touch ID only unlocks credentials already on device; biometric templates never leave the device.</li>
   </ul>
 
-  <h2>Data we do not collect</h2>
+  <h2>We do not collect data</h2>
   <ul>
-    <li>No advertising SDKs or third-party analytics trackers are embedded in the iOS app.</li>
+    <li>KubePilot’s developers do not receive, store or have access to your credentials, cluster data, logs or AI requests.</li>
+    <li>No usage analytics, crash reporting or other telemetry is sent to us or to anyone else.</li>
+    <li>No advertising SDKs or third-party analytics trackers are embedded in the iOS app, and the app does not track you across other apps or websites.</li>
     <li>No sale of personal data.</li>
     <li>No Apple Advertising Identifier (IDFA).</li>
   </ul>
+  <p>The built-in demo account connects to our demo server (demo.kubepilot.org), which serves simulated sample data and answers AI questions with a simulated model. It is for trying the app only; it does not connect to any real cluster.</p>
 
   <h2>On-device storage</h2>
   <p>The app may cache recent cluster summaries locally (SwiftData) to improve offline browsing. You can remove this data by signing out or deleting the app.</p>
@@ -150,8 +156,8 @@
     <li>Container logs contain whatever your applications write to them and may therefore include personal data (for example email addresses or IP addresses). KubePilot does not inspect or filter log contents.</li>
   </ul>
 
-  <h3>How it is collected</h3>
-  <p>The app does not collect this data itself. When you use an AI feature, the app asks your KubePilot server to perform the analysis; the server reads the data above from your Kubernetes cluster and builds the request to the AI model.</p>
+  <h3>How it is sent</h3>
+  <p>Neither the app nor its developers collect this data. When you use an AI feature, the app asks your KubePilot server to perform the analysis; the server reads the data above from your Kubernetes cluster and builds the request to the AI model.</p>
 
   <h3>Who receives it</h3>
   <ol>
