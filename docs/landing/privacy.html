@@ -156,7 +156,7 @@
   <h3>Who receives it</h3>
   <ol>
     <li><strong>Your KubePilot server</strong> — the server URL you entered in the app, operated by you or your organisation.</li>
-    <li><strong>The AI model configured on that server.</strong> By default this is a self-hosted model (for example Ollama) running on the same server, in which case no data leaves your infrastructure. Your server operator may instead configure an OpenAI-compatible third-party AI service (for example OpenAI, Azure OpenAI or another hosted LLM provider). The permission screen in the app names the AI endpoint and model your server reports, and states when it is not running on your server.</li>
+    <li><strong>The AI model configured on that server.</strong> By default this is a self-hosted model (for example Ollama) running on the same server, in which case no data leaves your infrastructure. Your server operator may instead configure an OpenAI-compatible third-party AI service (for example OpenAI, Azure OpenAI or another hosted LLM provider). The app asks for your permission right after sign-in, before any AI feature is used. Its permission screen names your KubePilot server, the AI provider (for example OpenAI) or endpoint and the model your server reports, and states whether an outside AI company receives the data.</li>
   </ol>
   <p>KubePilot’s developers do not operate an AI service for the app, do not receive your AI requests or results, and do not use them to train models.</p>
 

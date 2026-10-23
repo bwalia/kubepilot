@@ -132,7 +132,7 @@ struct DashboardView: View {
 
     private var insightsSection: some View {
         VStack(alignment: .leading, spacing: Theme.spacingSM) {
-            SectionHeader(title: "AI Insights")
+            SectionHeader(title: "Detected Issues")
             ForEach(viewModel.insights.prefix(3)) { insight in
                 SurfaceCard(cornerRadius: Theme.cornerRadiusSmall) {
                     VStack(alignment: .leading, spacing: Theme.spacingSM) {
