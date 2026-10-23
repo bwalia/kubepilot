@@ -32,6 +32,8 @@ enum DemoFixtures {
             return utf8(namespacesJSON)
         case "events":
             return utf8(eventsJSON)
+        case "clusters/pod-usage":
+            return utf8(podUsageJSON)
         case "troubleshooting/summary":
             return utf8(troubleshootingJSON)
         case "ai/health":
@@ -75,6 +77,16 @@ enum DemoFixtures {
     }
 
     private static func utf8(_ s: String) -> Data { Data(s.utf8) }
+
+    static let podUsageJSON = """
+    {"metrics_available":true,"storage_stats_available":true,"generated_at":"2026-09-29T00:00:00Z","pods":[
+    {"name":"checkout-api-7d9f8c","namespace":"payments","node":"demo-node-1","phase":"Running","owner_kind":"Deployment","owner_name":"checkout-api","restarts":4,"cpu_usage_milli":820,"cpu_request_milli":250,"cpu_limit_milli":1000,"mem_usage_bytes":503316480,"mem_request_bytes":268435456,"mem_limit_bytes":536870912,"storage_used_bytes":157286400,"ephemeral_used_bytes":157286400,"pvc_used_bytes":0,"pvc_capacity_bytes":0},
+    {"name":"ledger-db-0","namespace":"payments","node":"demo-node-2","phase":"Running","owner_kind":"StatefulSet","owner_name":"ledger-db","restarts":0,"cpu_usage_milli":410,"cpu_request_milli":500,"cpu_limit_milli":2000,"mem_usage_bytes":1288490188,"mem_request_bytes":1073741824,"mem_limit_bytes":2147483648,"storage_used_bytes":6442450944,"ephemeral_used_bytes":10485760,"pvc_used_bytes":6431965184,"pvc_capacity_bytes":10737418240,"pvc_count":1},
+    {"name":"fraud-scorer-5b8d6","namespace":"risk","node":"demo-node-1","phase":"Running","owner_kind":"Deployment","owner_name":"fraud-scorer","restarts":1,"cpu_usage_milli":1340,"cpu_request_milli":1000,"cpu_limit_milli":1500,"mem_usage_bytes":858993459,"mem_request_bytes":536870912,"mem_limit_bytes":1073741824,"storage_used_bytes":52428800,"ephemeral_used_bytes":52428800,"pvc_used_bytes":0,"pvc_capacity_bytes":0},
+    {"name":"ingress-nginx-controller-6f7c","namespace":"ingress-nginx","node":"demo-node-2","phase":"Running","owner_kind":"Deployment","owner_name":"ingress-nginx-controller","restarts":0,"cpu_usage_milli":120,"cpu_request_milli":100,"cpu_limit_milli":0,"mem_usage_bytes":188743680,"mem_request_bytes":94371840,"mem_limit_bytes":0,"storage_used_bytes":20971520,"ephemeral_used_bytes":20971520,"pvc_used_bytes":0,"pvc_capacity_bytes":0},
+    {"name":"prometheus-server-0","namespace":"monitoring","node":"demo-node-3","phase":"Running","owner_kind":"StatefulSet","owner_name":"prometheus-server","restarts":0,"cpu_usage_milli":260,"cpu_request_milli":200,"cpu_limit_milli":0,"mem_usage_bytes":1073741824,"mem_request_bytes":536870912,"mem_limit_bytes":0,"storage_used_bytes":21474836480,"ephemeral_used_bytes":0,"pvc_used_bytes":21474836480,"pvc_capacity_bytes":21474836480,"storage_estimated":true,"pvc_count":1}
+    ]}
+    """
 
     private static let podsJSON = """
     [{"Name":"checkout-api-7d9f8c","Namespace":"payments","Phase":"Running","Reason":"CrashLoopBackOff","NodeName":"demo-worker-1","Restarts":3,"Ready":false,"Uptime":"12m"},{"Name":"checkout-api-9ab12e","Namespace":"payments","Phase":"Running","Reason":"","NodeName":"demo-worker-2","Restarts":0,"Ready":true,"Uptime":"4h"},{"Name":"redis-cart-0","Namespace":"payments","Phase":"Running","Reason":"","NodeName":"demo-worker-1","Restarts":0,"Ready":true,"Uptime":"2d"},{"Name":"coredns-5d4f","Namespace":"kube-system","Phase":"Running","Reason":"","NodeName":"demo-control-1","Restarts":0,"Ready":true,"Uptime":"14d"},{"Name":"metrics-server","Namespace":"kube-system","Phase":"Pending","Reason":"ImagePullBackOff","NodeName":"","Restarts":2,"Ready":false,"Uptime":"8m"}]

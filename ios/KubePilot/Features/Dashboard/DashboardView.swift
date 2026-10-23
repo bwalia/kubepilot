@@ -24,6 +24,10 @@ struct DashboardView: View {
                         healthScoreCard
                         metricsGrid
 
+                        if let usage = viewModel.usage {
+                            TopConsumersSection(report: usage, namespace: appState.clusterManager.selectedNamespace)
+                        }
+
                         if !viewModel.insights.isEmpty {
                             insightsSection
                         }
@@ -255,6 +259,9 @@ final class DashboardViewModel {
     var summary: ClusterTroubleshootingSummary?
     var pods: [PodSummary] = []
     var anomalies: [Anomaly] = []
+    /// Top consumers by CPU, memory and storage. Nil hides the section, e.g. on
+    /// servers that predate the pod-usage endpoint.
+    var usage: PodUsageReport?
     var isLoading = false
     var errorMessage: String?
 
@@ -298,6 +305,12 @@ final class DashboardViewModel {
             anomalies = try await KubePilotService.shared.fetchAnomalies()
         } catch {
             anomalies = []
+        }
+
+        do {
+            usage = try await KubePilotService.shared.fetchPodUsage(namespace: namespace, top: 5)
+        } catch {
+            usage = nil
         }
 
         if summary == nil && pods.isEmpty {
