@@ -241,6 +241,36 @@ platform :ios do
     UI.success("No review submission waiting or in review — safe to submit")
   end
 
+  desc "Print App Store versions, review submissions and recent TestFlight builds (read-only)"
+  lane :review_status do
+    # Apple's API exposes states and dates only — Resolution Center messages
+    # (rejection reasons) are not available and must be read in App Store Connect.
+    asc_api_key
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    UI.user_error!("App #{APP_ID} not found in App Store Connect") unless app
+    ios = Spaceship::ConnectAPI::Platform::IOS
+
+    UI.header("App Store versions")
+    versions = app.get_app_store_versions(filter: { platform: ios }, limit: 5)
+    versions.sort_by { |v| v.created_date.to_s }.reverse.each do |v|
+      build = v.build ? "build #{v.build.version}" : "no build"
+      UI.message("#{v.version_string}  #{v.app_version_state || v.app_store_state}  (#{build}, created #{v.created_date})")
+    end
+
+    UI.header("Review submissions")
+    submissions = app.get_review_submissions(filter: { platform: ios }, limit: 10)
+    submissions.sort_by { |s| s.submitted_date.to_s }.reverse.first(5).each do |s|
+      UI.message("#{s.state}  submitted #{s.submitted_date || '(not submitted)'}  id #{s.id}")
+    end
+
+    UI.header("Recent builds")
+    builds = app.get_builds(includes: "preReleaseVersion", sort: "-uploadedDate", limit: 5)
+    builds.first(5).each do |b|
+      version = b.pre_release_version&.version
+      UI.message("#{version} (#{b.version})  #{b.processing_state}#{' expired' if b.expired}  uploaded #{b.uploaded_date}")
+    end
+  end
+
   desc "Bootstrap free price schedule + all territories via current ASC APIs"
   lane :ensure_free_worldwide do
     # Loads ASC_* into ENV for the helper script (also warms the Spaceship token).
