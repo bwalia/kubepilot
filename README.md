@@ -500,4 +500,4 @@ You can host this via GitHub Pages, Netlify, or any static web host.
 
 ## License
 
-See repository license information in the root or project settings.
+KubePilot is licensed under the [Apache License, Version 2.0](LICENSE).
