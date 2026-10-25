@@ -153,3 +153,16 @@ uploads `ios/fastlane/metadata/routing_app_coverage.geojson` (worldwide MultiPol
 
 Privacy policy URL (required): `https://pages.kubepilot.org/privacy.html`
 (from `docs/landing/privacy.html`, published by the Landing Page workflow).
+
+## Checking App Review status
+
+```bash
+cd ios
+eval "$(./ci/load-ios-vault-secrets.sh)"   # ASC API key from wslvault
+bundle exec fastlane ios review_status
+```
+
+Read-only: prints the App Store versions and their states, the latest review
+submissions and the most recent builds with their processing state. Apple's API
+does not expose Resolution Center messages, so rejection reasons still have to
+be read in App Store Connect.
