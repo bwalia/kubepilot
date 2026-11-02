@@ -24,6 +24,14 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      # Cheap, and both catch things Apple would otherwise catch for us days
+      # later: a required-reason API with no declared reason (ITMS-91053), and
+      # text that has dropped below WCAG AA on the dark theme.
+      - name: Check privacy manifest and contrast
+        run: |
+          python3 scripts/check_privacy_manifest.py
+          python3 scripts/check_contrast.py
+
       - name: Build
         run: |
           xcodebuild build \

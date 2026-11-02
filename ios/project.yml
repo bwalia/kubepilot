@@ -20,19 +20,61 @@ targets:
     platform: iOS
     sources:
       - path: KubePilot
+        excludes:
+          - Info.plist
+    # A real Info.plist, not INFOPLIST_KEY_* build settings. NSAppTransportSecurity
+    # is a dictionary and ITSAppUsesNonExemptEncryption has no INFOPLIST_KEY_
+    # equivalent, so neither can be expressed as a build setting at all.
+    info:
+      path: KubePilot/Info.plist
+      properties:
+        CFBundleDisplayName: KubePilot
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # iPad multitasking needs all four declared, or upload fails ITMS-90474.
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSFaceIDUsageDescription: "Unlock your KubePilot credentials with Face ID"
+        # The app only uses HTTPS and the system Keychain — exempt encryption.
+        # Declared here as well as in fastlane's submission_information so every
+        # TestFlight upload stops stalling on the export-compliance question.
+        ITSAppUsesNonExemptEncryption: false
+        # A KubePilot server is usually reached over HTTPS, but plenty run inside
+        # a cluster or on a LAN over plain HTTP. Without these, ATS silently
+        # refuses those connections and the app looks like the server is down.
+        # NSAllowsLocalNetworking covers any RFC1918 address, so no exception
+        # domain is needed per LAN host. Deliberately NOT NSAllowsArbitraryLoads:
+        # that turns ATS off for the public internet and invites a review query.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: true
+            127.0.0.1:
+              NSExceptionAllowsInsecureHTTPLoads: true
+        # iOS 14+ gates connections to local network addresses behind a
+        # permission prompt, and the prompt never appears without this string —
+        # so a server on 10.x/192.168.x or a .local host just fails to connect.
+        NSLocalNetworkUsageDescription: >-
+          KubePilot connects to your KubePilot server when it runs on this
+          network — for example inside your cluster or on a machine on the
+          same Wi-Fi.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.kubepilot.app
-        INFOPLIST_KEY_CFBundleDisplayName: KubePilot
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UILaunchScreen_UIColorName: LaunchBackground
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        INFOPLIST_KEY_NSFaceIDUsageDescription: "Unlock your KubePilot credentials with Face ID"
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: KubePilot/Info.plist
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0.0
     dependencies:
@@ -52,6 +94,13 @@ targets:
       path: KubePilotWidgets/Info.plist
       properties:
         CFBundleDisplayName: KubePilot Widgets
+        # Spelled out as build variables on purpose. Left implicit, xcodegen
+        # resolves them to whatever MARKETING_VERSION/CURRENT_PROJECT_VERSION
+        # happen to be at generate time and writes the literals — so the widget
+        # freezes at 1.0 (1) while fastlane bumps the app, and an embedded
+        # extension whose version differs from its host is rejected on upload.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
