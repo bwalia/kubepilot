@@ -956,15 +956,21 @@ struct ServerAccount: Codable, Identifiable, Hashable, Sendable {
         case oauthMicrosoft
         case oidc
 
+        /// Every one of these is a token the user pastes in — KubePilot runs no
+        /// OAuth flow and never signs anyone in through a third party. The
+        /// labels say "Token" so that stays obvious: bare provider names read
+        /// as social sign-in, which would put the app under App Store
+        /// guideline 4.8 (Login Services) and oblige it to offer Sign in with
+        /// Apple alongside them.
         var label: String {
             switch self {
             case .bearer: "API Token"
             case .basic: "Username & Password"
-            case .oauthGitHub: "GitHub"
-            case .oauthGitLab: "GitLab"
-            case .oauthGoogle: "Google"
-            case .oauthMicrosoft: "Microsoft"
-            case .oidc: "OIDC / SAML"
+            case .oauthGitHub: "GitHub Token"
+            case .oauthGitLab: "GitLab Token"
+            case .oauthGoogle: "Google Token"
+            case .oauthMicrosoft: "Microsoft Token"
+            case .oidc: "OIDC / SAML Token"
             }
         }
     }

@@ -42,6 +42,7 @@
 		CB1441C0A27FD1DB661CCB41 /* ClusterPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DB3E39265829BD9406A9004 /* ClusterPickerView.swift */; };
 		CD8780789CB655EF0BEABF35 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F232B0102FDC4B276D6DE6B8 /* AlertsView.swift */; };
 		D06783CAA344C10F235538DC /* AutopilotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A138A133146C4414B53053CF /* AutopilotView.swift */; };
+		DFE4C315F879F377EF4FC1FD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6E08E4E65A3B7F94C6B31093 /* PrivacyInfo.xcprivacy */; };
 		E533BAAE5318667DAC2DD1C7 /* SuggestedActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3772EC46B0AABAFF2194AD8C /* SuggestedActionsView.swift */; };
 		F4A7DEDF8C007794EF27F717 /* APIModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D687504C8D3FFC12545D8C6D /* APIModelsTests.swift */; };
 		F5B9A351BB13F7D7D0513C11 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B316A2C59A6C1836CA04DB /* KeychainStore.swift */; };
@@ -101,6 +102,7 @@
 		5EDEFA932F95F55F22C864A5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		61D27256635353D8F6669103 /* BiometricUnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricUnlockView.swift; sourceTree = "<group>"; };
 		64A44B4A207F167F48D6C066 /* HelmMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelmMark.swift; sourceTree = "<group>"; };
+		6E08E4E65A3B7F94C6B31093 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6EABD28677396C8067E479DA /* LogViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogViewerView.swift; sourceTree = "<group>"; };
 		73CC64E3C6C608F34B678EAD /* DemoFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoFixtures.swift; sourceTree = "<group>"; };
 		7CB6184619A7CA0B7BFB0FE1 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -312,6 +314,7 @@
 				E4B6F5339AE91A9E52CF147B /* Shared */,
 				0F4143F1164780374F42C994 /* Assets.xcassets */,
 				3459A1ED312F009A72B9941A /* KubePilot.entitlements */,
+				6E08E4E65A3B7F94C6B31093 /* PrivacyInfo.xcprivacy */,
 			);
 			path = KubePilot;
 			sourceTree = "<group>";
@@ -494,6 +497,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				995EE005A8AF4F04320EBDCD /* Assets.xcassets in Resources */,
+				DFE4C315F879F377EF4FC1FD /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -637,14 +641,8 @@
 				CODE_SIGN_ENTITLEMENTS = KubePilot/KubePilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = KubePilot;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock your KubePilot credentials with Face ID";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_UIColorName = LaunchBackground;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KubePilot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -788,14 +786,8 @@
 				CODE_SIGN_ENTITLEMENTS = KubePilot/KubePilot.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = KubePilot;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock your KubePilot credentials with Face ID";
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_UIColorName = LaunchBackground;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = KubePilot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

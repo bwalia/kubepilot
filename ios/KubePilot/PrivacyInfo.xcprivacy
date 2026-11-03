@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Required by Apple since 1 May 2024 for any app that calls a required-reason
+	API. This file is the in-binary counterpart of two other statements, and all
+	three have to agree or App Review treats the mismatch as the answer:
+
+	  1. App Store Connect → App Privacy → "Data Not Collected"
+	  2. docs/landing/privacy.html (pages.kubepilot.org/privacy.html)
+
+	NSPrivacyCollectedDataTypes is empty on purpose. The app has no analytics,
+	crash-reporting or advertising SDK and no backend of ours: credentials stay
+	in the Keychain, and cluster data, logs and AI requests go only to the
+	KubePilot server the user configured. We never receive any of it, which is
+	what "not collected" means in Apple's definition.
+
+	Cluster data does leave the device — to the user's own server, and onward to
+	whatever AI model that server's operator configured. That is disclosed and
+	consented to in KubePilot/Core/Privacy/AIConsent.swift, not declared here,
+	because the recipient is the user's own infrastructure rather than ours.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- AIConsent stores the user's AI data-sharing answer per account, and
+		     AuthManager / KubePilotAPI remember which cluster an account last
+		     selected. Both are this install's own state; nothing is read back
+		     out of the app and no other app or SDK can see it. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
