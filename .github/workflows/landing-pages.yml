@@ -53,6 +53,8 @@ jobs:
           mkdir -p _site/screenshots _site/blog/assets
           sed 's|\.\./screenshots/|screenshots/|g' docs/landing/index.html > _site/index.html
           cp docs/landing/privacy.html _site/privacy.html
+          # Landing assets: official App Store badges + iOS screenshots.
+          cp -R docs/landing/assets _site/assets
           # Generated blog pages + assets only (not posts/ source packs).
           cp docs/blog/index.html _site/blog/index.html
           for f in docs/blog/*.html; do

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KubePilot for iPhone and iPad Is Now on the App Store | KubePilot Blog</title>
+    <meta name="description" content="Download KubePilot free for iPhone and iPad: Kubernetes cluster health, pod logs, alerts and AI root-cause analysis on your own clusters, with no account and no data collected." />
+    <meta name="keywords" content="KubePilot iOS, Kubernetes iPhone app, Kubernetes iPad app, kubectl mobile, SRE on-call app, AI RCA, App Store" />
+    <link rel="canonical" href="https://pages.kubepilot.org/blog/kubepilot-ios-app-now-on-the-app-store.html" />
+    <meta name="theme-color" content="#F7F9FC" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function(){try{var t=localStorage.getItem('kubepilot-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/blog.css" />
+  </head>
+  <body>
+    
+    <header class="nav">
+      <div class="wrap nav-inner">
+        <a href="../index.html" class="logo" aria-label="KubePilot home"><span class="logo-text">Kube<span>Pilot</span></span></a>
+        <nav class="nav-links">
+          <a href="../index.html#modes">Modes</a>
+          <a href="../index.html#features">Features</a>
+          <a href="../index.html#install">Install</a>
+          <a href="./index.html" aria-current="page">Blog</a>
+          <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
+        </nav>
+        <div class="nav-actions">
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+            <span class="label">Daylight</span>
+          </button>
+          <a href="https://github.com/bwalia/kubepilot" class="btn btn-gh">GitHub</a>
+        </div>
+      </div>
+    </header>
+    <main>
+      <article class="wrap article">
+        <a class="back" href="./index.html">&larr; All posts</a>
+        <div class="tags"><span class="tag">KubePilot</span><span class="tag">iOS</span><span class="tag">Kubernetes</span><span class="tag">SRE</span><span class="tag">Release</span></div>
+        <h1>KubePilot for iPhone and iPad Is Now on the App Store</h1>
+        <div class="meta">
+          <span>Balinder Walia</span>
+          <span>&middot;</span>
+          <span>4 Nov 2026</span>
+          <span>&middot;</span>
+          <span>~5 min read</span>
+        </div>
+        <img class="hero-img" src="assets/img/ios-ipad-hero.jpg" alt="" />
+        <div class="prose">
+<p>
+  <strong>KubePilot for iPhone and iPad is live on the App Store.</strong> It's free, it's
+  native SwiftUI, and it puts the same incident loop you know from the KubePilot web cockpit
+  (spot the problem, understand it, act on it) in your pocket.
+</p>
+
+<p>
+  <a href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener" aria-label="Download KubePilot on the App Store">
+    <img src="assets/img/app-store-badge-black.svg" alt="Download on the App Store" width="160" height="54" style="height:54px;width:auto;border:0;" />
+  </a>
+</p>
+
+<h2>Why a mobile app for Kubernetes?</h2>
+<p>
+  Pages don't wait until you're at your desk. When an alert fires on the train, at dinner or at 2am,
+  the first ten minutes go on one question: <em>how bad is this, and what's actually broken?</em>
+  Opening a laptop, connecting to the VPN and typing <code>kubectl get pods -A</code> is slow.
+  The KubePilot app answers that question in seconds, and if the issue can wait until morning
+  you'll know that too.
+</p>
+
+<h2>What you can do from your phone</h2>
+<div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+  <div class="card">
+    <h3>📊 Cluster health at a glance</h3>
+    <p>A health score, healthy vs failing pods, CrashLoop and Pending counts, node problems and
+    alerts, plus the <strong>top CPU, memory and storage consumers</strong> so you can see what's
+    eating the cluster.</p>
+  </div>
+  <div class="card">
+    <h3>🔎 Pod triage</h3>
+    <p>Search and filter pods by CrashLoop, OOM or Pending across namespaces. Open one to see its
+    overview, events, sanitized YAML and <strong>live-tailing logs</strong>.</p>
+  </div>
+  <div class="card">
+    <h3>🧠 AI root-cause analysis</h3>
+    <p>Tap <strong>Analyse with AI</strong> on a failing pod, or ask the assistant a question in plain
+    English. It uses the AI engine on your KubePilot server, including local LLMs via Ollama.</p>
+  </div>
+  <div class="card">
+    <h3>🚨 Alerts &amp; RCA history</h3>
+    <p>Anomalies, cluster events and saved RCA reports in one timeline, so you can catch up on
+    what happened overnight.</p>
+  </div>
+</div>
+
+<div class="grid2" style="max-width:520px;margin:1.5rem auto;">
+  <img src="assets/img/ios-01_dashboard.jpg" alt="KubePilot iOS dashboard showing cluster health and pod counts" loading="lazy" style="width:100%;border-radius:18px;border:1px solid rgb(var(--p-border));" />
+  <img src="assets/img/ios-03_ai.jpg" alt="KubePilot iOS AI assistant" loading="lazy" style="width:100%;border-radius:18px;border:1px solid rgb(var(--p-border));" />
+</div>
+
+<h2>Built for the iPad too</h2>
+<p>
+  On iPad, KubePilot uses the extra space for a full dashboard. Keep it next to your laptop as a
+  second screen during an incident, or take it into the war room.
+</p>
+<img src="assets/img/ios-05_ipad_dashboard.jpg" alt="KubePilot dashboard on iPad" loading="lazy" style="display:block;width:100%;max-width:440px;margin:1.25rem auto;border-radius:18px;border:1px solid rgb(var(--p-border));" />
+
+<h2>Your clusters, your data</h2>
+<p>
+  KubePilot isn't a SaaS. The app talks <strong>directly to your own KubePilot server</strong>,
+  whether that's on your LAN, in your VPC or behind your ingress. There is:
+</p>
+<ul>
+  <li><strong>No KubePilot account</strong> to sign up for and no cloud relay in the middle.</li>
+  <li><strong>No data collected.</strong> No analytics or tracking SDKs. The App Store privacy label says "Data Not Collected".</li>
+  <li><strong>Credentials kept in the iOS Keychain</strong>, with optional Face ID or passcode lock.</li>
+  <li>AI requests go to <em>your</em> server's configured provider. The app asks for your consent before anything is shared and names the provider.</li>
+</ul>
+
+<h2>Siri and Shortcuts</h2>
+<p>
+  App Intents let you ask Siri or the Shortcuts app for a cluster health summary, or jump straight to
+  your failing pods, without tapping through the app.
+</p>
+
+<h2>Try it in 30 seconds</h2>
+<div class="step-head"><span class="step-num">1</span><h3 style="margin:0;">Install the app</h3></div>
+<p>Get <a href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener">KubePilot on the App Store</a>. It's free on iPhone and iPad.</p>
+<div class="step-head"><span class="step-num">2</span><h3 style="margin:0;">Tap “Try the live demo”</h3></div>
+<p>Explore a hosted demo cluster straight away, with no server needed.</p>
+<div class="step-head"><span class="step-num">3</span><h3 style="margin:0;">Connect your own cluster</h3></div>
+<p>Run the open-source KubePilot server (Helm, Docker or from source), then enter its URL and a
+bearer token or basic-auth credentials in the app:</p>
+<pre><code>helm upgrade --install kubepilot charts/kubepilot \
+  -n kubepilot --create-namespace</code></pre>
+
+<div class="cta">
+  <p style="margin:0 0 6px;"><strong>KubePilot is open source (Apache 2.0).</strong> The iOS app, server and
+  dashboard all live in one repo. Issues, feature requests and stars are all welcome.</p>
+  <a class="btn-primary" href="https://github.com/bwalia/kubepilot">View KubePilot on GitHub →</a>
+</div>
+
+<h2>What's next</h2>
+<p>
+  Push notifications for critical alerts, Live Activities for in-flight incidents and an Apple Watch
+  glance are on the roadmap. If something would make your on-call shifts easier,
+  <a href="https://github.com/bwalia/kubepilot/issues/new">open an issue</a>.
+</p>
+
+        </div>
+      </article>
+    </main>
+    
+    <footer class="footer">
+      <div class="wrap">
+        KubePilot &copy; 2025&ndash;2026 &middot;
+        <a href="./index.html">Blog</a> &middot;
+        <a href="../privacy.html">Privacy</a> &middot;
+        <a href="https://github.com/bwalia/kubepilot">GitHub</a>
+      </div>
+    </footer>
+    <script src="assets/theme.js"></script>
+  </body>
+</html>
