@@ -9,6 +9,7 @@
       content="KubePilot helps SRE and platform teams resolve Kubernetes cluster incidents faster with AI CoPilot, SRE Pilot browsing, and AutoPilot self-healing — from diagnosis to safe fix in one open-source cockpit."
     />
     <meta name="theme-color" content="#F7F9FC" />
+    <meta name="apple-itunes-app" content="app-id=6791872512" />
     <meta name="color-scheme" content="light dark" />
     <script>
       // Same key and default as the dashboard's _document no-flash script:
@@ -178,6 +179,34 @@
       }
       .btn-primary:hover { background: rgb(var(--p-accent-light)); border-color: rgb(var(--p-accent-light)); color: rgb(var(--p-bg)); box-shadow: var(--glow-blue); }
       .btn-lg { height: 48px; padding: 0 24px; font-size: 1rem; border-radius: 10px; }
+
+      /* ── App Store badge (official Apple artwork; black on Daylight, white on Night) ── */
+      .store-badge { display: inline-flex; line-height: 0; border-radius: 9px; }
+      .store-badge img { height: 48px; width: auto; }
+      .store-badge .sb-white, :root[data-theme="dark"] .store-badge .sb-black { display: none; }
+      :root[data-theme="dark"] .store-badge .sb-white { display: block; }
+      .store-badge:focus-visible { outline: 2px solid rgb(var(--p-accent)); outline-offset: 3px; }
+      .store-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; color: rgb(var(--p-text-secondary)); font-size: 0.9rem; }
+
+      /* ── iOS app section ── */
+      .ios-app { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; }
+      .ios-copy .eyebrow { color: rgb(var(--p-accent-light)); }
+      .ios-copy h2 { font-size: clamp(1.7rem, 3.6vw, 2.3rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin: 14px 0 12px; }
+      .ios-copy > p { color: rgb(var(--p-text-secondary)); margin-bottom: 18px; }
+      .ios-copy ul { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 10px; }
+      .ios-copy li { display: flex; gap: 10px; align-items: flex-start; color: rgb(var(--p-text-secondary)); }
+      .ios-copy li .ic { flex: none; width: 18px; height: 18px; margin-top: 3px; color: rgb(var(--p-success)); }
+      .ios-copy .store-row { justify-content: flex-start; margin-top: 0; }
+      .ios-shots { position: relative; display: flex; justify-content: center; align-items: flex-end; gap: 14px; }
+      .ios-shots img { border-radius: 22px; border: 1px solid rgb(var(--p-border)); box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.45); background: #0b1220; }
+      .ios-shots .phone { width: 31%; max-width: 190px; }
+      .ios-shots .phone.mid { transform: translateY(-22px); }
+      @media (max-width: 860px) {
+        .ios-app { grid-template-columns: 1fr; gap: 36px; }
+        .ios-copy { text-align: center; }
+        .ios-copy ul { max-width: 460px; margin-left: auto; margin-right: auto; text-align: left; }
+        .ios-copy .store-row { justify-content: center; }
+      }
 
       /* ── Mobile menu ── */
       .menu-toggle { display: none; background: none; border: none; color: rgb(var(--p-text-primary)); cursor: pointer; padding: 8px; border-radius: 8px; }
@@ -473,6 +502,7 @@
           <a href="#how-it-works">How It Works</a>
           <a href="#video">What is KubePilot</a>
           <a href="#screenshots">Screenshots</a>
+          <a href="#ios-app">iOS App</a>
           <a href="#install">Install</a>
           <a href="blog/">Blog</a>
           <a href="https://github.com/bwalia/kubepilot#readme">Docs</a>
@@ -507,6 +537,10 @@
           <div class="hero-actions">
             <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot">Get Started Free<svg class="ic" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
             <a class="btn btn-lg" href="#modes">Explore Modes</a>
+          </div>
+          <div class="store-row">
+            <a class="store-badge" href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener" aria-label="Download KubePilot on the App Store for iPhone and iPad"><img class="sb-black" src="assets/app-store-badge-black.svg" alt="Download on the App Store" width="150" height="50" /><img class="sb-white" src="assets/app-store-badge-white.svg" alt="" width="150" height="50" /></a>
+            <span>New: KubePilot for iPhone &amp; iPad &mdash; free on the App Store</span>
           </div>
           <div id="video" class="hero-video">
             <div class="hero-video-header">
@@ -551,6 +585,32 @@
       <div class="trust-bar wrap">
         <p><strong>One cockpit from signal to fix.</strong> Ask CoPilot in plain English, browse like an SRE in Pilot, and let AutoPilot preview or apply safe remediations — with local LLMs, durable RCA history, optional Slack alerts, and a native iOS companion.</p>
       </div>
+
+      <!-- iOS app -->
+      <section id="ios-app" class="section">
+        <div class="wrap ios-app">
+          <div class="ios-copy">
+            <span class="eyebrow"><svg class="ic" aria-hidden="true"><use href="#i-smartphone"/></svg> Now on the App Store</span>
+            <h2>KubePilot for iPhone &amp; iPad</h2>
+            <p>Your cluster doesn&rsquo;t wait until you&rsquo;re back at your desk. The free native app connects to your own KubePilot server, so you can triage incidents, read logs and run AI root-cause analysis from your phone.</p>
+            <ul>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg><span>Live cluster health, problem pods and top CPU, memory and storage consumers</span></li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg><span>Pod logs with live tail, events, YAML and one-tap AI analysis</span></li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg><span>Alerts, anomalies and RCA reports wherever you are</span></li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg><span>Face ID lock, Keychain-stored credentials and Siri &amp; Shortcuts</span></li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-shield-check"/></svg><span>No account needed and no data collected. Try the built-in live demo first.</span></li>
+            </ul>
+            <div class="store-row">
+              <a class="store-badge" href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener" aria-label="Download KubePilot on the App Store for iPhone and iPad"><img class="sb-black" src="assets/app-store-badge-black.svg" alt="Download on the App Store" width="150" height="50" /><img class="sb-white" src="assets/app-store-badge-white.svg" alt="" width="150" height="50" /></a>
+            </div>
+          </div>
+          <div class="ios-shots" aria-hidden="true">
+            <img class="phone" src="assets/ios-04_alerts.jpg" alt="" loading="lazy" width="660" height="1434" />
+            <img class="phone mid" src="assets/ios-01_dashboard.jpg" alt="" loading="lazy" width="660" height="1434" />
+            <img class="phone" src="assets/ios-03_ai.jpg" alt="" loading="lazy" width="660" height="1434" />
+          </div>
+        </div>
+      </section>
 
       <!-- Modes -->
       <section id="modes" class="section">
@@ -849,6 +909,10 @@ kubectl port-forward svc/kubepilot -n kubepilot 8080:8080</code></pre>
   serve --dashboard-port=8383</code></pre>
             </div>
             <div id="tab-ios" class="install-content">
+              <div class="store-row" style="justify-content:flex-start;margin:14px 0 10px;">
+                <a class="store-badge" href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener" aria-label="Download KubePilot on the App Store for iPhone and iPad"><img class="sb-black" src="assets/app-store-badge-black.svg" alt="Download on the App Store" width="150" height="50" /><img class="sb-white" src="assets/app-store-badge-white.svg" alt="" width="150" height="50" /></a>
+                <span>Free for iPhone &amp; iPad. Or build it yourself:</span>
+              </div>
 <pre><code>cd ios
 brew install xcodegen
 ./generate.sh
@@ -871,6 +935,9 @@ open KubePilot.xcodeproj
               <a class="btn btn-primary btn-lg" href="https://github.com/bwalia/kubepilot"><svg class="ic" aria-hidden="true"><use href="#i-github"/></svg>Star on GitHub</a>
               <a class="btn btn-lg" href="https://github.com/bwalia/kubepilot/issues/new">Request a Feature</a>
             </div>
+            <div class="store-row">
+              <a class="store-badge" href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener" aria-label="Download KubePilot on the App Store for iPhone and iPad"><img class="sb-black" src="assets/app-store-badge-black.svg" alt="Download on the App Store" width="150" height="50" /><img class="sb-white" src="assets/app-store-badge-white.svg" alt="" width="150" height="50" /></a>
+            </div>
           </div>
         </div>
       </section>
@@ -880,6 +947,7 @@ open KubePilot.xcodeproj
       <div class="wrap">
         KubePilot &copy; 2025&ndash;2026 &middot;
         <a href="blog/">Blog</a> &middot;
+        <a href="https://apps.apple.com/app/kubepilot/id6791872512" rel="noopener">iOS App</a> &middot;
         <a href="privacy.html">Privacy</a> &middot;
         <a href="https://github.com/bwalia/kubepilot">GitHub</a> &middot;
         <a href="https://github.com/bwalia/kubepilot#readme">Documentation</a> &middot;

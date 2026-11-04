@@ -1,0 +1,14 @@
+{
+  "title": "KubePilot for iPhone and iPad Is Now on the App Store",
+  "slug": "kubepilot-ios-app-now-on-the-app-store",
+  "excerpt": "The native KubePilot app is live and free on the App Store. Check cluster health, tail pod logs, read alerts and run AI root-cause analysis on your own Kubernetes clusters from an iPhone or iPad.",
+  "published_at": "2026-11-04",
+  "reading_minutes": 5,
+  "author_name": "Balinder Walia",
+  "tags": ["KubePilot", "iOS", "Kubernetes", "SRE", "Release"],
+  "seo_title": "KubePilot for iPhone and iPad Is Now on the App Store | KubePilot Blog",
+  "seo_description": "Download KubePilot free for iPhone and iPad: Kubernetes cluster health, pod logs, alerts and AI root-cause analysis on your own clusters, with no account and no data collected.",
+  "seo_keywords": "KubePilot iOS, Kubernetes iPhone app, Kubernetes iPad app, kubectl mobile, SRE on-call app, AI RCA, App Store",
+  "featured_image_url": "assets/img/ios-ipad-hero.jpg",
+  "status": "published"
+}
