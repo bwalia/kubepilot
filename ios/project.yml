@@ -76,7 +76,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: KubePilot/Info.plist
         CURRENT_PROJECT_VERSION: 1
-        MARKETING_VERSION: 1.0.0
+        MARKETING_VERSION: 1.0.1
     dependencies:
       - target: KubePilotWidgets
         embed: true
@@ -109,7 +109,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: KubePilotWidgets/Info.plist
         CURRENT_PROJECT_VERSION: 1
-        MARKETING_VERSION: 1.0.0
+        MARKETING_VERSION: 1.0.1
     entitlements:
       path: KubePilotWidgets/KubePilotWidgets.entitlements
 

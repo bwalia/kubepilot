@@ -1,1 +1,3 @@
-First public release — free Kubernetes AI companion for your KubePilot server.
+Connecting to a KubePilot server on your own network is more reliable: servers reached over plain HTTP on a LAN, inside a cluster or on localhost now work without extra setup, and iOS asks for local network permission properly the first time.
+
+Also adds Apple's privacy manifest, which states in the app itself what the App Store listing already says: KubePilot collects no data.
