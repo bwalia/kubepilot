@@ -20,5 +20,6 @@
   "healthOrWellnessTopics": false,
   "lootBox": false,
   "messagingAndChat": false,
-  "parentalControls": false
+  "parentalControls": false,
+  "socialMedia": false
 }
