@@ -8,7 +8,7 @@
       name="description"
       content="KubePilot helps SRE and platform teams resolve Kubernetes cluster incidents faster with AI CoPilot, SRE Pilot browsing, and AutoPilot self-healing — from diagnosis to safe fix in one open-source cockpit."
     />
-    <meta name="theme-color" content="#F7F9FC" />
+    <meta name="theme-color" content="#f4f7f6" />
     <meta name="apple-itunes-app" content="app-id=6791872512" />
     <meta name="color-scheme" content="light dark" />
     <script>
@@ -18,81 +18,81 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet" />
     <style>
       /* ============================================================
-         THEME TOKENS — mirrored 1:1 from dashboard/styles/globals.css so the
-         marketing site and the product read as one system.
+         THEME TOKENS — matched to the opsapi.org website (Poppins / Unbounded /
+         JetBrains Mono, ops-teal ink, teal-green accent, dark bands).
          :root = DAYLIGHT (default). [data-theme="dark"] = NIGHT.
          ============================================================ */
       :root {
-        --p-bg:              247 249 252;
+        --p-bg:              244 247 246;
         --p-surface:         255 255 255;
-        --p-surface-2:       240 243 248;
-        --p-border:          215 221 231;
-        --p-border-hover:    185 194 209;
-        --p-accent:           13 111 138;
-        --p-accent-light:     11  98 122;
-        --p-accent-deep:       8  70  88;
-        --p-success:           4 120  87;
-        --p-warning:         180  83   9;
-        --p-danger:          200  32  40;
-        --p-info:            107  40 214;
-        --p-muted:            90 102 122;
-        --p-text-secondary:   51  65  85;
-        --p-text-primary:     15  23  42;
-        --p-hover:            15  23  42;
+        --p-surface-2:       234 240 238;
+        --p-border:          211 222 219;
+        --p-border-hover:    180 196 192;
+        --p-accent:           0 128 107;
+        --p-accent-light:     0 110 92;
+        --p-accent-deep:       0 82 68;
+        --p-success:           0 128 107;
+        --p-warning:         168 95 0;
+        --p-danger:          180 40 46;
+        --p-info:            88 71 194;
+        --p-muted:            90 108 113;
+        --p-text-secondary:   68 86 91;
+        --p-text-primary:     13 29 33;
+        --p-hover:            13 29 33;
 
-        --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px -3px rgba(15,23,42,.09);
-        --shadow-card-hover: 0 8px 20px -6px rgba(15,23,42,.14), 0 20px 40px -12px rgba(15,23,42,.16);
-        --shadow-bar: 0 1px 0 0 rgb(215 221 231), 0 4px 16px -8px rgba(15,23,42,.12);
-        --glow-blue: 0 0 0 1px rgba(13,111,138,.45), 0 6px 22px -6px rgba(13,111,138,.45);
+        --shadow-card: 0 1px 2px rgba(10,34,38,.04), 0 4px 12px -3px rgba(10,34,38,.09);
+        --shadow-card-hover: 0 8px 20px -6px rgba(10,34,38,.14), 0 20px 40px -12px rgba(10,34,38,.16);
+        --shadow-bar: 0 1px 0 0 rgb(211 222 219), 0 4px 16px -8px rgba(10,34,38,.12);
+        --glow-blue: 0 0 0 1px rgba(0,128,107,.45), 0 6px 22px -6px rgba(0,128,107,.45);
         --shadow-inset: inset 0 1px 0 0 rgba(255,255,255,.7);
-        --atmo-1: rgba(13,111,138,.05);
-        --atmo-2: rgba(56,120,180,.04);
-        --code-bg: 240 243 248;
+        --atmo-1: rgba(0,128,107,.05);
+        --atmo-2: rgba(0,128,107,.03);
+        --code-bg: 234 240 238;
 
-        --radius: 16px;
-        --radius-md: 12px;
+        --radius: 12px;
+        --radius-md: 10px;
         --radius-sm: 8px;
         color-scheme: light;
       }
       :root[data-theme="dark"] {
-        --p-bg:               11  16  23;
-        --p-surface:          20  27  38;
-        --p-surface-2:        28  38  52;
-        --p-border:           43  56  74;
-        --p-border-hover:     62  80 102;
-        --p-accent:           34 211 238;
-        --p-accent-light:    125 236 250;
-        --p-accent-deep:      14 116 144;
-        --p-success:          52 211 153;
-        --p-warning:         251 191  36;
-        --p-danger:          251 113 133;
-        --p-info:            167 139 250;
-        --p-muted:           133 148 168;
-        --p-text-secondary:  181 195 212;
-        --p-text-primary:    234 241 248;
+        --p-bg:               11 22 25;
+        --p-surface:          17 33 31;
+        --p-surface-2:        22 42 41;
+        --p-border:           39 64 61;
+        --p-border-hover:     58 92 88;
+        --p-accent:           56 209 178;
+        --p-accent-light:    95 227 199;
+        --p-accent-deep:      0 128 107;
+        --p-success:          56 209 178;
+        --p-warning:         242 176 79;
+        --p-danger:          240 138 138;
+        --p-info:            169 155 245;
+        --p-muted:           127 151 146;
+        --p-text-secondary:  168 188 183;
+        --p-text-primary:    228 239 236;
         --p-hover:           255 255 255;
 
         --shadow-card: inset 0 1px 0 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.5), 0 10px 28px -16px rgba(0,0,0,.72);
         --shadow-card-hover: inset 0 1px 0 0 rgba(255,255,255,.07), 0 2px 6px rgba(0,0,0,.55), 0 16px 40px -14px rgba(0,0,0,.82);
-        --shadow-bar: 0 1px 0 0 rgb(43 56 74), 0 4px 16px -8px rgba(0,0,0,.6);
-        --glow-blue: 0 0 0 1px rgba(34,211,238,.32), 0 0 26px -6px rgba(34,211,238,.48);
+        --shadow-bar: 0 1px 0 0 rgb(39 64 61), 0 4px 16px -8px rgba(0,0,0,.6);
+        --glow-blue: 0 0 0 1px rgba(56,209,178,.32), 0 0 26px -6px rgba(56,209,178,.48);
         --shadow-inset: inset 0 1px 0 0 rgba(255,255,255,.05);
-        --atmo-1: rgba(34,211,238,.06);
-        --atmo-2: rgba(56,130,200,.05);
-        --code-bg: 11 16 23;
+        --atmo-1: rgba(56,209,178,.06);
+        --atmo-2: rgba(56,209,178,.04);
+        --code-bg: 8 25 27;
         color-scheme: dark;
       }
 
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { font-size: 17px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; transition: background-color .3s ease, color .3s ease; }
+      html { font-size: 16px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; transition: background-color .3s ease, color .3s ease; }
       html, body { background-color: rgb(var(--p-bg)); }
       body {
-        font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         color: rgb(var(--p-text-primary));
-        line-height: 1.65;
+        line-height: 1.7;
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -109,7 +109,7 @@
       strong { color: rgb(var(--p-text-primary)); font-weight: 600; }
       a { color: inherit; text-decoration: none; }
       img { max-width: 100%; height: auto; }
-      code, pre, .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+      code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
       ::selection { background: rgb(var(--p-accent) / 0.28); color: rgb(var(--p-text-primary)); }
       a, button { transition: border-color .15s ease, background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease; }
       a:focus-visible, button:focus-visible { outline: 2px solid rgb(var(--p-accent)); outline-offset: 2px; }
@@ -158,7 +158,7 @@
         display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px 0 8px;
         border-radius: 6px; border: 1px solid rgb(var(--p-border));
         background: rgb(var(--p-surface-2)); color: rgb(var(--p-text-secondary));
-        font: 600 13px/1 'IBM Plex Sans', sans-serif; cursor: pointer;
+        font: 600 13px/1 'Poppins', sans-serif; cursor: pointer;
       }
       .theme-toggle:hover { color: rgb(var(--p-text-primary)); border-color: rgb(var(--p-border-hover)); }
       .theme-toggle .ic { width: 16px; height: 16px; color: rgb(var(--p-accent)); }
@@ -375,7 +375,7 @@
       .step::before {
         content: counter(step, decimal-leading-zero); display: inline-flex; align-items: center; justify-content: center;
         height: 28px; padding: 0 10px; border-radius: 6px;
-        font: 600 0.85rem/1 'IBM Plex Mono', monospace;
+        font: 600 0.85rem/1 'JetBrains Mono', monospace;
         color: rgb(var(--p-accent-light)); background: rgb(var(--p-accent) / 0.12); border: 1px solid rgb(var(--p-accent) / 0.25);
         margin-bottom: 14px;
       }
@@ -392,7 +392,7 @@
       }
       .install-tabs { display: flex; gap: 4px; margin-bottom: 18px; flex-wrap: wrap; border-bottom: 1px solid rgb(var(--p-border)); }
       .install-tab {
-        font: 500 0.93rem 'IBM Plex Sans', sans-serif; padding: 12px 14px; margin-bottom: -1px;
+        font: 500 0.93rem 'Poppins', sans-serif; padding: 12px 14px; margin-bottom: -1px;
         background: transparent; border: 0; border-bottom: 2px solid transparent;
         color: rgb(var(--p-muted)); cursor: pointer;
       }
@@ -462,6 +462,38 @@
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
       }
+
+      /* ── opsapi.org look: Unbounded display, Poppins body, JetBrains Mono labels,
+            dark ops-teal bands for the hero and footer in both themes. ── */
+      :root { --font-display: 'Unbounded', 'Poppins', system-ui, sans-serif; --on-accent: 255 255 255; }
+      :root[data-theme="dark"] { --on-accent: 4 33 28; }
+      h1, h2, .logo-text { font-family: var(--font-display); letter-spacing: -0.01em; }
+      .eyebrow { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; letter-spacing: 0.12em; }
+      .logo-text { font-size: 1.05rem; }
+      .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: #0b2a2e; border: 0; color: #2fd3b5; position: relative; }
+      .logo-mark::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #f5a524; }
+      .hero, .footer {
+        --p-bg: 10 34 38; --p-surface: 15 45 49; --p-surface-2: 20 54 58;
+        --p-border: 42 76 74; --p-border-hover: 66 106 102;
+        --p-accent: 47 211 181; --p-accent-light: 106 230 207; --p-success: 47 211 181;
+        --p-muted: 150 176 170; --p-text-secondary: 169 193 188; --p-text-primary: 231 242 239;
+        --p-hover: 255 255 255; --on-accent: 4 33 28; --code-bg: 6 17 20;
+        color-scheme: dark; background: rgb(var(--p-bg)); color: rgb(var(--p-text-secondary));
+      }
+      :root[data-theme="dark"] .hero, :root[data-theme="dark"] .footer { --p-bg: 7 20 23; }
+      .nav { background: rgb(var(--p-bg) / 0.88); box-shadow: none; border-bottom: 1px solid rgb(var(--p-border)); }
+      .btn-primary, .btn-primary:hover { color: rgb(var(--on-accent)); }
+      .video-play { color: rgb(var(--on-accent)); }
+      .hero { padding-bottom: 88px; }
+      .hero h1 { font-size: clamp(2rem, 1.2rem + 2.6vw, 3.25rem); line-height: 1.15; letter-spacing: -0.02em; }
+      .hero h1 .gradient { color: rgb(var(--p-accent)); }
+      .hero .badge { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; letter-spacing: 0.1em; font-size: 0.74rem; }
+      .hero .sb-black { display: none; } .hero .sb-white { display: block; }
+      .section-header h2, .ios-copy h2, .cta-card h2 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem); line-height: 1.3; }
+      .step::before { font-family: 'JetBrains Mono', monospace; }
+      .footer { border-top: 0; padding: 40px 0; }
+      .footer a { color: rgb(var(--p-text-primary)); }
+      .footer a:hover { color: rgb(var(--p-accent)); text-decoration: none; }
     </style>
   </head>
   <body>
@@ -1014,7 +1046,7 @@ open KubePilot.xcodeproj
           var next = dark ? 'Daylight' : 'Night';
           btn.setAttribute('aria-label', 'Switch to ' + next + ' mode');
           btn.title = 'Switch to ' + next + ' mode';
-          meta.setAttribute('content', dark ? '#0B1017' : '#F7F9FC');
+          meta.setAttribute('content', dark ? '#0b1619' : '#f4f7f6');
         }
         btn.addEventListener('click', function () {
           var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
