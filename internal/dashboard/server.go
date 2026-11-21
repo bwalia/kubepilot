@@ -43,6 +43,7 @@ type Config struct {
 	Scheduler                         *jobs.Scheduler
 	K8sClient                         *k8s.Client
 	RCAStore                          *observability.RCAStore
+	Watcher                           *observability.ClusterWatcher
 	RunbookEngine                     *runbooks.Engine
 	Autopilot                         *autopilot.Controller
 	OTELAutopilot                     *otelautopilot.Controller
@@ -220,6 +221,9 @@ func (s *Server) Handler() http.Handler {
 	// safe operation. Resuming re-enables only the startup-configured mode.
 	api.HandleFunc("/autopilot/pause", s.handleAutopilotPause).Methods(http.MethodPost)
 	api.HandleFunc("/autopilot/resume", s.handleAutopilotResume).Methods(http.MethodPost)
+	api.HandleFunc("/watcher", s.handleWatcherStatus).Methods(http.MethodGet)
+	api.HandleFunc("/watcher/rca/pause", s.handleWatcherRCAPause).Methods(http.MethodPost)
+	api.HandleFunc("/watcher/rca/resume", s.handleWatcherRCAResume).Methods(http.MethodPost)
 	// Live mode switch (off | dry-run | active) — applied in-memory, no restart.
 	api.HandleFunc("/autopilot/mode", s.handleAutopilotSetMode).Methods(http.MethodPost)
 
@@ -1424,4 +1428,36 @@ func withCORS(next http.Handler, allowedOrigins []string) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// handleWatcherStatus reports whether background auto-RCA is enabled.
+func (s *Server) handleWatcherStatus(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Watcher == nil {
+		httpError(w, fmt.Errorf("watcher is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	writeJSON(w, map[string]any{
+		"auto_rca_enabled": s.cfg.Watcher.AutoRCAEnabled(),
+	})
+}
+
+// handleWatcherRCAPause stops background LLM RCA without stopping the dashboard
+// or anomaly detection.
+func (s *Server) handleWatcherRCAPause(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Watcher == nil {
+		httpError(w, fmt.Errorf("watcher is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	s.cfg.Watcher.SetAutoRCA(false)
+	s.handleWatcherStatus(w, nil)
+}
+
+// handleWatcherRCAResume re-enables background LLM RCA.
+func (s *Server) handleWatcherRCAResume(w http.ResponseWriter, _ *http.Request) {
+	if s.cfg.Watcher == nil {
+		httpError(w, fmt.Errorf("watcher is not configured"), http.StatusServiceUnavailable)
+		return
+	}
+	s.cfg.Watcher.SetAutoRCA(true)
+	s.handleWatcherStatus(w, nil)
 }

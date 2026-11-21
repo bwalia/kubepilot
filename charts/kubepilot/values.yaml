@@ -61,6 +61,9 @@ kubepilot:
   # llama3.1:8b is a quality upgrade when latency allows. Avoid large
   # "thinking" models (qwen3.8, etc.) — they routinely exceed UI timeouts.
   ollamaModel: "llama3.2:3b"
+  # Background LLM RCA on pod anomalies. Disable to keep the dashboard
+  # responsive when Ollama is shared/busy. Anomaly detection still runs.
+  enableAutoRCA: true
 
   # ollamaAPIKeySecret is optional — only required if Ollama is behind an auth proxy.
   # Set via: --set kubepilot.ollamaAPIKeySecret.name=my-secret
