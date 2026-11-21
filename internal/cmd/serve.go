@@ -76,6 +76,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().Bool("metrics-require-auth", false, "Require dashboard credentials to scrape /metrics")
 
 	// Autopilot — closed-loop AI self-healing.
+	cmd.Flags().Bool("enable-auto-rca", true, "Run background LLM RCA when the cluster watcher detects pod anomalies")
 	cmd.Flags().String("autopilot-mode", "off", "Autopilot self-healing mode: off | dry-run | active (active mutates the cluster)")
 	cmd.Flags().Float64("autopilot-min-confidence", 0.80, "Minimum RCA confidence (0.0-1.0) before autopilot may act")
 	cmd.Flags().String("autopilot-allowed-actions", "delete_pod,restart", "Comma-separated remediation actions autopilot may auto-apply")
@@ -128,6 +129,7 @@ func newServeCmd() *cobra.Command {
 	_ = viper.BindPFlag("otel_environment", cmd.Flags().Lookup("otel-environment"))
 	_ = viper.BindPFlag("metrics_enabled", cmd.Flags().Lookup("metrics-enabled"))
 	_ = viper.BindPFlag("metrics_require_auth", cmd.Flags().Lookup("metrics-require-auth"))
+	_ = viper.BindPFlag("enable_auto_rca", cmd.Flags().Lookup("enable-auto-rca"))
 	_ = viper.BindPFlag("autopilot_mode", cmd.Flags().Lookup("autopilot-mode"))
 	_ = viper.BindPFlag("autopilot_min_confidence", cmd.Flags().Lookup("autopilot-min-confidence"))
 	_ = viper.BindPFlag("autopilot_allowed_actions", cmd.Flags().Lookup("autopilot-allowed-actions"))
@@ -334,10 +336,16 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	}
 
 	watcher := observability.NewClusterWatcher(k8sClient, aiEngine.RCA(), rcaStore, observability.WatcherConfig{
-		Persistence: persistence,
-		Notifier:    notifier,
-		ReportHook:  autopilotCtl.HandleReport,
+		Persistence:   persistence,
+		Notifier:      notifier,
+		ReportHook:    autopilotCtl.HandleReport,
+		EnableAutoRCA: boolPtr(viper.GetBool("enable_auto_rca")),
 	}, log)
+	if viper.GetBool("enable_auto_rca") {
+		log.Info("Auto-RCA enabled (background LLM analysis on anomalies)")
+	} else {
+		log.Warn("Auto-RCA disabled (watcher still detects anomalies; no LLM RCA)")
+	}
 	go watcher.Start(ctx)
 
 	// Build runbook execution engine and optionally hot-reload user runbooks
@@ -382,6 +390,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 		Scheduler:      scheduler,
 		K8sClient:      k8sClient,
 		RCAStore:       rcaStore,
+		Watcher:        watcher,
 		RunbookEngine:  runbookEngine,
 		Autopilot:      autopilotCtl,
 		OTELAutopilot:  otelCtl,
@@ -413,6 +422,8 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	log.Info("KubePilot shutting down")
 	return nil
 }
+
+func boolPtr(v bool) *bool { return &v }
 
 func parseCSV(raw string) []string {
 	parts := strings.Split(raw, ",")

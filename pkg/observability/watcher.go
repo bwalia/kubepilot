@@ -40,6 +40,12 @@ type ClusterWatcher struct {
 	// reportHook, if set, is invoked with every freshly stored RCA report.
 	// It is the integration point for the autopilot self-healing controller.
 	reportHook ReportHook
+
+	// autoRCA controls whether detected pod anomalies trigger LLM RCA.
+	// Anomaly detection/storage still runs when this is false so the dashboard
+	// timeline keeps working without flooding the AI backend.
+	autoRCAmu sync.Mutex
+	autoRCA   bool
 }
 
 // ReportHook is called after a new RCA report has been stored. It lets external
@@ -55,6 +61,9 @@ type WatcherConfig struct {
 	Persistence  *Persistence
 	Notifier     AnomalyNotifier
 	ReportHook   ReportHook
+	// EnableAutoRCA controls whether the watcher calls the LLM for new pod
+	// anomalies. Default true when unset by callers that predate this field.
+	EnableAutoRCA *bool
 }
 
 // NewClusterWatcher creates a watcher that polls the cluster at the given interval.
@@ -74,6 +83,11 @@ func NewClusterWatcher(k8sClient *k8s.Client, rcaEngine *ai.RCAEngine, store *RC
 		dedupeWindow = 5 * time.Minute
 	}
 
+	enableAutoRCA := true
+	if cfg.EnableAutoRCA != nil {
+		enableAutoRCA = *cfg.EnableAutoRCA
+	}
+
 	return &ClusterWatcher{
 		k8s:           k8sClient,
 		rca:           rcaEngine,
@@ -87,6 +101,29 @@ func NewClusterWatcher(k8sClient *k8s.Client, rcaEngine *ai.RCAEngine, store *RC
 		dedupeWindow:  dedupeWindow,
 		rcaSem:        make(chan struct{}, 8), // max concurrent RCA analyses (raised to reduce starvation on busy clusters)
 		reportHook:    cfg.ReportHook,
+		autoRCA:       enableAutoRCA,
+	}
+}
+
+// AutoRCAEnabled reports whether background LLM RCA is currently on.
+func (w *ClusterWatcher) AutoRCAEnabled() bool {
+	w.autoRCAmu.Lock()
+	defer w.autoRCAmu.Unlock()
+	return w.autoRCA
+}
+
+// SetAutoRCA enables or disables background LLM RCA at runtime.
+func (w *ClusterWatcher) SetAutoRCA(enabled bool) {
+	w.autoRCAmu.Lock()
+	defer w.autoRCAmu.Unlock()
+	if w.autoRCA == enabled {
+		return
+	}
+	w.autoRCA = enabled
+	if enabled {
+		w.log.Info("Auto-RCA resumed")
+	} else {
+		w.log.Warn("Auto-RCA paused (anomaly detection continues; LLM RCA disabled)")
 	}
 }
 
@@ -95,6 +132,7 @@ func (w *ClusterWatcher) Start(ctx context.Context) {
 	w.log.Info("Cluster watcher started",
 		zap.Duration("interval", w.interval),
 		zap.Int("rules", len(w.rules)),
+		zap.Bool("auto_rca", w.AutoRCAEnabled()),
 	)
 
 	ticker := time.NewTicker(w.interval)
@@ -176,8 +214,8 @@ func (w *ClusterWatcher) poll(ctx context.Context) {
 				go w.notifier.NotifyAnomaly(ctx, anomaly)
 			}
 
-			// Only trigger RCA for Pod-level anomalies.
-			if anomaly.Resource.Kind == "Pod" && anomaly.Resource.Namespace != "" {
+			// Only trigger RCA for Pod-level anomalies when auto-RCA is enabled.
+			if w.AutoRCAEnabled() && anomaly.Resource.Kind == "Pod" && anomaly.Resource.Namespace != "" {
 				go w.triggerRCA(ctx, anomaly)
 			}
 		}

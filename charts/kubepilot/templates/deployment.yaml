@@ -36,6 +36,7 @@ spec:
             - --log-level={{ .Values.kubepilot.logLevel }}
             - --ollama-base-url={{ .Values.kubepilot.ollamaBaseURL }}
             - --ollama-model={{ .Values.kubepilot.ollamaModel }}
+            - --enable-auto-rca={{ .Values.kubepilot.enableAutoRCA }}
             {{- if .Values.kubepilot.enableActionMutations }}
             - --enable-action-mutations
             {{- end }}

@@ -76,6 +76,7 @@ cors_allowed_origins: "http://localhost:8383,http://127.0.0.1:8383"
 # auto-executed — they are escalated to a human. Autopilot never bypasses
 # change control and never touches blocked namespaces.
 # ─────────────────────────────────────────────────────────────────────────────
+enable_auto_rca: true                     # background LLM RCA on watcher anomalies
 autopilot_mode: "off"                      # off | dry-run | active
 autopilot_min_confidence: 0.80             # only act on RCA confidence >= this (0.0-1.0)
 autopilot_allowed_actions: "delete_pod,restart"  # actions autopilot may auto-apply
