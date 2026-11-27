@@ -9,7 +9,7 @@
   "ssl_auto_renew": true,
   "ssl_staging": false,
   "ssl_email": "support@kubepilot.org",
-  "dns_cname_target": "lon1.pop0.uk",
+  "dns_cname_target": "edge.pop0.uk",
   "dns_record_type": "CNAME",
   "listens": [
     {

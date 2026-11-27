@@ -12,7 +12,8 @@ Pushing those to `wslproxy` and running **Deploy WSLProxy Virtual Servers**
 This directory is the kubepilot-side source consumed by
 `.github/workflows/register-demo-edge.yml`, which:
 
-1. Upserts Cloudflare CNAME `demo.kubepilot.org` → `lon1.pop0.uk` (DNS-only)
+1. Upserts Cloudflare CNAME `demo.kubepilot.org` → `edge.pop0.uk` (DNS-only;
+   the lon1<->lon2 failover switch, see diy-tax-return-infra docs/runbooks/edge-failover.md)
 2. Imports the rule + vhost via wslproxy `/api/projects/import`
 
 Backend is `193.237.176.232:8888` (k3s1 traefik-edge). Traefik matches
