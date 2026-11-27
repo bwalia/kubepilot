@@ -8,7 +8,7 @@ path that falls back to offline fixtures when the public URL is unreachable.
 ```
 Apple reviewer
   → https://demo.kubepilot.org  (Cloudflare CNAME, grey-cloud / DNS-only)
-  → lon1.pop0.uk (wslproxy POP)
+  → edge.pop0.uk (wslproxy POP; lon1<->lon2 failover switch)
   → 193.237.176.232:8888 (k3s1 traefik-edge)
   → Ingress host demo.kubepilot.org → kubepilot-demo-api
 ```

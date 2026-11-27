@@ -25,7 +25,8 @@ on:
 
 env:
   ZONE: kubepilot.org
-  CNAME_TARGET: lon1.pop0.uk
+  # edge.pop0.uk is the lon1<->lon2 failover switch; see diy-tax-return-infra docs/runbooks/edge-failover.md
+  CNAME_TARGET: edge.pop0.uk
   DEMO_HOST: demo.kubepilot.org
 
 permissions:

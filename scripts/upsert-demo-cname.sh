@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Upsert Cloudflare CNAME demo.kubepilot.org → lon1.pop0.uk (DNS-only / grey-cloud).
+# Upsert Cloudflare CNAME demo.kubepilot.org → edge.pop0.uk (DNS-only / grey-cloud).
 #
 # Requires: CLOUDFLARE_API_TOKEN with Zone.DNS edit on kubepilot.org
 # Optional: CLOUDFLARE_ZONE_ID (looked up from CLOUDFLARE_ZONE if unset)
@@ -8,7 +8,8 @@ set -euo pipefail
 ZONE="${CLOUDFLARE_ZONE:-kubepilot.org}"
 NAME="${DEMO_DNS_NAME:-demo}"
 FQDN="${NAME}.${ZONE}"
-TARGET="${CNAME_TARGET:-lon1.pop0.uk}"
+# edge.pop0.uk is the lon1<->lon2 failover switch; see diy-tax-return-infra docs/runbooks/edge-failover.md
+TARGET="${CNAME_TARGET:-edge.pop0.uk}"
 API="https://api.cloudflare.com/client/v4"
 
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
